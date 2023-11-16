@@ -1,5 +1,21 @@
 use std::fmt;
 
+#[derive(Copy, Clone, Default)]
+pub struct Coord { pub x: isize, pub y: isize }
+
+impl Coord {
+    pub fn area(&self) -> isize {
+        self.x * self.y
+    }
+}
+
+impl fmt::Display for Coord {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "({},{})", self.x, self.y)
+    }
+}
+
+
 #[derive(Copy, Clone)]
 pub enum Pixel {
     B24{ r: u8, g: u8, b: u8 },

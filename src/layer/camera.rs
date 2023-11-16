@@ -1,20 +1,38 @@
-use crate::coord::Coord;
-use crate::pixel::Pixel;
-use crate::scene::Scene;
+use crate::utils::{Coord, Pixel};
+use crate::layer::Scene;
 
+#[derive(Copy, Clone)]
+pub struct CameraPixel {
+    pub brush: char,
+    pub color: Pixel
+}
+
+#[derive(Default)]
 pub struct Camera {
     pub dim: Coord,
     pub focus: Coord,
     pub mult: isize,
     pub repeat: Coord,
-    grid: Vec<Option<(char,Pixel)>>,
-    pixel_render_cascade_delay: u8
+    grid: Vec<Option<CameraPixel>>
 }
 
 impl Camera {
-    pub fn new(dim: Coord, focus: Coord, mult: isize, repeat: Coord, pixel_render_cascade_delay: u8) -> Self {
-        let grid: Vec<Option<(char, Pixel)>> = vec![None;(dim.x * dim.y) as usize];
-        Self{ dim, focus, mult, repeat, grid, pixel_render_cascade_delay }
+    pub fn new(scene: &Scene, dim: Coord, focus: Coord, mult: isize, repeat: Coord) -> Result<Self, String> {
+        let grid: Vec<Option<CameraPixel>> = vec![None;(dim.x * dim.y) as usize];
+        let mut camera: Self = Self{ grid: grid, ..Default::default() };
+        camera.set_dim(dim)?;
+        camera.set_focus(scene, focus)?;
+        camera.set_mult(mult)?;
+        camera.set_repeat(repeat)?;
+        Ok(camera)
+    }
+    fn set_dim(&mut self, new_dim: Coord) -> Result<(), String> {
+        if new_dim.x > 0 && new_dim.y > 0 {
+            self.dim = new_dim;
+            Ok(())
+        } else {
+            Err(format!("cannot set dimensions to negative coordinates, found: {}", new_dim))
+        }
     }
     pub fn set_focus(&mut self, scene: &Scene, new_focus: Coord) -> Result<(), String> {
         if new_focus.x >= 0 && new_focus.x < scene.dim.x && new_focus.y >= 0 && new_focus.y < scene.dim.y {
@@ -24,9 +42,20 @@ impl Camera {
             Err(format!("cannot set focus to {} since image dimensions are {}", new_focus, scene.dim))
         }
     }
-    pub fn set_mult(&mut self, new_mult: isize) {
+    pub fn set_mult(&mut self, new_mult: isize) -> Result<(), String> {
         if new_mult > 0 {
             self.mult = new_mult;
+            Ok(())
+        } else {
+            Err(format!("cannot set multiplier to 0 or negative value, found {}", new_mult))
+        }
+    }
+    fn set_repeat(&mut self, new_repeat: Coord) -> Result<(), String> {
+        if new_repeat.x > 0 && new_repeat.y > 0 {
+            self.repeat = new_repeat;
+            Ok(())
+        } else {
+            Err(format!("cannot set repeat to negative coordinates, found: {}", new_repeat))
         }
     }
     fn decode(&self, pixel: Pixel) -> char {
@@ -39,18 +68,15 @@ impl Camera {
                     if (i+mi) >= 0 && (i+mi) < self.dim.x && (j+mj) >= 0 && (j+mj) < self.dim.y {
                         match scene.get_pixel(Coord {x, y}) {
                             Some(pixel) => {
-                                self.grid[((i+mi)*self.dim.y + (j+mj)) as usize] = Some((' ', pixel));
+                                self.grid[((i+mi)*self.dim.y + (j+mj)) as usize] = Some(CameraPixel{
+                                    brush: ' ',
+                                    color: pixel
+                                });
                             },
                             None => {
                                 self.grid[((i+mi)*self.dim.y + (j+mj)) as usize] = None;
                             }
                         }
-                        //self.grid[((i+mi)*self.dim.y + (j+mj)) as usize] = Some((' ', scene.get_pixel(Coord{x, y})));
-                        //render_to_screen_pixel(i+mi, j+mj, ' ', scene.get_pixel(Coord{x, y}));
-                        /*match scene.get_pixel(Coord{x, y}) {
-                            Some(pixel) => render_to_screen_pixel(i+mi, j+mj, ' ', pixel),
-                            None => render_to_screen_pixel(i+mi, j+mj, ' ', Pixel())
-                        }*/
                     }
                 }
             }
@@ -102,7 +128,7 @@ impl Camera {
             x += 1;
         }
     }
-    pub fn get_pixel(&self, coord: Coord) -> Option<(char,Pixel)> {
+    pub fn get_camera_pixel(&self, coord: Coord) -> Option<CameraPixel> {
         self.grid[(coord.x*self.dim.y + coord.y) as usize]
     }
 }
