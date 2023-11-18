@@ -2,12 +2,57 @@ mod utils;
 mod layer;
 mod session;
 mod state;
+mod stroke;
 
 use crate::utils::{ Coord, Pixel };
-use crate::session::{ SessionScene, SessionCamera, Session };
+use crate::session::{ SessionScene, SessionCamera, SessionLayers };
 use crate::layer::{ Scene, Camera, Layer };
-//use crate::scene_view::primitives::{Coord, Pixel};
-//use crate::scene_view::{Scene, Camera};
+use crate::stroke::Stroke;
+use std::collections::HashMap;
+
+fn initialize_strokes() -> HashMap<String, Box<dyn Stroke>> {
+    let mut strokes: HashMap<String, Box<dyn Stroke>> = HashMap::new();
+
+    struct Pencil;
+    impl Stroke for Pencil {
+        fn get_num_clicks(&self) -> u8 {
+            1
+        }
+        fn perform(&mut self, _click: u8, scene: &mut Scene, focus: Coord, color: Pixel) {
+            scene.set_pixel(focus, color).unwrap();
+        }
+    }
+    let pencil = Pencil;
+    strokes.insert(String::from("pencil"), Box::new(pencil));
+
+    struct RectangleFill {
+        start_corner: Coord,
+    }
+    impl Stroke for RectangleFill {
+        fn get_num_clicks(&self) -> u8 {
+            2
+        }
+        fn perform(&mut self, click: u8, scene: &mut Scene, focus: Coord, color: Pixel) {
+            match click {
+                0 => {
+                    self.start_corner = focus;
+                },
+                1 => {
+                    for i in self.start_corner.x..(focus.x + 1) {
+                        for j in self.start_corner.y..(focus.y + 1) {
+                            scene.set_pixel(Coord{x: i, y: j}, color).unwrap();
+                        }
+                    }
+                },
+                _ => panic!(),
+            }
+        }
+    }
+    let rectangle_fill = RectangleFill{ start_corner: Coord{ x: 0, y: 0 }};
+    strokes.insert(String::from("rectangle_fill"), Box::new(rectangle_fill));
+
+    strokes
+}
 
 fn display_camera_grid(camera: &Camera) {
     for i in 0..camera.dim.x {
@@ -45,8 +90,6 @@ fn main() {
         1,
         Coord{ x: 1, y: 2 }
     ).unwrap();
-    camera.render(&scene);
-    display_camera_grid(&camera);
 
     if let Some(pixel) = scene.get_pixel(camera.focus) {
         if let Pixel::B24{r, g, b} = pixel {
@@ -57,18 +100,9 @@ fn main() {
     } else {
         panic!("pixel on scene at camera focus is not defined");
     }
-    //scene.set_pixel(Coord{ x: 2, y: 2 }, Pixel::B8(scene.get_pixel(Coord{x: 2, y: 2}))).unwrap();
-            
-    camera.render(&scene);
-    display_camera_grid(&camera);
+
     */
-    //for z in 0..3 {
-    //    camera.render(&scene);
-    //    println!("focus is now at ({}, {})", camera.focus.x, camera.focus.y);
-    //    displayCameraGrid(&camera);
-    //    camera.set_focus(&scene, Coord{ x: (camera.focus.x + 1), y: (camera.focus.y + 1) }).unwrap();
-    //    println!("\n");
-    //}
+    //layer.camera.set_focus(&layer.scene, layer.camera.focus.add(Coord{ x:1, y: 1})).unwrap();
     
     let session_scene = SessionScene {
         dim: Coord { x: 20, y: 20 },
@@ -80,29 +114,38 @@ fn main() {
         mult: 1,
         repeat: Coord { x: 1, y: 1 }
     };
-    /*
-    let session = Session { scene: session_scene, camera: session_camera };
-    let mut layer1 = Layer::new(&session);
-
-    layer1.camera.render(&layer1.scene);
-    display_camera_grid(&layer1.camera);
-
-    layer1.scene.set_pixel(Coord { x: 10, y: 10 }, Pixel::B8(9));
-    layer1.camera.render(&layer1.scene);
-    display_camera_grid(&layer1.camera);
-    */
+    let session_layers = SessionLayers {
+        len: 8,
+    };
 
     let scene = Scene::new (
         Coord { x: 20, y: 20 },
         vec![Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8), Pixel::B8(9), Pixel::B8(0), Pixel::B8(1), Pixel::B8(2), Pixel::B8(3), Pixel::B8(4), Pixel::B8(5), Pixel::B8(6), Pixel::B8(7), Pixel::B8(8)],
         Pixel::B8(0)
     ).unwrap();
-    let mut layer2 = Layer::new_from_scene(&session_camera, scene);
+    let mut layer = Layer::new_from_scene(&session_camera, scene).unwrap();
+    //let mut layer = Layer::new(&session_scene, &session_camera).unwrap();
 
-    layer2.camera.render(&layer2.scene);
-    display_camera_grid(&layer2.camera);
+    layer.camera.render(&layer.scene);
+    display_camera_grid(&layer.camera);
 
-    layer2.scene.set_pixel(Coord { x: 10, y: 10 }, Pixel::B8(9)).unwrap();
-    layer2.camera.render(&layer2.scene);
-    display_camera_grid(&layer2.camera);
+    let mut strokes = initialize_strokes();
+    /*
+    for (stroke_name, mut stroke) in strokes {
+        println!("Performing {} at {}", stroke_name, layer.camera.focus);
+        stroke.perform(0, &mut layer.scene, layer.camera.focus, Pixel::B8(9));
+    }
+    */
+    if let Some(rectangle_fill) = strokes.get_mut("rectangle_fill") {
+        rectangle_fill.perform(0, &mut layer.scene, layer.camera.focus, Pixel::B8(9));
+
+        layer.camera.set_focus(&layer.scene, layer.camera.focus.add(Coord{ x: 2, y: 2 })).unwrap();
+        layer.camera.render(&layer.scene);
+        display_camera_grid(&layer.camera);
+
+        rectangle_fill.perform(1, &mut layer.scene, layer.camera.focus, Pixel::B8(9));
+    }
+
+    layer.camera.render(&layer.scene);
+    display_camera_grid(&layer.camera);
 }
