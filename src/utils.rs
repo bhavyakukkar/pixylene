@@ -7,6 +7,12 @@ impl Coord {
     pub fn area(&self) -> isize {
         self.x * self.y
     }
+    pub fn zero() -> Self {
+        Self{ x: 0, y: 0 }
+    }
+    pub fn add(self, coord: Coord) -> Self {
+        Self{ x: self.x + coord.x, y: self.y + coord.y }
+    }
 }
 
 impl fmt::Display for Coord {
