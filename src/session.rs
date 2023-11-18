@@ -12,7 +12,6 @@ pub struct SessionCamera {
     pub repeat: Coord
 }
 
-pub struct Session {
-    pub scene: SessionScene,
-    pub camera: SessionCamera,
+pub struct SessionLayers {
+    pub len: u8,
 }
