@@ -2,7 +2,7 @@ use crate::utils::{ Coord, Pixel };
 
 pub struct SessionScene {
     pub dim: Coord,
-    pub background: Pixel
+    pub background: Option<Pixel>
 }
 
 pub struct SessionCamera {

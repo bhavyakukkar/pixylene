@@ -1,6 +1,5 @@
 a = "#ffffff" #white
 b = "#000000" #black
-
 c = "#f44336"
 d = "#ff9800"
 e = "#ffc107"
@@ -39,41 +38,6 @@ grid = [
 [a, a, a, b, a, a, a, a, a, a, a, a, b, a, a, a],
 [a, a, a, a, b, b, b, b, b, b, b, b, a, a, a, a]
 ]
-
-"""
-grid = [
-[a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a],
-[a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a],
-[a, a, a, a, b, b, b, b, a, a, a, a, a, a, a, a, a, a, a, b, b, b, b, a, a, a, a, a, a],
-[a, a, a, b, o, o, o, o, b, a, a, a, a, a, a, a, a, a, b, o, o, o, o, b, a, a, a, a, a],
-[a, a, b, p, b, b, o, o, o, b, a, a, a, a, a, a, a, b, o, o, o, b, b, p, b, a, a, a, a],
-[a, a, b, p, p, p, b, o, o, b, b, b, b, b, b, b, b, b, o, o, b, p, p, p, b, a, a, a, a],
-[a, a, b, p, p, p, b, o, o, o, o, o, o, o, o, o, o, o, o, o, b, p, p, p, b, a, a, a, a],
-[a, a, b, p, p, b, o, o, o, o, o, o, o, o, o, o, o, a, a, a, a, b, p, p, b, a, a, a, a],
-[a, a, a, b, b, o, o, o, o, o, o, o, o, o, a, a, a, a, a, a, a, a, b, b, a, a, a, a, a],
-[a, a, a, a, b, o, o, b, b, b, o, o, a, a, a, a, a, b, b, b, a, a, b, a, a, a, a, a, a],
-[a, a, a, a, b, o, b, b, a, a, b, a, a, a, a, a, b, a, a, b, b, a, b, a, a, a, a, a, a],
-[a, a, a, b, o, o, b, b, a, a, b, a, a, a, a, a, b, a, a, b, b, a, a, b, a, a, a, a, a],
-[a, a, a, b, a, a, b, a, b, b, b, a, a, a, a, a, b, b, b, a, b, a, a, b, a, a, a, a, a],
-[a, a, a, b, b, a, a, b, b, b, a, a, a, a, a, a, a, b, b, b, a, a, b, b, a, a, a, a, a],
-[a, a, a, b, a, a, a, a, a, a, a, a, a, b, a, a, a, a, a, a, a, a, a, b, a, a, a, a, a],
-[a, a, a, b, b, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, b, b, a, a, a, a, a],
-[a, a, a, b, a, a, a, a, a, a, b, a, a, b, a, a, b, a, a, a, a, a, a, b, a, a, a, a, a],
-[a, a, a, a, b, a, a, a, a, a, a, b, b, a, b, b, a, a, a, a, a, a, b, a, a, a, a, a, a],
-[a, a, a, a, b, b, o, o, a, a, a, a, a, a, a, a, a, a, o, o, b, b, b, a, a, a, a, a, a],
-[a, a, a, a, b, o, o, a, a, b, a, a, a, a, a, a, a, b, a, a, o, o, b, a, a, a, a, a, a],
-[a, a, a, a, b, o, o, a, p, p, b, a, a, a, a, a, b, p, p, a, o, o, b, a, a, a, a, a, a],
-[a, a, a, a, b, o, a, b, p, p, b, a, a, a, a, a, b, p, p, b, a, o, b, a, a, a, a, a, a],
-[a, a, a, a, b, a, a, a, b, b, a, a, a, a, a, a, a, b, b, a, a, a, b, a, a, a, a, a, a],
-[a, a, a, a, a, b, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, b, a, a, a, a, a, a, a],
-[a, a, a, a, a, a, b, a, a, a, b, b, b, b, b, b, b, a, a, a, b, a, a, a, a, a, a, a, a],
-[a, a, a, a, a, b, p, p, b, b, a, a, a, a, a, a, a, b, b, p, p, b, a, a, a, a, a, a, a],
-[a, a, a, a, a, a, b, b, a, a, a, a, a, a, a, a, a, a, a, b, b, a, a, a, a, a, a, a, a],
-[a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a],
-[a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a],
-[a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a]
-]
-"""
 
 for row in grid:
     for x in row:

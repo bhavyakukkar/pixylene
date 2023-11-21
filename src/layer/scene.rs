@@ -2,46 +2,31 @@ use crate::utils::{Coord, Pixel};
 
 pub struct Scene {
     pub dim: Coord,
-    pub grid: Vec<Pixel>,
-    pub pixel_depth: Pixel
+    pub grid: Vec<Option<Pixel>>
 }
 
 impl Scene {
-    pub fn new(dim: Coord, grid: Vec<Pixel>, pixel_depth: Pixel) -> Result<Self, String> {
+    pub fn new(dim: Coord, grid: Vec<Option<Pixel>>) -> Result<Self, String> {
         if grid.len() == (dim.x*dim.y).try_into().unwrap() {
-            Ok(Self{ dim, grid, pixel_depth })
+            Ok(Self{ dim, grid })
         }
         else {
             Err(format!("Scene dimensions do not match pixel grid"))
         }
     }
-    pub fn get_pixel(&self, coord: Coord) -> Option<Pixel> {
+    pub fn get_pixel(&self, coord: Coord) -> Result<Option<Pixel>, String> {
         if coord.x >= 0 && coord.x < self.dim.x && coord.y >= 0 && coord.y < self.dim.y {
-            Some(self.grid[(coord.x*self.dim.y + coord.y) as usize])
+            Ok(self.grid[(coord.x*self.dim.y + coord.y) as usize])
         } else {
-            None
+            Err(format!("Cannot get pixel {} from scene of dimensions {}", coord, self.dim))
         }
     }
-    pub fn set_pixel(&mut self, coord: Coord, new_pixel: Pixel) -> Result<(), String> {
+    pub fn set_pixel(&mut self, coord: Coord, new_pixel: Option<Pixel>) -> Result<(), String> {
         if coord.x >= 0 && coord.x < self.dim.x && coord.y >= 0 && coord.y < self.dim.y {
-            match new_pixel {
-                Pixel::B24{..} => match self.pixel_depth {
-                    Pixel::B24{..} => {
-                        self.grid[(coord.x*self.dim.y + coord.y) as usize] = new_pixel;
-                        Ok(())
-                    },
-                    Pixel::B8(_) => Err("Cannot set 24-bit pixel to 8-bit scene".to_string()),
-                },
-                Pixel::B8(_) => match self.pixel_depth {
-                    Pixel::B8(_) => {
-                        self.grid[(coord.x*self.dim.y + coord.y) as usize] = new_pixel;
-                        Ok(())
-                    },
-                    Pixel::B24{..} => Err("Cannot set 8-bit pixel to 24-bit scene".to_string()),
-                }
-            }
+            self.grid[(coord.x*self.dim.y + coord.y) as usize] = new_pixel;
+            Ok(())
         } else {
-            Err(format!("cannot set to pixel that is negative or out-of-bounds on scene on scene of dimensions {}, found: {}", self.dim, coord))
+            Err(format!("cannot set_pixel at invalid {} on scene of dimensions {}", coord, self.dim))
         }
     }
 }
