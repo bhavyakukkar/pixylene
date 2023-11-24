@@ -1,5 +1,5 @@
-a = "#ffffff" #white
-b = "#000000" #black
+a = "#ffffff00" #white
+b = "#00000000" #black
 c = "#f44336"
 d = "#ff9800"
 e = "#ffc107"
@@ -39,7 +39,77 @@ grid = [
 [a, a, a, a, b, b, b, b, b, b, b, b, a, a, a, a]
 ]
 
-for row in grid:
-    for x in row:
-        print("Pixel::B24{{ r: {}, g: {}, b, {} }}, ".format(*list(map(lambda hx: int(f"0x{hx}", 16), [x[1:3], x[3:5], x[5:]]))), end=' ')
+grids = [
 
+[
+[a, b, b],
+[b, b, b],
+[b, b, b],
+],
+
+[
+[b, a, b],
+[b, b, b],
+[b, b, b],
+],
+
+[
+[b, b, a],
+[b, b, b],
+[b, b, b],
+],
+
+[
+[b, b, b],
+[a, b, b],
+[b, b, b],
+],
+
+[
+[b, b, b],
+[b, a, b],
+[b, b, b],
+],
+
+[
+[b, b, b],
+[b, b, a],
+[b, b, b],
+],
+
+[
+[b, b, b],
+[b, b, b],
+[a, b, b],
+],
+
+[
+[b, b, b],
+[b, b, b],
+[b, a, b],
+],
+
+[
+[b, b, b],
+[b, b, b],
+[b, b, a],
+],
+
+]
+
+for i in range(len(grids)):
+    grid = grids[i]
+    print(f"let layer{i} = Layer {{ scene: Scene::new(Coord{{ x: 3, y: 3 }}, vec![")
+    for row in grid:
+        for x in row:
+            print(
+                "Some(Pixel4{{r:{},g:{},b:{},a:{}}}),"
+                .format(
+                    *list(map(
+                        lambda hx: int(f"0x{hx}", 16), [x[1:3], x[3:5], x[5:7], x[7:]]
+                    ))
+                ),
+                end=''
+            )
+        print()
+    print("]).unwrap(), opacity: 255 };")

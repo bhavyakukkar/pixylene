@@ -30,6 +30,21 @@ pub struct Pixel {
     pub a: u8,  // a: alpha (0-255)
 }
 
+impl Pixel {
+    pub fn empty() -> Pixel {
+        Pixel{ r: 0, g: 0, b: 0, a: 0 }
+    }
+    pub fn background() -> Pixel {
+        Pixel{ r: 0, g: 0, b: 0, a: 255 }
+    }
+    pub fn get_certain(pixel_maybe: Option<Pixel>) -> Pixel {
+        match pixel_maybe {
+            Some(pixel) => pixel,
+            None => Pixel::empty()
+        }
+    }
+}
+
 impl fmt::Display for Pixel {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let Self{ r, g, b, a } = self;
@@ -39,5 +54,30 @@ impl fmt::Display for Pixel {
             format!("{:x}", b),
             format!("{:x}", a)
         )
+    }
+}
+
+
+pub enum BlendMode {
+    Normal,
+}
+impl BlendMode {
+    pub fn merge_down(&self, top: Pixel, bottom: Pixel) -> Pixel {
+        match self {
+            Self::Normal => {
+                //todo!();
+                if top.a == 255 {
+                    return top;
+                }
+                else if top.a == 0 {
+                    return bottom;
+                }
+                let r = (((top.a as f32)*(top.r as f32))/((top.a as u16 + bottom.a as u16) as f32) + (((bottom.a as f32)*(bottom.r as f32))/((top.a as u16 + bottom.a as u16) as f32))) as u8;
+                let g = (((top.a as f32)*(top.g as f32))/((top.a as u16 + bottom.a as u16) as f32) + (((bottom.a as f32)*(bottom.g as f32))/((top.a as u16 + bottom.a as u16) as f32))) as u8;
+                let b = (((top.a as f32)*(top.b as f32))/((top.a as u16 + bottom.a as u16) as f32) + (((bottom.a as f32)*(bottom.b as f32))/((top.a as u16 + bottom.a as u16) as f32))) as u8;
+                let a = std::cmp::max(0u16, std::cmp::min(255u16, bottom.a as u16 + (((top.a as f32)/((256 as u16 - bottom.a as u16) as f32)) as u16))) as u8;
+                Pixel{ r, g, b, a }
+            },
+        }
     }
 }
