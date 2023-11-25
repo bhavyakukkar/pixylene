@@ -2,6 +2,7 @@ use crate::layer::Layer;
 
 struct Project {
     layers: Vec<Layer>,
+    selected_layer: u8,
     palette: Palette
 }
 
