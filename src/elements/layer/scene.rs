@@ -1,4 +1,4 @@
-use crate::utils::{Coord, Pixel};
+use crate::elements::common::{Coord, Pixel};
 
 pub struct Scene {
     pub dim: Coord,

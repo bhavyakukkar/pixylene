@@ -1,5 +1,6 @@
-use crate::utils::{ Coord, Pixel };
-use crate::layer::Scene;
+use crate::elements::common::{ Coord, Pixel };
+use crate::elements::layer::Scene;
+
 use std::collections::HashMap;
 
 pub trait Stroke {

@@ -1,5 +1,5 @@
-use crate::utils::{Coord, Pixel};
-use crate::layer::Scene;
+use crate::elements::common::{ Coord, Pixel };
+use crate::elements::layer::Scene;
 
 #[derive(Copy, Clone)]
 pub enum CameraPixel {
@@ -17,13 +17,11 @@ pub struct Camera {
     pub focus: Coord,
     pub mult: isize,
     pub repeat: Coord,
-    grid: Vec<CameraPixel>
 }
 
 impl Camera {
     pub fn new(scene: &Scene, dim: Coord, focus: Coord, mult: isize, repeat: Coord) -> Result<Self, String> {
-        let grid: Vec<CameraPixel> = vec![CameraPixel::OutOfScene;(dim.x * dim.y) as usize];
-        let mut camera: Self = Self{ grid: grid, ..Default::default() };
+        let mut camera: Self = Self{ ..Default::default() };
         camera.set_dim(dim)?;
         camera.set_focus(scene, focus)?;
         camera.set_mult(mult)?;
@@ -35,7 +33,7 @@ impl Camera {
             self.dim = new_dim;
             Ok(())
         } else {
-            Err(format!("cannot set dimensions to negative coordinates, found: {}", new_dim))
+            Err(format!("cannot set camera's dimensions to negative coordinates, found: {}", new_dim))
         }
     }
     pub fn set_focus(&mut self, scene: &Scene, new_focus: Coord) -> Result<(), String> {
@@ -43,7 +41,7 @@ impl Camera {
             self.focus = new_focus;
             Ok(())
         } else {
-            Err(format!("cannot set focus to {} since image dimensions are {}", new_focus, scene.dim))
+            Err(format!("cannot set camera's focus to {} since image dimensions are {}", new_focus, scene.dim))
         }
     }
     pub fn set_mult(&mut self, new_mult: isize) -> Result<(), String> {
@@ -51,7 +49,7 @@ impl Camera {
             self.mult = new_mult;
             Ok(())
         } else {
-            Err(format!("cannot set multiplier to 0 or negative value, found {}", new_mult))
+            Err(format!("cannot set camera's multiplier to 0 or negative value, found {}", new_mult))
         }
     }
     fn set_repeat(&mut self, new_repeat: Coord) -> Result<(), String> {
@@ -59,13 +57,14 @@ impl Camera {
             self.repeat = new_repeat;
             Ok(())
         } else {
-            Err(format!("cannot set repeat to negative coordinates, found: {}", new_repeat))
+            Err(format!("cannot set camera's repeat to negative coordinates, found: {}", new_repeat))
         }
     }
     fn decode(&self, pixel: Pixel) -> char {
         return 'O';
     }
-    pub fn render(&mut self, scene: &Scene) {
+    pub fn render(&mut self, scene: &Scene) -> Vec<CameraPixel> {
+        let mut grid: Vec<CameraPixel> = vec![CameraPixel::OutOfScene; (self.dim.x * self.dim.y) as usize];
         let mut render_pixel = |i: isize, j: isize, x: isize, y: isize| {
             for mi in 0..self.mult*self.repeat.x {
                 for mj in 0..self.mult*self.repeat.y {
@@ -76,18 +75,18 @@ impl Camera {
                         Ok(pixel_maybe) => {
                             match pixel_maybe {
                                 Some(pixel) => {
-                                    self.grid[((i+mi)*self.dim.y + (j+mj)) as usize] = CameraPixel::Filled{
+                                    grid[((i+mi)*self.dim.y + (j+mj)) as usize] = CameraPixel::Filled{
                                         brush: ' ',
                                         color: pixel
                                     };
                                 },
                                 None => {
-                                    self.grid[((i+mi)*self.dim.y + (j+mj)) as usize] = CameraPixel::Empty;
+                                    grid[((i+mi)*self.dim.y + (j+mj)) as usize] = CameraPixel::Empty;
                                 }
                             }
                         },
                         Err(_) => {
-                            self.grid[((i+mi)*self.dim.y + (j+mj)) as usize] = CameraPixel::OutOfScene;
+                            grid[((i+mi)*self.dim.y + (j+mj)) as usize] = CameraPixel::OutOfScene;
                         }
                     }
                 }
@@ -139,11 +138,6 @@ impl Camera {
             i += mult*repeat.x;
             x += 1;
         }
-    }
-    pub fn get_camera_pixel(&self, coord: Coord) -> Result<CameraPixel, String> {
-        if coord.x >= 0 && coord.x < self.dim.x && coord.y >= 0 && coord.y < self.dim.y {
-            return Ok(self.grid[(coord.x*self.dim.y + coord.y) as usize]);
-        }
-        Err(format!("cannot get camera pixel at {} for camera of dimensions {}", coord, self.dim))
+        return grid;
     }
 }
