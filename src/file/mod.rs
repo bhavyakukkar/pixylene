@@ -1,3 +1,3 @@
-pub use self::file::File;
+pub use self::file::Png;
 mod file;
 

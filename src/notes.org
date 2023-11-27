@@ -1,0 +1,51 @@
+* TASKS [0/0]
+** FUNCTIONAL [0/0]
+*** NEXT [0/0]
+*** AT SOME POINT IN TIME [0/0]
+**** SMALL CHANGE [0/1]
+- [ ] Png to Scene: fill more color-type/bit-depth combos
+**** MEDIUM CHANGE
+- [ ] camera should be able to set focus to coord not in scene, just not be able to set_pixel there
+** NON-FUNCTIONAL [0/0]
+*** NEXT [0/0]
+*** AT SOME POINT IN TIME [0/0]
+**** BIG CHANGE [0/1]
+- [ ] move initialize_strokes logic to project/session
+* STRUCTURE
+** MODES
+InCamera
+SettingLayer
+Setting
+** SESSION
+- path
+*** PROJECT
+**** ACTION STACK
+MC -> move camera
+P -> pencil
+RF -> rectangle_fill
+
+Action-Stack:
+
+MC(1,0)
+P
+RF1/2
+MC(2,2)
+RF2/2
+MC(0,1)
+
+undo(): while not MC, revert()
+    MC.revert()
+    RF2/2.revert()
+undo()
+    MC.revert()
+    RF1/1.revert()
+undo()
+    P.revert()
+
+
+** STATE
+|               | NoProjectOpen | ProjectOpen                         |
+|---------------+---------------+-------------------------------------|
+| NoProjectOpen |               | open_project, open_png, new_project |
+| ProjectOpen   | close_project |                                     |
+|               |               |                                     |

@@ -1,6 +1,5 @@
-use crate::utils::{ Coord, Pixel, BlendMode };
-use crate::layer::{ Scene, Camera };
-use crate::session::{ SessionScene, SessionCamera };
+use crate::elements::common::{ Coord, Pixel, BlendMode };
+use crate::elements::layer::Scene;
 
 pub struct Layer {
     pub scene: Scene,
@@ -30,7 +29,7 @@ impl Layer {
                             top,
                             bottom
                         ))
-                    );
+                    )?;
                 }
             }
         }
