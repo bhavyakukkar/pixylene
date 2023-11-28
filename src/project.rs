@@ -1,21 +1,18 @@
 use std::collections::HashMap;
 
 use crate::elements::layer::{ Camera, Layer };
-use crate::elements::Stroke;
-
-pub enum StrokeVisibility {
-    NotSelected,
-    Selected,
-    Ongoing{ step: u8, clicks: u8 }
-}
+use crate::elements::Palette;
+use crate::elements::stroke::{ StrokeState, Stroke };
+use crate::action::Action;
 
 pub struct Project {
     pub layers: Vec<Layer>,
+    pub selected_layer: usize,
     pub camera: Camera,
-    pub selected_layer: u8,
-    //palette: Palette,
-    pub strokes: HashMap<String, (Box<dyn Stroke>, StrokeVisibility)>,
-    //action_stack: Vec<Action>,
+    pub palette: Palette,
+    pub strokes: HashMap<String, (Box<dyn Stroke>, StrokeState)>,
+    pub selected_stroke: String,
+    pub action_stack: Vec<Box<dyn Action>>,
 }
 
 impl Project {

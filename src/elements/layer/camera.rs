@@ -28,7 +28,7 @@ impl Camera {
         camera.set_repeat(repeat)?;
         Ok(camera)
     }
-    fn set_dim(&mut self, new_dim: Coord) -> Result<(), String> {
+    pub fn set_dim(&mut self, new_dim: Coord) -> Result<(), String> {
         if new_dim.x > 0 && new_dim.y > 0 {
             self.dim = new_dim;
             Ok(())
@@ -52,16 +52,13 @@ impl Camera {
             Err(format!("cannot set camera's multiplier to 0 or negative value, found {}", new_mult))
         }
     }
-    fn set_repeat(&mut self, new_repeat: Coord) -> Result<(), String> {
+    pub fn set_repeat(&mut self, new_repeat: Coord) -> Result<(), String> {
         if new_repeat.x > 0 && new_repeat.y > 0 {
             self.repeat = new_repeat;
             Ok(())
         } else {
             Err(format!("cannot set camera's repeat to negative coordinates, found: {}", new_repeat))
         }
-    }
-    fn decode(&self, pixel: Pixel) -> char {
-        return 'O';
     }
     pub fn render(&mut self, scene: &Scene) -> Vec<CameraPixel> {
         let mut grid: Vec<CameraPixel> = vec![CameraPixel::OutOfScene; (self.dim.x * self.dim.y) as usize];

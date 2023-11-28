@@ -2,17 +2,21 @@
 mod elements;
 mod session;
 mod project;
+mod action;
 mod file;
 
 use crate::elements::common::{ Coord, Pixel, BlendMode };
 use crate::elements::layer::{ Scene, Camera, CameraPixel, Layer };
-use crate::elements::Stroke;
+use crate::elements::Palette;
+use crate::elements::stroke::Stroke;
 use crate::session::{ SessionScene, SessionCamera, SessionLayers };
 use crate::project::Project;
+use crate::action::{ Action, DrawOnce };
 use crate::file::Png;
 
 use colored::*;
 use std::fs::File;
+use std::collections::HashMap;
 
 fn display_camera_grid(grid: Vec<CameraPixel>, camera: &Camera) {
     for i in 0..camera.dim.x {
@@ -131,10 +135,67 @@ fn main() {
     }
     */
 
-    let png = Png::open(String::from("/home/bhavya/pictures/trash/maxresdefault_64x64.png"));
-    let mut project = png.to_project().unwrap();
+    let png = Png::open(String::from("/home/bhavya/pictures/trash/snowbrick_rgba.png")).unwrap();
+    let mut scene = png.to_scene().unwrap();
+    let mut camera = Camera::new(&scene, Coord{ x: 18, y: 36 }, Coord{ x: 8, y: 8 }, 1, Coord{ x: 1, y: 2 }).unwrap();
+    let mut project = Project {
+        layers: vec![Layer {
+            scene: scene,
+            opacity: 255
+        }],
+        selected_layer: 0,
+        camera: camera,
+        palette: Palette { colors: vec![Some(Pixel{r:0,g:0,b:0,a:255})] },
+        strokes: <dyn Stroke>::initialize_strokes(),
+        selected_stroke: String::from("pencil"),
+        action_stack: vec![]
+    };
+
     let grid: Vec<CameraPixel> = project.camera.render(&project.layers[0].scene);
     display_camera_grid(grid, &project.camera);
+
+    let mut draw_once = DrawOnce{ palette_index: 1, new_pixel: None };
+    
+    println!("drew once with pencil");
+    draw_once.perform_action(&mut project).unwrap();
+    let grid: Vec<CameraPixel> = project.camera.render(&project.layers[0].scene);
+    display_camera_grid(grid, &project.camera);
+
+    println!("undo");
+    draw_once.perform_action(&mut project).unwrap();
+    let grid: Vec<CameraPixel> = project.camera.render(&project.layers[0].scene);
+    display_camera_grid(grid, &project.camera);
+
+
+    /*
+    let draw_once = DrawOnce{ palette_index: 1, new_pixel: None };
+    project.camera.set_focus(&mut project.layers[project.selected_layer], Coord{ x: 9, y: 9 }).unwrap();
+
+    println!("drew once with rectangle");
+    draw_once.perform_action(&mut project);
+    let grid: Vec<CameraPixel> = project.camera.render(&project.layers[0].scene);
+    display_camera_grid(grid, &project.camera);
+
+
+    let draw_once = DrawOnce{ palette_index: 1, new_pixel: None };
+    project.camera.set_focus(&mut project.layers[project.selected_layer], Coord{ x: 14, y: 14 }).unwrap();
+
+    println!("drew once with rectangle");
+    let draw_once_undo = draw_once.perform_action(&mut project);
+    let grid: Vec<CameraPixel> = project.camera.render(&project.layers[0].scene);
+    display_camera_grid(grid, &project.camera);
+
+    println!("undo");
+    let draw_once_redo = draw_once_undo.perform_action(&mut project);
+    let grid: Vec<CameraPixel> = project.camera.render(&project.layers[0].scene);
+    display_camera_grid(grid, &project.camera);
+
+    println!("redo");
+    draw_once_redo.perform_action(&mut project);
+    let grid: Vec<CameraPixel> = project.camera.render(&project.layers[0].scene);
+    display_camera_grid(grid, &project.camera);
+    */
+
 
     /*
     let mut grid: Vec<Option<Pixel>> = vec![];

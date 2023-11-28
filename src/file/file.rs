@@ -1,6 +1,5 @@
 use crate::elements::common::{ Coord, Pixel };
 use crate::elements::layer::{ Scene, Camera, Layer };
-use crate::project::Project;
 
 use std::fs::File;
 use png::{ Decoder, ColorType, BitDepth };
@@ -17,22 +16,33 @@ pub struct Png {
 }
 
 impl Png {
-    pub fn open(path: String) -> Self {
-        let decoder = Decoder::new(File::open(path).unwrap());
-        let mut reader = decoder.read_info().unwrap();
-        let mut buf = vec![0; reader.output_buffer_size()];
-        let info = reader.next_frame(&mut buf).unwrap();
-        let bytes = buf[..info.buffer_size()].to_vec();
-        println!("height: {}, width: {}", info.height, info.width);
-        Png {
-            height: info.height,
-            width: info.width,
-            color_type: info.color_type,
-            bit_depth: info.bit_depth,
-            bytes: bytes
+    pub fn open(path: String) -> Result<Self, String> {
+        if let Ok(file) = File::open(&path) {
+            let decoder = Decoder::new(file);
+            if let Ok(mut reader) = decoder.read_info() {
+                let mut buf = vec![0; reader.output_buffer_size()];
+                let info: png::OutputInfo;
+                if let Ok(info) = reader.next_frame(&mut buf) {
+                    let bytes = buf[..info.buffer_size()].to_vec();
+                    //println!("height: {}, width: {}", info.height, info.width);
+                    Ok(Png {
+                        height: info.height,
+                        width: info.width,
+                        color_type: info.color_type,
+                        bit_depth: info.bit_depth,
+                        bytes: bytes
+                    })
+                } else {
+                    return Err(format!("error decoding next frame for '{}'", path));
+                }
+            } else {
+                return Err(format!("error decoding file '{}'", path));
+            }
+        } else {
+            return Err(format!("could not open file '{}'", path));
         }
     }
-    pub fn to_project(self) -> Result<Project, String> {
+    pub fn to_scene(self) -> Result<Scene, String> {
         let dim: Coord = Coord{ x: self.height as isize, y: self.width as isize };
         let mut scene: Scene = Scene::new(dim, vec![None; dim.area() as usize])?;
         match self.color_type {
@@ -144,15 +154,6 @@ impl Png {
                 }
             }
         }
-        let camera = Camera::new(&scene, Coord{ x: 65, y: 130 }, Coord{ x: 32, y: 32 }, 1, Coord{ x: 1, y: 2 })?;
-        Ok(Project {
-            layers: vec![Layer {
-                scene: scene,
-                opacity: 255
-            }],
-            camera: camera,
-            selected_layer: 0,
-            strokes: HashMap::new()
-        })
+        Ok(scene)
     }
 }

@@ -1,14 +1,14 @@
 use crate::elements::common::Pixel;
 
 pub struct Palette {
-    colors: Vec<Pixel>
+    pub colors: Vec<Option<Pixel>>
 }
 impl Palette {
-    fn get_color(&self, index: usize) -> Result<Pixel, String> {
+    pub fn get_color(&self, index: usize) -> Result<Option<Pixel>, String> {
         if index >= 1 && index <= self.colors.len() {
-            Ok(self.colors[index])
+            Ok(self.colors[index - 1usize])
         } else {
-            Err(format!("cannot get color {} from palette of {} colors (hint: palette indexing starts from 1", index, self.colors.len()))
+            Err(format!("cannot get color {} from palette of {} colors (hint: palette indexing starts from 1)", index, self.colors.len()))
         }
     }
 }

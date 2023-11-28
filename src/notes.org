@@ -8,6 +8,7 @@
 - [ ] camera should be able to set focus to coord not in scene, just not be able to set_pixel there
 ** NON-FUNCTIONAL [0/0]
 *** NEXT [0/0]
+- [ ] every derived stroke must use pencil, cannot directly use set_pixel (begin at stroke.rs:27)
 *** AT SOME POINT IN TIME [0/0]
 **** BIG CHANGE [0/1]
 - [ ] move initialize_strokes logic to project/session
