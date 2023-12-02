@@ -6,6 +6,9 @@
 - [ ] Png to Scene: fill more color-type/bit-depth combos
 **** MEDIUM CHANGE
 - [ ] camera should be able to set focus to coord not in scene, just not be able to set_pixel there
+- [ ] account for layer opacity in Project::draw_pixel
+**** LARGE CHANGE
+- [ ] change-tree instead of change-stack, doesn't forget future changes after changes in undoed state
 ** NON-FUNCTIONAL [0/0]
 *** NEXT [0/0]
 - [ ] every derived stroke must use pencil, cannot directly use set_pixel (begin at stroke.rs:27)

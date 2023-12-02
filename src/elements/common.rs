@@ -59,11 +59,15 @@ impl fmt::Display for Pixel {
 
 
 pub enum BlendMode {
+    Overwrite,
     Normal,
 }
 impl BlendMode {
     pub fn merge_down(&self, top: Pixel, bottom: Pixel) -> Pixel {
         match self {
+            Self::Overwrite => {
+                return top;
+            },
             Self::Normal => {
                 //todo!();
                 if top.a == 255 {
