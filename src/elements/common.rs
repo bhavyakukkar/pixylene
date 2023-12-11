@@ -13,6 +13,9 @@ impl Coord {
     pub fn add(self, coord: Coord) -> Self {
         Self{ x: self.x + coord.x, y: self.y + coord.y }
     }
+    pub fn multiply(self, coord: Coord) -> Self {
+        Self{ x: self.x * coord.x, y: self.y * coord.y }
+    }
 }
 
 impl fmt::Display for Coord {

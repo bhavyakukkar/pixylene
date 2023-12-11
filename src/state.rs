@@ -1,18 +1,18 @@
-pub enum Main {
+pub enum Root {
     NoSceneLoaded,
     SceneLoaded(SceneLoaded)
 }
-
 pub enum SceneLoaded {
     LayerView,
     CameraView,
     PaletteView
 }
 
+/*
 fn get_keybind_tree(mode: Main) {
     match mode {
-        Main::NoSceneLoaded => todo!(),
-        Main::SceneLoaded(mode) => {
+        Root::NoSceneLoaded => todo!(),
+        Root::SceneLoaded(mode) => {
             match mode {
                 SceneLoaded::LayerView => todo!(),
                 SceneLoaded::CameraView => todo!(),
@@ -21,6 +21,7 @@ fn get_keybind_tree(mode: Main) {
         }
     }
 }
+*/
 
 /*
  * KeyTree: map<key, action> = KeyTrees[Mode];
