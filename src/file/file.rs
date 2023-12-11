@@ -2,6 +2,8 @@ use crate::elements::common::{ Coord, Pixel };
 use crate::elements::layer::{ Scene, Camera, Layer };
 
 use std::fs::File;
+use std::path::Path;
+use std::io::BufWriter;
 use png::{ Decoder, ColorType, BitDepth };
 use ColorType::*;
 use BitDepth::*;
@@ -10,8 +12,8 @@ use std::collections::HashMap;
 pub struct Png {
     height: u32,
     width: u32,
-    color_type: png::ColorType,
-    bit_depth: png::BitDepth,
+    color_type: ColorType,
+    bit_depth: BitDepth,
     bytes: Vec<u8>
 }
 
@@ -24,7 +26,6 @@ impl Png {
                 let info: png::OutputInfo;
                 if let Ok(info) = reader.next_frame(&mut buf) {
                     let bytes = buf[..info.buffer_size()].to_vec();
-                    //println!("height: {}, width: {}", info.height, info.width);
                     Ok(Png {
                         height: info.height,
                         width: info.width,
@@ -42,11 +43,35 @@ impl Png {
             return Err(format!("could not open file '{}'", path));
         }
     }
+    pub fn save(&self, path: String) -> Result<(), String> {
+        let path = Path::new(&path);
+        match File::create(path) {
+            Ok(file) => {
+                let ref mut w = BufWriter::new(file);
+
+                let mut encoder = png::Encoder::new(w, self.width, self.height);
+                encoder.set_color(self.color_type);
+                encoder.set_depth(self.bit_depth);
+                encoder.set_source_gamma(png::ScaledFloat::from_scaled(45455));
+                let x = match encoder.write_header() {
+                    Ok(mut writer) => {
+                        match writer.write_image_data(&self.bytes) {
+                            Ok(_) => Ok(()),
+                            Err(error) => Err(format!("{:?}", error)),
+                        }
+                    },
+                    Err(error) => Err(format!("{:?}", error)),
+                };
+                x
+            },
+            Err(error) => Err(format!("{:?}", error)),
+        }
+    }
     pub fn to_scene(self) -> Result<Scene, String> {
         let dim: Coord = Coord{ x: self.height as isize, y: self.width as isize };
         let mut scene: Scene = Scene::new(dim, vec![None; dim.area() as usize])?;
         match self.color_type {
-            png::ColorType::Grayscale => {
+            Grayscale => {
                 match self.bit_depth {
                     One => {
                         return Err(String::from("One-bit Grayscale PNGs currently not supported"));
@@ -65,7 +90,7 @@ impl Png {
                     }
                 }
             },
-            png::ColorType::Rgb => {
+            Rgb => {
                 match self.bit_depth {
                     One => {
                         return Err(String::from("One-bit RGB PNGs currently not supported"));
@@ -84,7 +109,7 @@ impl Png {
                     }
                 }
             },
-            png::ColorType::Indexed => {
+            Indexed => {
                 match self.bit_depth {
                     One => {
                         return Err(String::from("One-bit Indexed PNGs currently not supported"));
@@ -103,7 +128,7 @@ impl Png {
                     }
                 }
             },
-            png::ColorType::GrayscaleAlpha => {
+            GrayscaleAlpha => {
                 match self.bit_depth {
                     One => {
                         return Err(String::from("One-bit Grayscale-Alpha PNGs currently not supported"));
@@ -122,7 +147,7 @@ impl Png {
                     }
                 }
             },
-            png::ColorType::Rgba => {
+            Rgba => {
                 match self.bit_depth {
                     One => {
                         return Err(String::from("One-bit RGBA PNGs currently not supported"));
@@ -155,5 +180,131 @@ impl Png {
             }
         }
         Ok(scene)
+    }
+    pub fn from_scene(
+        scene: &Scene,
+        color_type: ColorType,
+        bit_depth: BitDepth
+    ) -> Result<Self, String> {
+        let mut png = Png {
+            height: scene.dim.x as u32,
+            width: scene.dim.y as u32,
+            color_type: color_type,
+            bit_depth: bit_depth,
+            bytes: Vec::new(),
+        };
+        match color_type {
+            Grayscale => {
+                match bit_depth {
+                    One => {
+                        return Err(String::from("One-bit Grayscale PNGs currently not supported"));
+                    },
+                    Two => {
+                        return Err(String::from("Two-bit Grayscale PNGs currently not supported"));
+                    },
+                    Four => {
+                        return Err(String::from("Four-bit Grayscale PNGs currently not supported"));
+                    },
+                    Eight => {
+                        return Err(String::from("Eight-bit Grayscale PNGs currently not supported"));
+                    },
+                    Sixteen => {
+                        return Err(String::from("Sixteen-bit Grayscale PNGs currently not supported"));
+                    }
+                }
+            },
+            Rgb => {
+                match bit_depth {
+                    One => {
+                        return Err(String::from("One-bit RGB PNGs currently not supported"));
+                    },
+                    Two => {
+                        return Err(String::from("Two-bit RGB PNGs currently not supported"));
+                    },
+                    Four => {
+                        return Err(String::from("Four-bit RGB PNGs currently not supported"));
+                    },
+                    Eight => {
+                        return Err(String::from("Eight-bit RGB PNGs currently not supported"));
+                    },
+                    Sixteen => {
+                        return Err(String::from("Sixteen-bit RGB PNGs currently not supported"));
+                    }
+                }
+            },
+            Indexed => {
+                match bit_depth {
+                    One => {
+                        return Err(String::from("One-bit Indexed PNGs currently not supported"));
+                    },
+                    Two => {
+                        return Err(String::from("Two-bit Indexed PNGs currently not supported"));
+                    },
+                    Four => {
+                        return Err(String::from("Four-bit Indexed PNGs currently not supported"));
+                    },
+                    Eight => {
+                        return Err(String::from("Eight-bit Indexed PNGs currently not supported"));
+                    },
+                    Sixteen => {
+                        return Err(String::from("Sixteen-bit Indexed PNGs currently not supported"));
+                    }
+                }
+            },
+            GrayscaleAlpha => {
+                match bit_depth {
+                    One => {
+                        return Err(String::from("One-bit Grayscale-Alpha PNGs currently not supported"));
+                    },
+                    Two => {
+                        return Err(String::from("Two-bit Grayscale-Alpha PNGs currently not supported"));
+                    },
+                    Four => {
+                        return Err(String::from("Four-bit Grayscale-Alpha PNGs currently not supported"));
+                    },
+                    Eight => {
+                        return Err(String::from("Eight-bit Grayscale-Alpha PNGs currently not supported"));
+                    },
+                    Sixteen => {
+                        return Err(String::from("Sixteen-bit Grayscale-Alpha PNGs currently not supported"));
+                    }
+                }
+            },
+            Rgba => {
+                match bit_depth {
+                    One => {
+                        return Err(String::from("One-bit RGBA PNGs currently not supported"));
+                    },
+                    Two => {
+                        return Err(String::from("Two-bit RGBA PNGs currently not supported"));
+                    },
+                    Four => {
+                        return Err(String::from("Four-bit RGBA PNGs currently not supported"));
+                    },
+                    Eight => {
+                        for i in 0..scene.dim.x {
+                            for j in 0..scene.dim.y {
+                                let Pixel {
+                                    r: red,
+                                    g: green,
+                                    b: blue,
+                                    a: alpha
+                                } = Pixel::get_certain(scene.get_pixel(
+                                    Coord{ x: i as isize, y: j as isize }
+                                )?);
+                                png.bytes.push(red);
+                                png.bytes.push(green);
+                                png.bytes.push(blue);
+                                png.bytes.push(alpha);
+                            }
+                        }
+                    },
+                    Sixteen => {
+                        return Err(String::from("Sixteen-bit RGBA PNGs currently not supported"));
+                    }
+                }
+            }
+        }
+        Ok(png)
     }
 }

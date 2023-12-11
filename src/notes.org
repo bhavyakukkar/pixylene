@@ -1,20 +1,22 @@
 * TASKS [0/0]
 ** FUNCTIONAL [0/0]
 *** NEXT [0/0]
+- [X] Pencil action that just does DrawOnce with blending
+- [ ] Action:redo because you did an idiot job on Action:undo
+- [ ] new branch to implement savefile on Project
 *** AT SOME POINT IN TIME [0/0]
 **** SMALL CHANGE [0/1]
+- [ ] Camera.get_focus() so that Camera.focus can be made private
+- [ ] RectangularOutline Action
 - [ ] Png to Scene: fill more color-type/bit-depth combos
 **** MEDIUM CHANGE
 - [ ] camera should be able to set focus to coord not in scene, just not be able to set_pixel there
-- [ ] account for layer opacity in Project::draw_pixel
 **** LARGE CHANGE
 - [ ] change-tree instead of change-stack, doesn't forget future changes after changes in undoed state
 ** NON-FUNCTIONAL [0/0]
 *** NEXT [0/0]
-- [ ] every derived stroke must use pencil, cannot directly use set_pixel (begin at stroke.rs:27)
 *** AT SOME POINT IN TIME [0/0]
 **** BIG CHANGE [0/1]
-- [ ] move initialize_strokes logic to project/session
 * STRUCTURE
 ** MODES
 InCamera
@@ -53,3 +55,17 @@ undo()
 | NoProjectOpen |               | open_project, open_png, new_project |
 | ProjectOpen   | close_project |                                     |
 |               |               |                                     |
+
+- Action on performing may be complete/incomplete
+- Complete action on performing will return a new reverted Action
+- Incomplete action on performing will return nothing
+
+(or)
+
+- Action on performing may be complete/incomplete
+- Complete action on performing will become the reverted Action and return done
+- Incomplete action on performing will return 
+
+
+
+- value of action type will get created but wont be destroyed until it returns a Change::End or Change::StartEnd
