@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, Savefile)]
 pub struct Coord { pub x: isize, pub y: isize }
 
 impl Coord {
@@ -25,7 +25,7 @@ impl fmt::Display for Coord {
 }
 
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Savefile)]
 pub struct Pixel {
     pub r: u8,  // r: red (0-255)
     pub g: u8,  // g: green (0-255)

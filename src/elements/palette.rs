@@ -1,5 +1,6 @@
 use crate::elements::common::Pixel;
 
+#[derive(Savefile)]
 pub struct Palette {
     pub colors: Vec<Option<Pixel>>
 }

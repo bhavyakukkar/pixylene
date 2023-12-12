@@ -8,3 +8,5 @@ edition = "2021"
 [dependencies]
 colored = "2.0.4"
 png = "0.17.10"
+savefile = "0.16"
+savefile-derive = "0.16"

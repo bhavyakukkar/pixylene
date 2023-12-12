@@ -11,7 +11,7 @@ pub enum CameraPixel {
     OutOfScene
 }
 
-#[derive(Default)]
+#[derive(Default, Savefile)]
 pub struct Camera {
     pub dim: Coord,
     pub focus: Coord,

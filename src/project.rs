@@ -1,9 +1,11 @@
+use savefile::prelude::*;
 use std::collections::HashMap;
 
 use crate::elements::common::{ Coord, Pixel, BlendMode };
 use crate::elements::layer::{ Camera, Layer };
 use crate::elements::Palette;
 
+#[derive(Savefile)]
 pub struct Project {
     pub layers: Vec<Layer>,
     pub selected_layer: usize,

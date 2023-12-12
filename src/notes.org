@@ -1,18 +1,21 @@
 * TASKS [0/0]
 ** FUNCTIONAL [0/0]
-*** NEXT [0/0]
+*** NEXT [2/3]
 - [X] Pencil action that just does DrawOnce with blending
+- [ ] Project::new
 - [ ] Action:redo because you did an idiot job on Action:undo
-- [ ] new branch to implement savefile on Project
+- [X] new branch to implement savefile on Project
 *** AT SOME POINT IN TIME [0/0]
-**** SMALL CHANGE [0/1]
+**** SMALL CHANGE [1/4]
+- [X] Png::open errors returned as debug strings similar to Png::save
 - [ ] Camera.get_focus() so that Camera.focus can be made private
 - [ ] RectangularOutline Action
-- [ ] Png to Scene: fill more color-type/bit-depth combos
-**** MEDIUM CHANGE
+- [ ] Png to/fro Scene: fill more color-type/bit-depth combos
+**** MEDIUM CHANGE [0/1]
 - [ ] camera should be able to set focus to coord not in scene, just not be able to set_pixel there
-**** LARGE CHANGE
+**** LARGE CHANGE [0/2]
 - [ ] change-tree instead of change-stack, doesn't forget future changes after changes in undoed state
+- [ ] lower-level (elements) error literature
 ** NON-FUNCTIONAL [0/0]
 *** NEXT [0/0]
 *** AT SOME POINT IN TIME [0/0]

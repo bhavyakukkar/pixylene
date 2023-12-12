@@ -1,6 +1,7 @@
 use crate::elements::common::{ Coord, Pixel, BlendMode };
 use crate::elements::layer::Scene;
 
+#[derive(Savefile)]
 pub struct Layer {
     pub scene: Scene,
     pub opacity: u8

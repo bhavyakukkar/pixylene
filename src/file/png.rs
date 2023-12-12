@@ -1,6 +1,3 @@
-use crate::elements::common::{ Coord, Pixel };
-use crate::elements::layer::{ Scene, Camera, Layer };
-
 use std::fs::File;
 use std::path::Path;
 use std::io::BufWriter;
@@ -8,6 +5,9 @@ use png::{ Decoder, ColorType, BitDepth };
 use ColorType::*;
 use BitDepth::*;
 use std::collections::HashMap;
+
+use crate::elements::common::{ Coord, Pixel };
+use crate::elements::layer::{ Scene, Camera, Layer };
 
 pub struct Png {
     height: u32,
@@ -19,31 +19,40 @@ pub struct Png {
 
 impl Png {
     pub fn open(path: String) -> Result<Self, String> {
-        if let Ok(file) = File::open(&path) {
-            let decoder = Decoder::new(file);
-            if let Ok(mut reader) = decoder.read_info() {
-                let mut buf = vec![0; reader.output_buffer_size()];
-                let info: png::OutputInfo;
-                if let Ok(info) = reader.next_frame(&mut buf) {
-                    let bytes = buf[..info.buffer_size()].to_vec();
-                    Ok(Png {
-                        height: info.height,
-                        width: info.width,
-                        color_type: info.color_type,
-                        bit_depth: info.bit_depth,
-                        bytes: bytes
-                    })
-                } else {
-                    return Err(format!("error decoding next frame for '{}'", path));
+        match File::open(&path) {
+            Ok(file) => {
+                let decoder = Decoder::new(file);
+                match decoder.read_info() {
+                    Ok(mut reader) => {
+                        let mut buf = vec![0; reader.output_buffer_size()];
+                        let info: png::OutputInfo;
+                        match reader.next_frame(&mut buf) {
+                            Ok(info) => {
+                                let bytes = buf[..info.buffer_size()].to_vec();
+                                return Ok(Png {
+                                    height: info.height,
+                                    width: info.width,
+                                    color_type: info.color_type,
+                                    bit_depth: info.bit_depth,
+                                    bytes: bytes
+                                });
+                            },
+                            Err(error) => {
+                                return Err(format!("error decoding next frame for '{}': {:?}", path, error));
+                            },
+                        }
+                    },
+                    Err(error) => {
+                        return Err(format!("error decoding file '{}': {:?}", path, error));
+                    },
                 }
-            } else {
-                return Err(format!("error decoding file '{}'", path));
-            }
-        } else {
-            return Err(format!("could not open file '{}'", path));
+            },
+            Err(error) => {
+                return Err(format!("could not open file '{}': {:?}", path, error));
+            },
         }
     }
-    pub fn save(&self, path: String) -> Result<(), String> {
+    pub fn export(&self, path: String) -> Result<(), String> {
         let path = Path::new(&path);
         match File::create(path) {
             Ok(file) => {

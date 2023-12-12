@@ -1,5 +1,6 @@
 use crate::elements::common::{Coord, Pixel};
 
+#[derive(Savefile)]
 pub struct Scene {
     pub dim: Coord,
     pub grid: Vec<Option<Pixel>>
