@@ -1,5 +1,2 @@
-pub use self::png::Png;
-mod png;
-
-pub use self::savefile::Save;
-mod savefile;
+pub mod png_file;
+pub mod project_file;

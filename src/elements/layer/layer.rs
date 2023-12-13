@@ -21,7 +21,7 @@ impl Layer {
             for i in 0..resultant_scene.dim.x {
                 for j in 0..resultant_scene.dim.y {
                     let coord = Coord{ x: i, y: j };
-                    let mut bottom = Pixel::get_certain(resultant_scene.get_pixel(coord)?);
+                    let bottom = Pixel::get_certain(resultant_scene.get_pixel(coord)?);
                     let mut top = Pixel::get_certain(layers[k].scene.get_pixel(coord)?);
                     top.a = ((((layers[k].opacity as u16) * (top.a as u16)) as f32)/255f32) as u8;
                     resultant_scene.set_pixel(

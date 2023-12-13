@@ -1,6 +1,9 @@
 * TASKS [0/0]
 ** FUNCTIONAL [0/0]
-*** NEXT [2/3]
+*** NEXT [2/4]
+- [ ] Actions that work instantly like MoveCameraUp are fundamentally different from actions that require input like SetPaletteColor
+- [ ] Actions in different directory actions/
+- [ ] toml for default impl of Pixylene::import & Pixylene::new
 - [X] Pencil action that just does DrawOnce with blending
 - [ ] Project::new
 - [ ] Action:redo because you did an idiot job on Action:undo
@@ -16,6 +19,7 @@
 **** LARGE CHANGE [0/2]
 - [ ] change-tree instead of change-stack, doesn't forget future changes after changes in undoed state
 - [ ] lower-level (elements) error literature
+- [ ] toml palette
 ** NON-FUNCTIONAL [0/0]
 *** NEXT [0/0]
 *** AT SOME POINT IN TIME [0/0]
@@ -25,33 +29,6 @@
 InCamera
 SettingLayer
 Setting
-** SESSION
-- path
-*** PROJECT
-**** ACTION STACK
-MC -> move camera
-P -> pencil
-RF -> rectangle_fill
-
-Action-Stack:
-
-MC(1,0)
-P
-RF1/2
-MC(2,2)
-RF2/2
-MC(0,1)
-
-undo(): while not MC, revert()
-    MC.revert()
-    RF2/2.revert()
-undo()
-    MC.revert()
-    RF1/1.revert()
-undo()
-    P.revert()
-
-
 ** STATE
 |               | NoProjectOpen | ProjectOpen                         |
 |---------------+---------------+-------------------------------------|
@@ -72,3 +49,20 @@ undo()
 
 
 - value of action type will get created but wont be destroyed until it returns a Change::End or Change::StartEnd
+
+** SESSION
+- project-path
+** COMMANDS
+| Command              | Arguments    | Session                                                           | Done |
+|----------------------+--------------+-------------------------------------------------------------------+------|
+| quit                 | -            | -                                                                 |      |
+| open                 | project-path | > project-path; > project; < project-path?                        |      |
+| save                 | -            | < project-path; < project                                         |      |
+| import               | png-path     | > project; > project-path? (store in same directory); > png-path? |      |
+| export               | png-path     | < png-path?                                                       |      |
+| perform              | action-name  | < action-manager; < project                                       |      |
+| view                 |              | < project                                                         |      |
+| layer new            |              | < project; < background-color                                     |      |
+| layer <> del         |              | < project                                                         |      |
+| layer <> set_opacity | opacity      | < project                                                         |      |
+| palette <> set       | color        | < project                                                         |      |

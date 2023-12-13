@@ -4,12 +4,11 @@ use std::io::BufWriter;
 use png::{ Decoder, ColorType, BitDepth };
 use ColorType::*;
 use BitDepth::*;
-use std::collections::HashMap;
 
 use crate::elements::common::{ Coord, Pixel };
-use crate::elements::layer::{ Scene, Camera, Layer };
+use crate::elements::layer::{ Scene };
 
-pub struct Png {
+pub struct PngFile {
     height: u32,
     width: u32,
     color_type: ColorType,
@@ -17,7 +16,7 @@ pub struct Png {
     bytes: Vec<u8>
 }
 
-impl Png {
+impl PngFile {
     pub fn open(path: String) -> Result<Self, String> {
         match File::open(&path) {
             Ok(file) => {
@@ -29,7 +28,7 @@ impl Png {
                         match reader.next_frame(&mut buf) {
                             Ok(info) => {
                                 let bytes = buf[..info.buffer_size()].to_vec();
-                                return Ok(Png {
+                                return Ok(PngFile {
                                     height: info.height,
                                     width: info.width,
                                     color_type: info.color_type,
@@ -195,7 +194,7 @@ impl Png {
         color_type: ColorType,
         bit_depth: BitDepth
     ) -> Result<Self, String> {
-        let mut png = Png {
+        let mut png = PngFile {
             height: scene.dim.x as u32,
             width: scene.dim.y as u32,
             color_type: color_type,

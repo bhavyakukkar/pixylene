@@ -1,7 +1,3 @@
-use savefile::prelude::*;
-use std::collections::HashMap;
-
-use crate::elements::common::{ Coord, Pixel, BlendMode };
 use crate::elements::layer::{ Camera, Layer };
 use crate::elements::Palette;
 
@@ -14,9 +10,6 @@ pub struct Project {
 }
 
 impl Project {
-    fn new(layers: Vec<Layer>) -> Result<Project, String> {
-        todo!();
-    }
     pub fn get_num_layers(&self) -> usize {
         self.layers.len()
     }
