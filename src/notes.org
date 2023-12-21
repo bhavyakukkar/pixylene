@@ -1,25 +1,30 @@
 * TASKS [0/0]
 ** FUNCTIONAL [0/0]
-*** NEXT [2/4]
+*** NEXT [3/9]
+- [ ] layer error literature (Pixylene::export depends on Layer::merge returning 'can only merge >=2 layers')
+- [ ] get rid of camera.repeat, something of that nature should be managed by PixyleneDisplay
 - [ ] Actions that work instantly like MoveCameraUp are fundamentally different from actions that require input like SetPaletteColor
-- [ ] Actions in different directory actions/
-- [ ] toml for default impl of Pixylene::import & Pixylene::new
+- [X] Actions in different directory actions/
 - [X] Pencil action that just does DrawOnce with blending
-- [ ] Project::new
-- [ ] Action:redo because you did an idiot job on Action:undo
+- [ ] Pixylene::empty
+- [ ] Action:redo because you did a bad job on Action:undo
 - [X] new branch to implement savefile on Project
 *** AT SOME POINT IN TIME [0/0]
 **** SMALL CHANGE [1/4]
 - [X] Png::open errors returned as debug strings similar to Png::save
+- [ ] Copy and Paste action is a cross-cutting concern (shouldn't lock the Action Manager)
+- [ ] Action that lets you 'write' colors line-by-line, left-to-right
+- [ ] Action that lets you draw the same color for a continued camera motion and pixels draw at every new camera focus
 - [ ] Camera.get_focus() so that Camera.focus can be made private
 - [ ] RectangularOutline Action
 - [ ] Png to/fro Scene: fill more color-type/bit-depth combos
 **** MEDIUM CHANGE [0/1]
+- [ ] each layer has a blendmode (like in gimp)
 - [ ] camera should be able to set focus to coord not in scene, just not be able to set_pixel there
 **** LARGE CHANGE [0/2]
+- [ ] toml for default impl of Pixylene::import & Pixylene::new that includes palette
 - [ ] change-tree instead of change-stack, doesn't forget future changes after changes in undoed state
 - [ ] lower-level (elements) error literature
-- [ ] toml palette
 ** NON-FUNCTIONAL [0/0]
 *** NEXT [0/0]
 *** AT SOME POINT IN TIME [0/0]

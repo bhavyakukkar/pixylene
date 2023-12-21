@@ -5,8 +5,56 @@ use png::{ Decoder, ColorType, BitDepth };
 use ColorType::*;
 use BitDepth::*;
 
+use crate::grammar::Decorate;
 use crate::elements::common::{ Coord, Pixel };
 use crate::elements::layer::{ Scene };
+
+#[derive(Debug)]
+enum ReadError {
+    FileNotFound(std::io::Error),
+    DecodingError(png::DecodingError),
+}
+
+#[derive(Debug)]
+enum WriteError {
+    DirectoryNotFound(std::io::Error),
+    EncodingError(png::EncodingError),
+}
+
+#[derive(Debug)]
+pub enum PngFileError {
+    ReadError(String, ReadError),
+    WriteError(String, WriteError),
+    Unsupported(String),
+    SceneError(String), //todo: replace String with SceneError
+}
+impl std::fmt::Display for PngFileError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        use PngFileError::*;
+        match self {
+            ReadError(path, error) => write!(f, "{}", Decorate::output(
+                "PngFileError".to_string(),
+                None,
+                Some(format!("{}: {:?}", path, error)),
+            )),
+            WriteError(path, error) => write!(f, "{}", Decorate::output(
+                "PngFileError".to_string(),
+                None,
+                Some(format!("{}: {:?}", path, error)),
+            )),
+            Unsupported(desc) => write!(f, "{}", Decorate::output(
+                "PngFileError".to_string(),
+                None,
+                Some(desc.to_string()),
+            )),
+            SceneError(desc) => write!(f, "{}", Decorate::output(
+                "PngFileError".to_string(),
+                None,
+                Some(desc.to_string()),
+            )),
+        }
+    }
+}
 
 pub struct PngFile {
     height: u32,
@@ -17,7 +65,7 @@ pub struct PngFile {
 }
 
 impl PngFile {
-    pub fn open(path: String) -> Result<Self, String> {
+    pub fn read(path: String) -> Result<Self, PngFileError> {
         match File::open(&path) {
             Ok(file) => {
                 let decoder = Decoder::new(file);
@@ -37,22 +85,28 @@ impl PngFile {
                                 });
                             },
                             Err(error) => {
-                                return Err(format!("error decoding next frame for '{}': {:?}", path, error));
+                                return Err(PngFileError::ReadError(
+                                    path,
+                                    ReadError::DecodingError(error)
+                                ));
                             },
                         }
                     },
                     Err(error) => {
-                        return Err(format!("error decoding file '{}': {:?}", path, error));
+                        return Err(PngFileError::ReadError(
+                            path,
+                            ReadError::DecodingError(error)
+                        ));
                     },
                 }
             },
             Err(error) => {
-                return Err(format!("could not open file '{}': {:?}", path, error));
+                return Err(PngFileError::ReadError(path, ReadError::FileNotFound(error)));
             },
         }
     }
-    pub fn export(&self, path: String) -> Result<(), String> {
-        let path = Path::new(&path);
+    pub fn write(&self, file_path: String) -> Result<(), PngFileError> {
+        let path = Path::new(&file_path);
         match File::create(path) {
             Ok(file) => {
                 let ref mut w = BufWriter::new(file);
@@ -65,106 +119,162 @@ impl PngFile {
                     Ok(mut writer) => {
                         match writer.write_image_data(&self.bytes) {
                             Ok(_) => Ok(()),
-                            Err(error) => Err(format!("{:?}", error)),
+                            Err(error) => Err(PngFileError::WriteError(
+                                file_path,
+                                WriteError::EncodingError(error)
+                            )),
                         }
                     },
-                    Err(error) => Err(format!("{:?}", error)),
+                    Err(error) => Err(PngFileError::WriteError(
+                        file_path,
+                        WriteError::EncodingError(error)
+                    )),
                 };
                 x
             },
-            Err(error) => Err(format!("{:?}", error)),
+            Err(error) => Err(PngFileError::WriteError(
+                file_path,
+                WriteError::DirectoryNotFound(error)
+            )),
         }
     }
-    pub fn to_scene(self) -> Result<Scene, String> {
+    pub fn to_scene(self) -> Result<Scene, PngFileError> {
         let dim: Coord = Coord{ x: self.height as isize, y: self.width as isize };
-        let mut scene: Scene = Scene::new(dim, vec![None; dim.area() as usize])?;
+        let mut scene: Scene = Scene::new(dim, vec![None; dim.area() as usize]).unwrap();
+        //todo: remove above unwrap when scene error literature
         match self.color_type {
             Grayscale => {
                 match self.bit_depth {
                     One => {
-                        return Err(String::from("One-bit Grayscale PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "One-bit Grayscale PNGs currently not supported".to_string()
+                        ));
                     },
                     Two => {
-                        return Err(String::from("Two-bit Grayscale PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Two-bit Grayscale PNGs currently not supported".to_string()
+                        ));
                     },
                     Four => {
-                        return Err(String::from("Four-bit Grayscale PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Four-bit Grayscale PNGs currently not supported".to_string()
+                        ));
                     },
                     Eight => {
-                        return Err(String::from("Eight-bit Grayscale PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Eight-bit Grayscale PNGs currently not supported".to_string()
+                        ));
                     },
                     Sixteen => {
-                        return Err(String::from("Sixteen-bit Grayscale PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Sixteen-bit Grayscale PNGs currently not supported".to_string()
+                        ));
                     }
                 }
             },
             Rgb => {
                 match self.bit_depth {
                     One => {
-                        return Err(String::from("One-bit RGB PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "One-bit RGB PNGs currently not supported".to_string()
+                        ));
                     },
                     Two => {
-                        return Err(String::from("Two-bit RGB PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Two-bit RGB PNGs currently not supported".to_string()
+                        ));
                     },
                     Four => {
-                        return Err(String::from("Four-bit RGB PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Four-bit RGB PNGs currently not supported".to_string()
+                        ));
                     },
                     Eight => {
-                        return Err(String::from("Eight-bit RGB PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Eight-bit RGB PNGs currently not supported".to_string()
+                        ));
                     },
                     Sixteen => {
-                        return Err(String::from("Sixteen-bit RGB PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Sixteen-bit RGB PNGs currently not supported".to_string()
+                        ));
                     }
                 }
             },
             Indexed => {
                 match self.bit_depth {
                     One => {
-                        return Err(String::from("One-bit Indexed PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "One-bit Indexed PNGs currently not supported".to_string()
+                        ));
                     },
                     Two => {
-                        return Err(String::from("Two-bit Indexed PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Two-bit Indexed PNGs currently not supported".to_string()
+                        ));
                     },
                     Four => {
-                        return Err(String::from("Four-bit Indexed PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Four-bit Indexed PNGs currently not supported".to_string()
+                        ));
                     },
                     Eight => {
-                        return Err(String::from("Eight-bit Indexed PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Eight-bit Indexed PNGs currently not supported".to_string()
+                        ));
                     },
                     Sixteen => {
-                        return Err(String::from("Sixteen-bit Indexed PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Sixteen-bit Indexed PNGs currently not supported".to_string()
+                        ));
                     }
                 }
             },
             GrayscaleAlpha => {
                 match self.bit_depth {
                     One => {
-                        return Err(String::from("One-bit Grayscale-Alpha PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "One-bit Grayscale-Alpha PNGs currently not supported".to_string()
+                        ));
                     },
                     Two => {
-                        return Err(String::from("Two-bit Grayscale-Alpha PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Two-bit Grayscale-Alpha PNGs currently not supported".to_string()
+                        ));
                     },
                     Four => {
-                        return Err(String::from("Four-bit Grayscale-Alpha PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Four-bit Grayscale-Alpha PNGs currently not supported".to_string()
+                        ));
                     },
                     Eight => {
-                        return Err(String::from("Eight-bit Grayscale-Alpha PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Eight-bit Grayscale-Alpha PNGs currently not supported".to_string()
+                        ));
                     },
                     Sixteen => {
-                        return Err(String::from("Sixteen-bit Grayscale-Alpha PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Sixteen-bit Grayscale-Alpha PNGs currently not supported".to_string()
+                        ));
                     }
                 }
             },
             Rgba => {
                 match self.bit_depth {
                     One => {
-                        return Err(String::from("One-bit RGBA PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "One-bit RGBA PNGs currently not supported".to_string()
+                        ));
                     },
                     Two => {
-                        return Err(String::from("Two-bit RGBA PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Two-bit RGBA PNGs currently not supported".to_string()
+                        ));
                     },
                     Four => {
-                        return Err(String::from("Four-bit RGBA PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Four-bit RGBA PNGs currently not supported".to_string()
+                        ));
                     },
                     Eight => {
                         for i in 0..self.height {
@@ -177,12 +287,15 @@ impl PngFile {
                                         b: self.bytes[((4*i*self.width) + (4*j) + 2) as usize],
                                         a: self.bytes[((4*i*self.width) + (4*j) + 3) as usize],
                                     })
-                                )?;
+                                ).unwrap();
+                                //todo: remove above unwrap when scene error literature
                             }
                         }
                     },
                     Sixteen => {
-                        return Err(String::from("Sixteen-bit RGBA PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Sixteen-bit RGBA PNGs currently not supported".to_string()
+                        ));
                     }
                 }
             }
@@ -193,7 +306,7 @@ impl PngFile {
         scene: &Scene,
         color_type: ColorType,
         bit_depth: BitDepth
-    ) -> Result<Self, String> {
+    ) -> Result<Self, PngFileError> {
         let mut png = PngFile {
             height: scene.dim.x as u32,
             width: scene.dim.y as u32,
@@ -205,89 +318,135 @@ impl PngFile {
             Grayscale => {
                 match bit_depth {
                     One => {
-                        return Err(String::from("One-bit Grayscale PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "One-bit Grayscale PNGs currently not supported".to_string()
+                        ));
                     },
                     Two => {
-                        return Err(String::from("Two-bit Grayscale PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Two-bit Grayscale PNGs currently not supported".to_string()
+                        ));
                     },
                     Four => {
-                        return Err(String::from("Four-bit Grayscale PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Four-bit Grayscale PNGs currently not supported".to_string()
+                        ));
                     },
                     Eight => {
-                        return Err(String::from("Eight-bit Grayscale PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Eight-bit Grayscale PNGs currently not supported".to_string()
+                        ));
                     },
                     Sixteen => {
-                        return Err(String::from("Sixteen-bit Grayscale PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Sixteen-bit Grayscale PNGs currently not supported".to_string()
+                        ));
                     }
                 }
             },
             Rgb => {
                 match bit_depth {
                     One => {
-                        return Err(String::from("One-bit RGB PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "One-bit RGB PNGs currently not supported".to_string()
+                        ));
                     },
                     Two => {
-                        return Err(String::from("Two-bit RGB PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Two-bit RGB PNGs currently not supported".to_string()
+                        ));
                     },
                     Four => {
-                        return Err(String::from("Four-bit RGB PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Four-bit RGB PNGs currently not supported".to_string()
+                        ));
                     },
                     Eight => {
-                        return Err(String::from("Eight-bit RGB PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Eight-bit RGB PNGs currently not supported".to_string()
+                        ));
                     },
                     Sixteen => {
-                        return Err(String::from("Sixteen-bit RGB PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Sixteen-bit RGB PNGs currently not supported".to_string()
+                        ));
                     }
                 }
             },
             Indexed => {
                 match bit_depth {
                     One => {
-                        return Err(String::from("One-bit Indexed PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "One-bit Indexed PNGs currently not supported".to_string()
+                        ));
                     },
                     Two => {
-                        return Err(String::from("Two-bit Indexed PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Two-bit Indexed PNGs currently not supported".to_string()
+                        ));
                     },
                     Four => {
-                        return Err(String::from("Four-bit Indexed PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Four-bit Indexed PNGs currently not supported".to_string()
+                        ));
                     },
                     Eight => {
-                        return Err(String::from("Eight-bit Indexed PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Eight-bit Indexed PNGs currently not supported".to_string()
+                        ));
                     },
                     Sixteen => {
-                        return Err(String::from("Sixteen-bit Indexed PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Sixteen-bit Indexed PNGs currently not supported".to_string()
+                        ));
                     }
                 }
             },
             GrayscaleAlpha => {
                 match bit_depth {
                     One => {
-                        return Err(String::from("One-bit Grayscale-Alpha PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "One-bit Grayscale-Alpha PNGs currently not supported".to_string()
+                        ));
                     },
                     Two => {
-                        return Err(String::from("Two-bit Grayscale-Alpha PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Two-bit Grayscale-Alpha PNGs currently not supported".to_string()
+                        ));
                     },
                     Four => {
-                        return Err(String::from("Four-bit Grayscale-Alpha PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Four-bit Grayscale-Alpha PNGs currently not supported".to_string()
+                        ));
                     },
                     Eight => {
-                        return Err(String::from("Eight-bit Grayscale-Alpha PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Eight-bit Grayscale-Alpha PNGs currently not supported".to_string()
+                        ));
                     },
                     Sixteen => {
-                        return Err(String::from("Sixteen-bit Grayscale-Alpha PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Sixteen-bit Grayscale-Alpha PNGs currently not supported".to_string()
+                        ));
                     }
                 }
             },
             Rgba => {
                 match bit_depth {
                     One => {
-                        return Err(String::from("One-bit RGBA PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "One-bit RGBA PNGs currently not supported".to_string()
+                        ));
                     },
                     Two => {
-                        return Err(String::from("Two-bit RGBA PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Two-bit RGBA PNGs currently not supported".to_string()
+                        ));
                     },
                     Four => {
-                        return Err(String::from("Four-bit RGBA PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Four-bit RGBA PNGs currently not supported".to_string()
+                        ));
                     },
                     Eight => {
                         for i in 0..scene.dim.x {
@@ -299,7 +458,8 @@ impl PngFile {
                                     a: alpha
                                 } = Pixel::get_certain(scene.get_pixel(
                                     Coord{ x: i as isize, y: j as isize }
-                                )?);
+                                ).unwrap());
+                                //todo: remove above unwrap when scene error literature
                                 png.bytes.push(red);
                                 png.bytes.push(green);
                                 png.bytes.push(blue);
@@ -308,7 +468,9 @@ impl PngFile {
                         }
                     },
                     Sixteen => {
-                        return Err(String::from("Sixteen-bit RGBA PNGs currently not supported"));
+                        return Err(PngFileError::Unsupported(
+                            "Sixteen-bit RGBA PNGs currently not supported".to_string()
+                        ));
                     }
                 }
             }

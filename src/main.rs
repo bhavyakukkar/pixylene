@@ -12,7 +12,7 @@ mod pixylene;
 
 use crate::elements::common::Coord;
 use crate::elements::layer::CameraPixel;
-use crate::action::{ Pencil, MoveCamera, RectangularFill };
+use crate::action::actions;
 use crate::pixylene::{ Pixylene, PixyleneDisplay };
 
 use colored::*;
@@ -47,30 +47,41 @@ impl PixyleneDisplay for Pixylene {
 }
 
 fn main() {
-    //let mut app = Pixylene::import("/home/bhavya/pictures/trash/snowbrick_rgba.png").unwrap();
-    let mut app = Pixylene::open("/home/bhavya/pictures/trash/snowbrick.bin").unwrap();
+    let mut app = Pixylene::import("/home/bhavya/pictures/trash/snowbrick_rgba.png").unwrap();
+    //let mut app = Pixylene::open("/home/bhavya/pictures/trash/snowbrick.bin").unwrap();
 
-    app.add_action("rectangular_fill", Box::new(RectangularFill{
+    app.add_action("rectangular_fill", Box::new(actions::rectangular_fill::RectangularFill{
         palette_index: 1,
         start_corner: None
     }));
-    app.add_action("pencil", Box::new(Pencil{
+    app.add_action("pencil", Box::new(actions::pencil::Pencil{
         palette_index: 2,
         new_pixel: None,
     }));
-    app.add_action("move_camera_up", Box::new(MoveCamera{
+    app.add_action("move_camera_up", Box::new(actions::move_camera::MoveCamera{
         focus_move: Coord{ x: -1, y: 0 },
     }));
-    app.add_action("move_camera_down", Box::new(MoveCamera{
+    app.add_action("move_camera_down", Box::new(actions::move_camera::MoveCamera{
         focus_move: Coord{ x: 1, y: 0 },
     }));
+    app.add_action("move_camera_left", Box::new(actions::move_camera::MoveCamera{
+        focus_move: Coord{ x: 0, y: -1 },
+    }));
+    app.add_action("move_camera_right", Box::new(actions::move_camera::MoveCamera{
+        focus_move: Coord{ x: 0, y: 1 },
+    }));
+    app.display();
 
-    app.perform("move_camera_up").unwrap();
-    app.perform("move_camera_up").unwrap();
-    app.perform("pencil").unwrap();
-    app.perform("move_camera_down").unwrap();
-    app.perform("move_camera_down").unwrap();
+    app.perform("move_camera_up").unwrap(); app.perform("move_camera_up").unwrap(); app.perform("move_camera_up").unwrap();
+    app.perform("move_camera_right").unwrap(); app.perform("move_camera_right").unwrap(); app.perform("move_camera_right").unwrap();
+    app.perform("rectangular_fill").unwrap();
+
+    app.perform("move_camera_down").unwrap(); app.perform("move_camera_down").unwrap(); app.perform("move_camera_down").unwrap();
+    app.perform("move_camera_left").unwrap(); app.perform("move_camera_left").unwrap(); app.perform("move_camera_left").unwrap();
+
+    app.perform("rectangular_fill").unwrap();
     app.display();
 
     //app.save("/home/bhavya/pictures/trash/snowbrick.bin").unwrap();
+    app.export("/home/bhavya/pictures/trash/snowbrick_export.png").unwrap();
 }
