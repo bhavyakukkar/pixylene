@@ -121,5 +121,11 @@ impl Pixylene {
             Err(error) => Err(PixyleneError::ActionManagerError(error)),
         }
     }
+    pub fn undo(&mut self) -> Result<(), PixyleneError> {
+        match self.action_manager.undo(&mut self.project) {
+            Ok(()) => Ok(()),
+            Err(error) => Err(PixyleneError::ActionManagerError(error)),
+        }
+    }
 }
 
