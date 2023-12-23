@@ -84,8 +84,14 @@ impl Pixylene {
             selected_layer: 0,
             camera: camera,
             palette: Palette { colors: vec![
-                Some(Pixel{r: 0, g: 0, b: 0, a: 255}),
-                Some(Pixel{r: 127, g: 0, b: 255, a: 255 }),
+                Some(Pixel{r: 81, g: 87, b: 109, a: 255}),
+                Some(Pixel{r: 231, g: 130, b: 132, a: 255}),
+                Some(Pixel{r: 166, g: 209, b: 137, a: 255}),
+                Some(Pixel{r: 229, g: 200, b: 144, a: 255}),
+                Some(Pixel{r: 140, g: 170, b: 238, a: 255}),
+                Some(Pixel{r: 244, g: 184, b: 228, a: 255}),
+                Some(Pixel{r: 129, g: 200, b: 190, a: 255}),
+                Some(Pixel{r: 181, g: 191, b: 226, a: 255}),
             ] },
         };
 
