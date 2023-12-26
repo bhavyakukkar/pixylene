@@ -49,5 +49,4 @@ pub trait Action {
     //perform action, transform to reverted (for undo) action, and return as a Change
     fn perform_action(&mut self, project: &mut Project) -> Result<Vec<Change>, String>;
     //whether action has been completely executed
-    fn end_action(&self) -> bool;
 }

@@ -35,7 +35,4 @@ impl Action for Pencil {
         changes.push(Change::End);
         Ok(changes)
     }
-    fn end_action(&self) -> bool {
-        true
-    }
 }

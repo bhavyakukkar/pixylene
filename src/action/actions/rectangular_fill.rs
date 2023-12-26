@@ -48,10 +48,4 @@ impl Action for RectangularFill {
             Ok(vec![Change::Start])
         }
     }
-    fn end_action(&self) -> bool {
-        match self.start_corner {
-            Some(_) => false,
-            None => true,
-        }
-    }
 }

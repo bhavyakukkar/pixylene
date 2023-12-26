@@ -20,7 +20,4 @@ impl Action for MoveCamera {
         };
         Ok(vec![Change::StartEnd(Rc::new(RefCell::new(move_camera_back)))])
     }
-    fn end_action(&self) -> bool {
-        true
-    }
 }

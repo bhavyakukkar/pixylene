@@ -47,7 +47,7 @@ impl std::fmt::Display for PixyleneError {
 
 pub struct Pixylene {
     pub project: Project,
-    action_manager: ActionManager,
+    pub action_manager: ActionManager,
     //defaults: Defaults,
 }
 impl Pixylene {

@@ -16,7 +16,4 @@ impl Action for ResizeCamera {
         };
         Ok(vec![Change::StartEnd(Rc::new(RefCell::new(resize_camera_back)))])
     }
-    fn end_action(&self) -> bool {
-        true
-    }
 }

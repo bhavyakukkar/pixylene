@@ -16,7 +16,4 @@ impl Action for ChangeCameraRepeat {
         };
         Ok(vec![Change::StartEnd(Rc::new(RefCell::new(change_camera_repeat_back)))])
     }
-    fn end_action(&self) -> bool {
-        true
-    }
 }

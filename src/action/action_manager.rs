@@ -77,7 +77,7 @@ pub struct ActionManager {
     pub actions: HashMap<String, Box<dyn Action>>,
     lock: bool,
     locked_action: Option<String>,
-    change_stack: Vec<Change>,
+    pub change_stack: Vec<Change>,
 }
 impl ActionManager {
     pub fn new(actions: HashMap<String, Box<dyn Action>>) -> Self {

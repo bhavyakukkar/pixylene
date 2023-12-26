@@ -30,5 +30,4 @@ impl Action for DrawOnce {
         };
         Ok(vec![Change::StartEnd(Rc::new(RefCell::new(draw_once_back)))])
     }
-    fn end_action(&self) -> bool { true }
 }

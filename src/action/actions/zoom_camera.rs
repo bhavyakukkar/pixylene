@@ -16,7 +16,4 @@ impl Action for ZoomCamera {
         };
         Ok(vec![Change::StartEnd(Rc::new(RefCell::new(zoom_camera_back)))])
     }
-    fn end_action(&self) -> bool {
-        true
-    }
 }
