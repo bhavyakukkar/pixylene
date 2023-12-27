@@ -39,6 +39,7 @@ impl PixyleneDisplay for Pixylene {
                         print!(" ");
                     }
                 }
+
             }
             println!();
         }
@@ -122,10 +123,10 @@ fn main() {
     }));
     //app.perform("move_camera_left").unwrap();
     //app.perform("move_camera_up").unwrap();
-    app.display();
+    //app.display();
 
     let mut line = String::new();
-    std::io::stdin().read_line(&mut line).unwrap();
+    //std::io::stdin().read_line(&mut line).unwrap();
 
     /*
     app.perform("pencil1").unwrap();
@@ -180,17 +181,23 @@ fn main() {
     //app.perform("move_camera_down").unwrap();
     //app.perform("move_camera_left").unwrap();
     app.perform("rectangular_fill").unwrap();
-    for _ in 0..2 {
+    for _ in 0..1 {
         app.perform("move_camera_down").unwrap();
         app.perform("move_camera_left").unwrap();
     }
     app.perform("rectangular_fill").unwrap();
 
-    app.display();
-    display_change_stack(&app.action_manager.change_stack);
-    std::io::stdin().read_line(&mut line).unwrap();
+    for _ in 0..1 {
+        app.perform("move_camera_down").unwrap();
+        app.perform("move_camera_left").unwrap();
+    }
 
-    app.undo();
+    println!();
+    //app.display();
+    //display_change_stack(&app.action_manager.change_stack);
+    //std::io::stdin().read_line(&mut line).unwrap();
+
+    //app.undo();
     /*
     app.perform("move_camera_up").unwrap(); app.perform("move_camera_up").unwrap(); app.perform("move_camera_up").unwrap();
     app.perform("move_camera_right").unwrap(); app.perform("move_camera_right").unwrap(); app.perform("move_camera_right").unwrap();
@@ -200,8 +207,8 @@ fn main() {
     app.perform("move_camera_left").unwrap(); app.perform("move_camera_left").unwrap(); app.perform("move_camera_left").unwrap();
     app.perform("rectangular_fill").unwrap();
     */
-    app.display();
-    display_change_stack(&app.action_manager.change_stack);
+    //app.display();
+    //display_change_stack(&app.action_manager.change_stack);
 
     //app.save("/home/bhavya/pictures/trash/snowbrick.bin").unwrap();
     //app.export("/home/bhavya/pictures/trash/snowbrick_export.png").unwrap();

@@ -75,29 +75,28 @@ impl std::fmt::Display for ActionManagerError {
 
 pub struct ActionManager {
     pub actions: HashMap<String, Box<dyn Action>>,
-    lock: bool,
-    locked_action: Option<String>,
+    scene_lock: Option<String>,
+    camera_lock: Option<String>,
     pub change_stack: Vec<Change>,
 }
 impl ActionManager {
     pub fn new(actions: HashMap<String, Box<dyn Action>>) -> Self {
         ActionManager {
             actions: actions,
-            lock: false,
-            locked_action: None,
+            scene_lock: None,
+            camera_lock: None,
             change_stack: Vec::new(),
         }
     }
+    //currently very useless
     fn record(&mut self, changes: Vec<Change>) {
         for change in changes {
             match change {
                 Change::Start => {
-                    self.lock = true;
                     self.change_stack.push(Change::Start);
                 },
                 Change::End => {
                     self.change_stack.push(Change::End);
-                    self.lock = false;
                 }
                 Change::StartEnd(action_rc) => {
                     self.change_stack.push(Change::StartEnd(action_rc));
@@ -117,46 +116,88 @@ impl ActionManager {
         use PerformError::*;
         use ActionManagerError::ActionFailedToPerform;
 
-        if let Some(action) = self.actions.get_mut(&action_name) {
-            match &self.locked_action {
-                Some(locked_action) => {
-                    if locked_action.ne(&action_name) {
-                        return Err(ActionManagerError::PerformError(LockedAction(format!(
-                            "cannot perform action '{}' while action '{}' has locked the \
-                            action-manager",
-                            action_name,
-                            locked_action,
-                        ))));
-                    } else {
-                        match action.perform_action(project) {
-                            Ok(changes) => {
-                                self.record(changes);
-                                return Ok(());
-                            },
-                            Err(error) => {
-                                return Err(ActionFailedToPerform(String::from(error)));
-                            },
+        let action = match self.actions.get_mut(&action_name) {
+            Some(action) => { action },
+            None => {
+                return Err(ActionManagerError::PerformError(ActionNotFound(format!(
+                    "action '{}' was not found in inserted actions",
+                    action_name,
+                ))));
+            }
+        };
+
+        if let Some(scene_locked_action_name) = &self.scene_lock {
+            if action.locks_scene() && action_name.ne(scene_locked_action_name) {
+                return Err(ActionManagerError::PerformError(LockedAction(format!(
+                    "cannot perform scene-locking action '{}' while action '{}' has locked the \
+                     scene",
+                    action_name,
+                    scene_locked_action_name,
+                ))));
+            }
+        }
+
+        if let Some(camera_locked_action_name) = &self.camera_lock {
+            if action.locks_camera() && action_name.ne(camera_locked_action_name) {
+                return Err(ActionManagerError::PerformError(LockedAction(format!(
+                    "cannot perform camera-locking action '{}' while action '{}' has locked the \
+                     camera",
+                    action_name,
+                    camera_locked_action_name,
+                ))));
+            }
+        }
+
+        if action.locks_scene() { self.scene_lock = Some(action_name.clone()); }
+        if action.locks_camera() { self.camera_lock = Some(action_name.clone()); }
+
+        match action.perform_action(project) {
+            Ok(changes) => {
+                let num_changes = changes.len();
+                if num_changes > 0 {
+                    //todo: fix bad vec implementation with perform returning a VecDeque of changes instead of a Vec of changes
+                    let mut i = 0;
+                    let mut last_change: Change = Change::Start;
+                    for change in changes {
+                        if i == num_changes - 1 {
+                            last_change = change;
+                            break;
+                        }
+                        print!(" ({}{})", match &self.scene_lock { Some(_) => ":", None => " " }, match &self.camera_lock { Some(_) => ":", None => " " });
+                        match &change {
+                            Change::Start => print!(" S_ "),
+                            Change::End => print!(" _E"),
+                            Change::StartEnd(_) => print!(" SE"),
+                            Change::Untracked(_) => print!(" UU"),
+                        }
+                        self.change_stack.push(change);
+                        i += 1;
+                    }
+
+                    print!(" ({}{})", match &self.scene_lock { Some(_) => ":", None => " " }, match &self.camera_lock { Some(_) => ":", None => " " });
+                    match &last_change {
+                        Change::Start => print!(" S_ "),
+                        Change::End => print!(" _E"),
+                        Change::StartEnd(_) => print!(" SE"),
+                        Change::Untracked(_) => print!(" UU"),
+                    }
+                    match last_change {
+                        Change::Start => (),
+                        Change::End |
+                        Change::StartEnd(_) |
+                        Change::Untracked(_) => {
+                            if action.locks_scene() { self.scene_lock = None; }
+                            if action.locks_camera() { self.camera_lock = None; }
                         }
                     }
-                },
-                None => {
-                    match action.perform_action(project) {
-                        Ok(changes) => {
-                            self.record(changes);
-                            return Ok(());
-                        },
-                        Err(error) => {
-                            return Err(ActionFailedToPerform(String::from(error)));
-                        },
-                    }
+                    self.change_stack.push(last_change);
                 }
+            },
+            Err(error) => {
+                return Err(ActionFailedToPerform(String::from(error)));
             }
-        } else {
-            return Err(ActionManagerError::PerformError(ActionNotFound(format!(
-                "action '{}' was not found in inserted actions",
-                action_name,
-            ))));
         }
+        Ok(())
     }
     pub fn undo(&mut self, project: &mut Project) -> Result<(), ActionManagerError> {
         use UndoError::*;
@@ -168,11 +209,13 @@ impl ActionManager {
                 String::from("nothing to undo")
             )));
         }
+        /*
         if self.lock {
             return Err(ActionManagerError::UndoError(LockedAction(
                 String::from("Cannot undo while action-manager is locked")
             )));
         }
+        */
         let mut was_locked = false;
         let mut reverted_changes: Vec<Change> = Vec::new();
         loop {

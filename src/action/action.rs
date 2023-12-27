@@ -48,5 +48,10 @@ impl Change {
 pub trait Action {
     //perform action, transform to reverted (for undo) action, and return as a Change
     fn perform_action(&mut self, project: &mut Project) -> Result<Vec<Change>, String>;
-    //whether action has been completely executed
+    fn end_action(&self) -> bool { true }
+
+    // these methods must be overridden only for a complex Action, i.e.,
+    // one that takes 2 or more calls to perform_action to complete
+    fn locks_scene(&self) -> bool { false }
+    fn locks_camera(&self) -> bool { false }
 }

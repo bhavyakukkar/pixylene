@@ -15,6 +15,7 @@ impl Action for RectangularFill {
     fn perform_action(&mut self, project: &mut Project) -> Result<Vec<Change>, String> {
         if let Some(start_corner) = self.start_corner {
             let mut changes: Vec<Change> = Vec::new();
+            changes.push(Change::Start);
             for i in min(start_corner.x, project.camera.focus.x)..(max(
                 start_corner.x,
                 project.camera.focus.x
@@ -45,7 +46,14 @@ impl Action for RectangularFill {
             Ok(changes)
         } else {
             self.start_corner = Some(project.camera.focus);
-            Ok(vec![Change::Start])
+            Ok(Vec::new())
         }
     }
+    fn end_action(&self) -> bool {
+        match self.start_corner {
+            Some(_) => false,
+            None => true,
+        }
+    }
+    fn locks_scene(&self) -> bool { true }
 }
