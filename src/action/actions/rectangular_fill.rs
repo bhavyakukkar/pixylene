@@ -43,6 +43,7 @@ impl Action for RectangularFill {
                 }
             }
             changes.push(Change::End);
+            self.start_corner = None;
             Ok(changes)
         } else {
             self.start_corner = Some(project.camera.focus);

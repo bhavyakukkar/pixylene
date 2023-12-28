@@ -73,159 +73,54 @@ fn main() {
     let mut app = Pixylene::import("/home/bhavya/pictures/trash/snowbrick_rgba.png").unwrap();
     //let mut app = Pixylene::open("/home/bhavya/pictures/trash/snowbrick.bin").unwrap();
 
-    app.add_action("rectangular_fill", Box::new(actions::rectangular_fill::RectangularFill{
-        palette_index: 7,
+    for i in 0..8 {
+        app.add_action(&format!("{}", i+1), Box::new(actions::pencil::Pencil{
+            palette_index: i+1,
+            new_pixel: None,
+        }));
+    }
+    app.add_action("f", Box::new(actions::rectangular_fill::RectangularFill{
+        palette_index: 1,
         start_corner: None
     }));
-    app.add_action("pencil1", Box::new(actions::pencil::Pencil{
-        palette_index: 1,
-        new_pixel: None,
-    }));
-    app.add_action("pencil2", Box::new(actions::pencil::Pencil{
-        palette_index: 2,
-        new_pixel: None,
-    }));
-    app.add_action("pencil3", Box::new(actions::pencil::Pencil{
-        palette_index: 3,
-        new_pixel: None,
-    }));
-    app.add_action("pencil4", Box::new(actions::pencil::Pencil{
-        palette_index: 4,
-        new_pixel: None,
-    }));
-    app.add_action("pencil5", Box::new(actions::pencil::Pencil{
-        palette_index: 5,
-        new_pixel: None,
-    }));
-    app.add_action("pencil6", Box::new(actions::pencil::Pencil{
-        palette_index: 6,
-        new_pixel: None,
-    }));
-    app.add_action("pencil7", Box::new(actions::pencil::Pencil{
-        palette_index: 7,
-        new_pixel: None,
-    }));
-    app.add_action("pencil8", Box::new(actions::pencil::Pencil{
-        palette_index: 8,
-        new_pixel: None,
-    }));
-    app.add_action("move_camera_up", Box::new(actions::move_camera::MoveCamera{
+
+    app.add_action("k", Box::new(actions::move_camera::MoveCamera{
         focus_move: Coord{ x: -1, y: 0 },
     }));
-    app.add_action("move_camera_down", Box::new(actions::move_camera::MoveCamera{
+    app.add_action("j", Box::new(actions::move_camera::MoveCamera{
         focus_move: Coord{ x: 1, y: 0 },
     }));
-    app.add_action("move_camera_left", Box::new(actions::move_camera::MoveCamera{
+    app.add_action("h", Box::new(actions::move_camera::MoveCamera{
         focus_move: Coord{ x: 0, y: -1 },
     }));
-    app.add_action("move_camera_right", Box::new(actions::move_camera::MoveCamera{
+    app.add_action("l", Box::new(actions::move_camera::MoveCamera{
         focus_move: Coord{ x: 0, y: 1 },
     }));
-    //app.perform("move_camera_left").unwrap();
-    //app.perform("move_camera_up").unwrap();
-    //app.display();
 
-    let mut line = String::new();
-    //std::io::stdin().read_line(&mut line).unwrap();
-
-    /*
-    app.perform("pencil1").unwrap();
-    app.display();
-    display_change_stack(&app.action_manager.change_stack);
-    app.perform("move_camera_right").unwrap();
-    std::io::stdin().read_line(&mut line).unwrap();
-
-    app.perform("pencil2").unwrap();
-    app.display();
-    display_change_stack(&app.action_manager.change_stack);
-    app.perform("move_camera_right").unwrap();
-    std::io::stdin().read_line(&mut line).unwrap();
-
-    app.perform("pencil3").unwrap();
-    app.display();
-    display_change_stack(&app.action_manager.change_stack);
-    app.perform("move_camera_right").unwrap();
-    std::io::stdin().read_line(&mut line).unwrap();
-
-    app.perform("pencil4").unwrap();
-    app.display();
-    display_change_stack(&app.action_manager.change_stack);
-    app.perform("move_camera_right").unwrap();
-    std::io::stdin().read_line(&mut line).unwrap();
-
-    app.perform("pencil5").unwrap();
-    app.display();
-    display_change_stack(&app.action_manager.change_stack);
-    app.perform("move_camera_right").unwrap();
-    std::io::stdin().read_line(&mut line).unwrap();
-
-    app.perform("pencil6").unwrap();
-    app.display();
-    display_change_stack(&app.action_manager.change_stack);
-    app.perform("move_camera_right").unwrap();
-    std::io::stdin().read_line(&mut line).unwrap();
-
-    app.perform("pencil7").unwrap();
-    app.display();
-    display_change_stack(&app.action_manager.change_stack);
-    app.perform("move_camera_right").unwrap();
-    std::io::stdin().read_line(&mut line).unwrap();
-
-    app.perform("pencil8").unwrap();
-    app.display();
-    display_change_stack(&app.action_manager.change_stack);
-    app.perform("move_camera_right").unwrap();
-    std::io::stdin().read_line(&mut line).unwrap();
-    */
-
-    //app.perform("move_camera_down").unwrap();
-    //app.perform("move_camera_left").unwrap();
-    app.perform("rectangular_fill").unwrap();
-    println!("\nchange_index: {}", app.action_manager.change_index);
-    for _ in 0..1 {
-        app.perform("move_camera_down").unwrap();
-        println!("\nchange_index: {}", app.action_manager.change_index);
-        app.perform("move_camera_left").unwrap();
-        println!("\nchange_index: {}", app.action_manager.change_index);
+    loop {
+        let mut line = String::new();
+        std::io::stdin().read_line(&mut line).unwrap();
+        line = (&line[..(line.len() - 1)]).to_string();
+        if line.eq(&String::from("u")) {
+            match app.undo() {
+                Ok(()) => (),
+                Err(error) => println!("!!! {} !!!", error),
+            }
+        }
+        else if line.eq(&String::from("r")) {
+            match app.redo() {
+                Ok(()) => (),
+                Err(error) => println!("!!! {} !!!", error),
+            }
+        }
+        else {
+            match app.perform(&line) {
+                Ok(()) => (),
+                Err(error) => println!("!!! {} !!!", error),
+            }
+        }
+        app.display();
     }
-    app.perform("rectangular_fill").unwrap();
-    println!("\nchange_index: {}", app.action_manager.change_index);
-
-    for _ in 0..1 {
-        app.perform("move_camera_down").unwrap();
-        println!("\nchange_index: {}", app.action_manager.change_index);
-        app.perform("move_camera_left").unwrap();
-        println!("\nchange_index: {}", app.action_manager.change_index);
-    }
-
-    app.undo().unwrap();
-    println!("\nchange_index: {}", app.action_manager.change_index);
-    app.undo().unwrap();
-    println!("\nchange_index: {}", app.action_manager.change_index);
-    app.undo().unwrap();
-    println!("\nchange_index: {}", app.action_manager.change_index);
-    app.undo().unwrap();
-    println!("\nchange_index: {}", app.action_manager.change_index);
-    app.undo().unwrap();
-    println!("\nchange_index: {}", app.action_manager.change_index);
-
-    app.undo().unwrap();
-    //app.display();
-    //display_change_stack(&app.action_manager.change_stack);
-    //std::io::stdin().read_line(&mut line).unwrap();
-
-    //app.undo();
-    /*
-    app.perform("move_camera_up").unwrap(); app.perform("move_camera_up").unwrap(); app.perform("move_camera_up").unwrap();
-    app.perform("move_camera_right").unwrap(); app.perform("move_camera_right").unwrap(); app.perform("move_camera_right").unwrap();
-    app.perform("rectangular_fill").unwrap();
-
-    app.perform("move_camera_down").unwrap(); app.perform("move_camera_down").unwrap(); app.perform("move_camera_down").unwrap();
-    app.perform("move_camera_left").unwrap(); app.perform("move_camera_left").unwrap(); app.perform("move_camera_left").unwrap();
-    app.perform("rectangular_fill").unwrap();
-    */
-    //app.display();
-    //display_change_stack(&app.action_manager.change_stack);
 
     //app.save("/home/bhavya/pictures/trash/snowbrick.bin").unwrap();
     //app.export("/home/bhavya/pictures/trash/snowbrick_export.png").unwrap();

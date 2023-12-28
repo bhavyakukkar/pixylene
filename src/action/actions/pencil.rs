@@ -35,4 +35,5 @@ impl Action for Pencil {
         changes.push(Change::End);
         Ok(changes)
     }
+    fn locks_scene(&self) -> bool { true }
 }

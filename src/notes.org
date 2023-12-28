@@ -1,6 +1,9 @@
 * TASKS [0/0]
 ** FUNCTIONAL [0/0]
 *** NEXT [3/9]
+- [ ] palette has cursor & foreground pixels that can be changed at runtime
+- [ ] camera has group of selected pixels (for visual mode)
+- [ ] get your errors in order
 - [ ] Action::perform_action returns Changes::Single or Change::Multiple
 - [ ] ActionManager::undo returns UndoError
 - [ ] undo behavior as written on piece of paper
