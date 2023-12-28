@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::rc::Rc;
+use std::cell::RefCell;
 
 use crate::project::Project;
 use crate::action::{ Action, Change };
@@ -77,7 +79,8 @@ pub struct ActionManager {
     pub actions: HashMap<String, Box<dyn Action>>,
     scene_lock: Option<String>,
     camera_lock: Option<String>,
-    pub change_stack: Vec<Change>,
+    pub change_stack: Vec<Change>, //todo: make private
+    pub change_index: usize, //todo: make private
 }
 impl ActionManager {
     pub fn new(actions: HashMap<String, Box<dyn Action>>) -> Self {
@@ -86,6 +89,7 @@ impl ActionManager {
             scene_lock: None,
             camera_lock: None,
             change_stack: Vec::new(),
+            change_index: 0,
         }
     }
     //currently very useless
@@ -163,7 +167,8 @@ impl ActionManager {
                             last_change = change;
                             break;
                         }
-                        print!(" ({}{})", match &self.scene_lock { Some(_) => ":", None => " " }, match &self.camera_lock { Some(_) => ":", None => " " });
+                        self.change_index += 1;
+                        print!(" {}({}{})", self.change_index, match &self.scene_lock { Some(_) => ":", None => " " }, match &self.camera_lock { Some(_) => ":", None => " " });
                         match &change {
                             Change::Start => print!(" S_ "),
                             Change::End => print!(" _E"),
@@ -174,7 +179,8 @@ impl ActionManager {
                         i += 1;
                     }
 
-                    print!(" ({}{})", match &self.scene_lock { Some(_) => ":", None => " " }, match &self.camera_lock { Some(_) => ":", None => " " });
+                    self.change_index += 1;
+                    print!(" {}({}{})", self.change_index, match &self.scene_lock { Some(_) => ":", None => " " }, match &self.camera_lock { Some(_) => ":", None => " " });
                     match &last_change {
                         Change::Start => print!(" S_ "),
                         Change::End => print!(" _E"),
@@ -203,129 +209,66 @@ impl ActionManager {
         use UndoError::*;
         use ActionManagerError::{ ActionFailedToPerform, CannotUntrackAction };
 
-        let mut index: usize = self.change_stack.len() - 1;
-        if index == 0 {
+        if self.change_index == 0 {
             return Err(ActionManagerError::UndoError(NothingToUndo(
                 String::from("nothing to undo")
             )));
         }
-        /*
-        if self.lock {
-            return Err(ActionManagerError::UndoError(LockedAction(
-                String::from("Cannot undo while action-manager is locked")
-            )));
-        }
-        */
         let mut was_locked = false;
         let mut reverted_changes: Vec<Change> = Vec::new();
+        let mut new_change: Change;
         loop {
-            if let Some(change) = self.change_stack.pop() {
+            new_change = Change::End;
+            if let Some(change) = self.change_stack.get_mut(self.change_index - 1) {
                 match change {
                     Change::Start => {
-                        if was_locked {
-                            reverted_changes.push(Change::End);
-                            self.record(reverted_changes);
-                            was_locked = false;
-                            return Ok(());
-                        } else {
-                            return Err(ActionManagerError::UndoError(InvalidChangeStack(
-                                format!(
-                                    "invalid change_stack: Start change at index {} while no \
-                                    locked End change pending resolution",
-                                    index,
-                                )
-                            )));
-                        }
+                        println!("encountered start");
+                        new_change = Change::End;
+                        self.change_index -= 1;
+                        break;
                     },
                     Change::End => {
-                        if was_locked {
-                            return Err(ActionManagerError::UndoError(InvalidChangeStack(
-                                format!(
-                                    "invalid change_stack: End change at index {} while a locked \
-                                    End change is pending resolution",
-                                    index,
-                                )
-                            )));
-                        } else {
-                            was_locked = true;
-                            reverted_changes.push(Change::Start);
-                        }
+                        println!("encountered end");
+                        new_change = Change::Start;
+                        self.change_index -= 1;
                     },
                     Change::StartEnd(action_rc) => {
-                        if was_locked {
-                            return Err(ActionManagerError::UndoError(InvalidChangeStack(
-                                format!(
-                                    "invalid change_stack: StartEnd change at index {} while a \
-                                    locked End change is pending resolution",
-                                    index,
-                                )
-                            )));
-                        } else {
-                            let mut action = action_rc.borrow_mut();
-
-                            match (*action).perform_action(project) {
-                                Ok(changes) => {
-                                    for change in changes {
-                                        index += 1;
-                                        match change.as_untracked() {
-                                            Ok(change) => {
-                                                reverted_changes.push(change);
-                                            },
-                                            Err(error) => {
-                                                return Err(CannotUntrackAction(error));
-                                            },
-                                        }
-                                    }
-                                    return Ok(())
-                                },
-                                Err(error) => {
-                                    return Err(ActionFailedToPerform(format!(
-                                        "at index {} of change-stack: {}",
-                                        index,
-                                        error,
-                                    )));
-                                },
+                        println!("encountered startend");
+                        let mut action = action_rc.borrow_mut();
+                        match (*action).perform_action(project) {
+                            Ok(changes) => for change in changes {
+                                // assumes that action that returned
+                                // StartEnd once will return StartEnd again
+                                // and for-loop will only run for 1 iter
+                                new_change = change;
+                            },
+                            Err(desc) => {
+                                return Err(ActionManagerError::ActionFailedToPerform(desc));
                             }
                         }
+                        self.change_index -= 1;
+                        break;
                     },
                     Change::Untracked(action_rc) => {
-                        if was_locked {
-                            let mut action = action_rc.borrow_mut();
-                            match (*action).perform_action(project) {
-                                Ok(changes) => {
-                                    for change in changes {
-                                        index += 1;
-                                        match change.as_untracked() {
-                                            Ok(change) => {
-                                                reverted_changes.push(change);
-                                            },
-                                            Err(error) => {
-                                                return Err(CannotUntrackAction(error));
-                                            },
-                                        }
-                                    }
-                                },
-                                Err(error) => {
-                                    return Err(ActionFailedToPerform(format!(
-                                        "at index {} of change-stack: {}",
-                                        index,
-                                        error,
-                                    )));
-                                },
+                        println!("encountered untracked");
+                        let mut action = action_rc.borrow_mut();
+                        match (*action).perform_action(project) {
+                            Ok(changes) => for change in changes {
+                                // assumes that action that returned
+                                // Untracked once will return Untracked again
+                                // and for-loop will only run for 1 iter
+                                new_change = change;
+                            },
+                            Err(desc) => {
+                                return Err(ActionManagerError::ActionFailedToPerform(desc));
                             }
-                        } else {
-                            return Err(ActionManagerError::UndoError(InvalidChangeStack(
-                                format!(
-                                    "invalid change_stack: Untracked change at index {} while no \
-                                    locked End change pending resolution",
-                                    index,
-                                )
-                            )));
                         }
-                    },
+                        self.change_index -= 1;
+                    }
                 }
+                self.change_stack.insert(self.change_index, new_change);
             }
-            index -= 1;
         }
+        Ok(())
     }
 }

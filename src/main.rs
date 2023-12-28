@@ -181,18 +181,35 @@ fn main() {
     //app.perform("move_camera_down").unwrap();
     //app.perform("move_camera_left").unwrap();
     app.perform("rectangular_fill").unwrap();
+    println!("\nchange_index: {}", app.action_manager.change_index);
     for _ in 0..1 {
         app.perform("move_camera_down").unwrap();
+        println!("\nchange_index: {}", app.action_manager.change_index);
         app.perform("move_camera_left").unwrap();
+        println!("\nchange_index: {}", app.action_manager.change_index);
     }
     app.perform("rectangular_fill").unwrap();
+    println!("\nchange_index: {}", app.action_manager.change_index);
 
     for _ in 0..1 {
         app.perform("move_camera_down").unwrap();
+        println!("\nchange_index: {}", app.action_manager.change_index);
         app.perform("move_camera_left").unwrap();
+        println!("\nchange_index: {}", app.action_manager.change_index);
     }
 
-    println!();
+    app.undo().unwrap();
+    println!("\nchange_index: {}", app.action_manager.change_index);
+    app.undo().unwrap();
+    println!("\nchange_index: {}", app.action_manager.change_index);
+    app.undo().unwrap();
+    println!("\nchange_index: {}", app.action_manager.change_index);
+    app.undo().unwrap();
+    println!("\nchange_index: {}", app.action_manager.change_index);
+    app.undo().unwrap();
+    println!("\nchange_index: {}", app.action_manager.change_index);
+
+    app.undo().unwrap();
     //app.display();
     //display_change_stack(&app.action_manager.change_stack);
     //std::io::stdin().read_line(&mut line).unwrap();

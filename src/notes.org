@@ -1,6 +1,9 @@
 * TASKS [0/0]
 ** FUNCTIONAL [0/0]
 *** NEXT [3/9]
+- [ ] Action::perform_action returns Changes::Single or Change::Multiple
+- [ ] ActionManager::undo returns UndoError
+- [ ] undo behavior as written on piece of paper
 - [ ] layer error literature (Pixylene::export depends on Layer::merge returning 'can only merge >=2 layers')
 - [ ] get rid of camera.repeat, something of that nature should be managed by PixyleneDisplay
 - [ ] Actions that work instantly like MoveCameraUp are fundamentally different from actions that require input like SetPaletteColor
@@ -11,6 +14,7 @@
 - [X] new branch to implement savefile on Project
 *** AT SOME POINT IN TIME [0/0]
 **** SMALL CHANGE [1/4]
+- [ ] perform_action returns VecDeque of Change's
 - [X] Png::open errors returned as debug strings similar to Png::save
 - [ ] Copy and Paste action is a cross-cutting concern (shouldn't lock the Action Manager)
 - [ ] Action that lets you 'write' colors line-by-line, left-to-right
