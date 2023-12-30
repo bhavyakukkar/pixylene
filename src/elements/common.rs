@@ -34,6 +34,22 @@ pub struct Pixel {
 }
 
 impl Pixel {
+    pub fn from_hex(color_hex: String) -> Result<Pixel, String> {
+        match hex::decode(color_hex) {
+            Ok(bytes) => {
+                match bytes.len() {
+                    4 => Ok(Pixel{ r: bytes[0], g: bytes[1], b: bytes[2], a: bytes[3] }),
+                    3 => Ok(Pixel{ r: bytes[0], g: bytes[1], b: bytes[2], a: 255 }),
+                    l => Err(format!(
+                            "Invalid length of bytes for hex triplet, expecting 3 (RGB) or 4 (RGBA), \
+                             found: {}",
+                             l
+                        )),
+                }
+            },
+            Err(error) => Err(error.to_string())
+        }
+    }
     pub fn empty() -> Pixel {
         Pixel{ r: 0, g: 0, b: 0, a: 0 }
     }

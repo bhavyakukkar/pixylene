@@ -1,8 +1,16 @@
 * TASKS [0/0]
 ** FUNCTIONAL [0/0]
-*** NEXT [3/9]
-- [ ] palette has cursor & foreground pixels that can be changed at runtime
+*** NEXT [3/14]
+- (libpyxelene) palette has 2 methods to change specified color [0/0]
+  - [ ] changeToExisting that takes index of other color in palette
+  - [ ] changeTo that takes direct hex value
+  - [ ] (libpyxelene) rectangularfill takes a palette_index too
+- (pixylenetui) [0/0]
+  - [ ] defined palette contains 10 colors, foreground+background+eight defined colors
+  - [ ] switchForeground is a wrapper that performs Palette.changeTo(1, <input>)
+  - [ ] switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
 - [ ] camera has group of selected pixels (for visual mode)
+- [ ] project is immutable, scene-locking actions receive the mutable scene but can use the immutable project for things like Project.getFocus(), similar for camera-locking actions
 - [ ] get your errors in order
 - [ ] Action::perform_action returns Changes::Single or Change::Multiple
 - [ ] ActionManager::undo returns UndoError
