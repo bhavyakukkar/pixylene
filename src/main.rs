@@ -97,6 +97,8 @@ fn main() {
         focus_move: Coord{ x: 0, y: 1 },
     }));
 
+    //app.project.palette.change_color_to(1, "00000000ff".to_string()).unwrap();
+
     loop {
         let mut line = String::new();
         std::io::stdin().read_line(&mut line).unwrap();
