@@ -1,11 +1,12 @@
 * TASKS [0/0]
 ** FUNCTIONAL [0/0]
 *** NEXT [3/14]
-- (libpyxelene) palette has 2 methods to change specified color [0/0]
-  - [ ] changeToExisting that takes index of other color in palette
-  - [ ] changeTo that takes direct hex value
-  - [ ] (libpyxelene) rectangularfill takes a palette_index too
-- (pixylenetui) [0/0]
+- [ ] remove colored as dependency of libpyxlene
+- (libpyxelene) palette has 2 methods to change specified color [3/3]
+  - [X] changeToExisting that takes index of other color in palette
+  - [X] changeTo that takes direct hex value
+  - [X] (libpyxelene) rectangularfill takes a palette_index too
+- (pixylenetui) [0/3]
   - [ ] defined palette contains 10 colors, foreground+background+eight defined colors
   - [ ] switchForeground is a wrapper that performs Palette.changeTo(1, <input>)
   - [ ] switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
