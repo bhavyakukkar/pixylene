@@ -1,7 +1,7 @@
 * TASKS [0/0]
 ** FUNCTIONAL [0/0]
-*** NEXT [3/14]
-- [ ] remove colored as dependency of libpyxlene
+*** NEXT [4/15]
+- [X] remove colored as dependency of libpyxlene
 - (libpyxelene) palette has 2 methods to change specified color [3/3]
   - [X] changeToExisting that takes index of other color in palette
   - [X] changeTo that takes direct hex value
@@ -10,7 +10,6 @@
   - [ ] defined palette contains 10 colors, foreground+background+eight defined colors
   - [ ] switchForeground is a wrapper that performs Palette.changeTo(1, <input>)
   - [ ] switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
-- [ ] camera has group of selected pixels (for visual mode)
 - [ ] project is immutable, scene-locking actions receive the mutable scene but can use the immutable project for things like Project.getFocus(), similar for camera-locking actions
 - [ ] get your errors in order
 - [ ] Action::perform_action returns Changes::Single or Change::Multiple
@@ -35,12 +34,18 @@
 - [ ] RectangularOutline Action
 - [ ] Png to/fro Scene: fill more color-type/bit-depth combos
 **** MEDIUM CHANGE [0/1]
+- [ ] savefiles be plaintext so people can use vcs on them
 - [ ] each layer has a blendmode (like in gimp)
 - [ ] camera should be able to set focus to coord not in scene, just not be able to set_pixel there
 **** LARGE CHANGE [0/2]
 - [ ] toml for default impl of Pixylene::import & Pixylene::new that includes palette
 - [ ] change-tree instead of change-stack, doesn't forget future changes after changes in undoed state
 - [ ] lower-level (elements) error literature
+*** MAYBE / MAYBE NOT
+**** SMALL CHANGE
+- [ ] camera has group of selected pixels (for visual mode)
+**** MEDIUM CHANGE
+**** LARGE CHANGE
 ** NON-FUNCTIONAL [0/0]
 *** NEXT [0/0]
 *** AT SOME POINT IN TIME [0/0]
