@@ -309,7 +309,14 @@ impl ActionManager {
                                 // assumes that action that returned
                                 // Untracked once will return Untracked again
                                 // and for-loop will only run for 1 iter
-                                new_change = change;
+                                match change.as_untracked() {
+                                    Ok(change) => {
+                                        new_change = change;
+                                    },
+                                    Err(desc) => {
+                                        return Err(ActionManagerError::CannotUntrackAction(desc));
+                                    }
+                                }
                             },
                             Err(desc) => {
                                 return Err(ActionManagerError::ActionFailedToPerform(desc));
