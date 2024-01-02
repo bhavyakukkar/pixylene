@@ -1,48 +1,49 @@
 * TASKS [0/0]
 ** FUNCTIONAL [0/0]
-*** NEXT [4/15]
+*** [6/14] NEXT
 - [X] remove colored as dependency of libpyxlene
-- (libpyxelene) palette has 2 methods to change specified color [3/3]
+- [3/3] (libpyxelene) palette has 2 methods to change specified color
   - [X] changeToExisting that takes index of other color in palette
   - [X] changeTo that takes direct hex value
   - [X] (libpyxelene) rectangularfill takes a palette_index too
-- (pixylenetui) [0/3]
+- [ ] layer error literature (Pixylene::export depends on Layer::merge returning 'can only merge >=2 layers')
+- [ ] Copy and Paste action is a cross-cutting concern (shouldn't lock the Action Manager)
+- [ ] wrapper for Camera::render() so that a Scene doesn't need to be passed as parameter
+- [0/3] (pixylenetui)
   - [ ] defined palette contains 10 colors, foreground+background+eight defined colors
   - [ ] switchForeground is a wrapper that performs Palette.changeTo(1, <input>)
   - [ ] switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
 - [ ] project is immutable, scene-locking actions receive the mutable scene but can use the immutable project for things like Project.getFocus(), similar for camera-locking actions
-- [ ] get your errors in order
 - [ ] Action::perform_action returns Changes::Single or Change::Multiple
 - [ ] ActionManager::undo returns UndoError
-- [ ] undo behavior as written on piece of paper
-- [ ] layer error literature (Pixylene::export depends on Layer::merge returning 'can only merge >=2 layers')
+- [X] undo behavior as written on piece of paper
 - [ ] get rid of camera.repeat, something of that nature should be managed by PixyleneDisplay
 - [ ] Actions that work instantly like MoveCameraUp are fundamentally different from actions that require input like SetPaletteColor
 - [X] Actions in different directory actions/
 - [X] Pencil action that just does DrawOnce with blending
 - [ ] Pixylene::empty
-- [ ] Action:redo because you did a bad job on Action:undo
+- [X] Action:redo because you did a bad job on Action:undo
 - [X] new branch to implement savefile on Project
 *** AT SOME POINT IN TIME [0/0]
-**** SMALL CHANGE [1/4]
+**** [1/7] SMALL CHANGE
 - [ ] perform_action returns VecDeque of Change's
 - [X] Png::open errors returned as debug strings similar to Png::save
-- [ ] Copy and Paste action is a cross-cutting concern (shouldn't lock the Action Manager)
-- [ ] Action that lets you 'write' colors line-by-line, left-to-right
-- [ ] Action that lets you draw the same color for a continued camera motion and pixels draw at every new camera focus
+- [ ] Mode that lets you 'write' colors line-by-line, left-to-right
+- [ ] Mode that lets you draw the same color for a continued camera motion and pixels draw at every new camera focus
 - [ ] Camera.get_focus() so that Camera.focus can be made private
 - [ ] RectangularOutline Action
 - [ ] Png to/fro Scene: fill more color-type/bit-depth combos
-**** MEDIUM CHANGE [0/1]
+- [ ] "Dependency Justification" for paper like done on crossterm's github
+**** [0/3] MEDIUM CHANGE
 - [ ] savefiles be plaintext so people can use vcs on them
 - [ ] each layer has a blendmode (like in gimp)
 - [ ] camera should be able to set focus to coord not in scene, just not be able to set_pixel there
-**** LARGE CHANGE [0/2]
+**** [0/4] LARGE CHANGE
+- [ ] builder pattern for app, so that can chain add_action and perform method calls
 - [ ] toml for default impl of Pixylene::import & Pixylene::new that includes palette
 - [ ] change-tree instead of change-stack, doesn't forget future changes after changes in undoed state
-- [ ] lower-level (elements) error literature
 *** MAYBE / MAYBE NOT
-**** SMALL CHANGE
+**** [0/1] SMALL CHANGE
 - [ ] camera has group of selected pixels (for visual mode)
 **** MEDIUM CHANGE
 **** LARGE CHANGE
