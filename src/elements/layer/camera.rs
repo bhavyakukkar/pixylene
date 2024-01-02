@@ -5,7 +5,8 @@ use crate::elements::layer::Scene;
 pub enum CameraPixel {
     Filled {
         brush: char,
-        color: Pixel
+        color: Pixel,
+        is_focus: bool,
     },
     Empty,
     OutOfScene
@@ -62,7 +63,7 @@ impl Camera {
     }
     pub fn render(&mut self, scene: &Scene) -> Vec<CameraPixel> {
         let mut grid: Vec<CameraPixel> = vec![CameraPixel::OutOfScene; (self.dim.x * self.dim.y) as usize];
-        let mut render_pixel = |i: isize, j: isize, x: isize, y: isize| {
+        let mut render_pixel = |i: isize, j: isize, x: isize, y: isize, is_focus: bool| {
             for mi in 0..self.mult*self.repeat.x {
                 for mj in 0..self.mult*self.repeat.y {
                     if (i+mi) < 0 || (i+mi) >= self.dim.x || (j+mj) < 0 || (j+mj) >= self.dim.y {
@@ -74,7 +75,8 @@ impl Camera {
                                 Some(pixel) => {
                                     grid[((i+mi)*self.dim.y + (j+mj)) as usize] = CameraPixel::Filled{
                                         brush: ' ',
-                                        color: pixel
+                                        color: pixel,
+                                        is_focus: is_focus,
                                     };
                                 },
                                 None => {
@@ -101,14 +103,14 @@ impl Camera {
             let mut j = mid.y;
             let mut y = focus.y;
             while j > -1*mult*repeat.y {
-                render_pixel(i, j, x, y);
+                render_pixel(i, j, x, y, i == mid.x && j == mid.y);
                 j -= mult*repeat.y;
                 y -= 1;
             }
             j = mid.y + mult*repeat.y;
             y = focus.y + 1;
             while j < dim.y {
-                render_pixel(i, j, x, y);
+                render_pixel(i, j, x, y, i == mid.x && j == mid.y);
                 j += mult*repeat.y;
                 y += 1;
             }
@@ -121,14 +123,14 @@ impl Camera {
             let mut j = mid.y;
             let mut y = focus.y;
             while j > -1*mult*repeat.y {
-                render_pixel(i, j, x, y);
+                render_pixel(i, j, x, y, false);
                 j -= mult*repeat.y;
                 y -= 1;
             }
             j = mid.y + mult*repeat.y;
             y = focus.y + 1;
             while j < dim.y {
-                render_pixel(i, j, x, y);
+                render_pixel(i, j, x, y, false);
                 j += mult*repeat.y;
                 y += 1;
             }
