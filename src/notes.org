@@ -1,13 +1,13 @@
 * TASKS [0/0]
 ** FUNCTIONAL [0/0]
-*** [6/14] NEXT
+*** [6/15] NEXT
 - [X] remove colored as dependency of libpyxlene
 - [3/3] (libpyxelene) palette has 2 methods to change specified color
   - [X] changeToExisting that takes index of other color in palette
   - [X] changeTo that takes direct hex value
   - [X] (libpyxelene) rectangularfill takes a palette_index too
 - [ ] layer error literature (Pixylene::export depends on Layer::merge returning 'can only merge >=2 layers')
-- [ ] Copy and Paste action is a cross-cutting concern (shouldn't lock the Action Manager)
+- [ ] action that lets you copy and paste pixels & doesn't lock the Action Manager
 - [ ] wrapper for Camera::render() so that a Scene doesn't need to be passed as parameter
 - [0/3] (pixylenetui)
   - [ ] defined palette contains 10 colors, foreground+background+eight defined colors
@@ -26,16 +26,20 @@
 - [X] new branch to implement savefile on Project
 *** AT SOME POINT IN TIME [0/0]
 **** [1/7] SMALL CHANGE
+- [ ] (pixylenetui) clear error after valid action has been entered and performed
 - [ ] perform_action returns VecDeque of Change's
 - [X] Png::open errors returned as debug strings similar to Png::save
 - [ ] Mode that lets you 'write' colors line-by-line, left-to-right
+- [ ] add_action may throw err if action-name already exists
 - [ ] Mode that lets you draw the same color for a continued camera motion and pixels draw at every new camera focus
 - [ ] Camera.get_focus() so that Camera.focus can be made private
 - [ ] RectangularOutline Action
 - [ ] Png to/fro Scene: fill more color-type/bit-depth combos
 - [ ] "Dependency Justification" for paper like done on crossterm's github
 **** [0/3] MEDIUM CHANGE
+- [ ] an action that can let you write "tags" to pixels on a layer and let you search for them later
 - [ ] savefiles be plaintext so people can use vcs on them
+- [ ] better error reporting when action fails, maybe debug fmt for actions too?
 - [ ] each layer has a blendmode (like in gimp)
 - [ ] camera should be able to set focus to coord not in scene, just not be able to set_pixel there
 **** [0/4] LARGE CHANGE
@@ -46,6 +50,7 @@
 **** [0/1] SMALL CHANGE
 - [ ] camera has group of selected pixels (for visual mode)
 **** MEDIUM CHANGE
+- [ ] ActionManager::perform() directly takes dyn Action
 **** LARGE CHANGE
 ** NON-FUNCTIONAL [0/0]
 *** NEXT [0/0]

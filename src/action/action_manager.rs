@@ -194,6 +194,8 @@ impl ActionManager {
                 }
             },
             Err(error) => {
+                if action.locks_scene() { self.scene_lock = None; }
+                if action.locks_camera() { self.camera_lock = None; }
                 return Err(ActionFailedToPerform(String::from(error)));
             }
         }
