@@ -1,5 +1,28 @@
 use crate::elements::common::{ Coord, Pixel };
 use crate::elements::layer::Scene;
+use crate::grammar::Decorate;
+
+#[derive(Debug)]
+enum CameraError {
+    NonNaturalDimensions(String),
+    FocusDoesntLieOnScene(String),
+    NonNaturalMultiplier(String),
+    NonNaturalRepeat(String),
+}
+use CameraError::*;
+
+impl std::fmt::Display for CameraError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        use CameraError::*;
+        let n = String::from("CameraError");
+        match self {
+            NonNaturalDimensions(desc) => Decorate::output(n, Some("NonNaturalDimensions"), Some(desc)),
+            FocusDoesntLieOnScene(desc) => Decorate::output(n, Some("FocusDoesLieOnScene"), Some(desc)),
+            NonNaturalMultiplier(desc) => Decorate::output(n, Some("NonNaturalMultiplier"), Some(desc)),
+            NonNaturalRepeat(desc) => Decorate::output(n, Some("NonNaturalRepeat"), Some(desc)),
+        }
+    }
+}
 
 #[derive(Copy, Clone)]
 pub enum CameraPixel {
@@ -21,23 +44,32 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(scene: &Scene, dim: Coord, focus: Coord, mult: isize, repeat: Coord) -> Result<Self, String> {
+    pub fn new(
+        scene: &Scene,
+        dimensions: Coord,
+        focus: Coord,
+        multiplier: isize,
+        camera_pixels_per_scene_pixel: Coord
+    ) -> Result<Self, CameraError> {
         let mut camera: Self = Self{ ..Default::default() };
-        camera.set_dim(dim)?;
+        camera.set_dim(dimensions)?;
         camera.set_focus(scene, focus)?;
-        camera.set_mult(mult)?;
-        camera.set_repeat(repeat)?;
+        camera.set_mult(multiplier)?;
+        camera.set_repeat(camera_pixels_per_scene_pixel)?;
         Ok(camera)
     }
-    pub fn set_dim(&mut self, new_dim: Coord) -> Result<(), String> {
+    pub fn set_dim(&mut self, new_dim: Coord) -> Result<(), CameraError> {
         if new_dim.x > 0 && new_dim.y > 0 {
             self.dim = new_dim;
             Ok(())
         } else {
-            Err(format!("cannot set camera's dimensions to negative coordinates, found: {}", new_dim))
+            Err(NonNaturalDimensions(format!(
+                "cannot set camera's dimensions to negative coordinates, found: {}",
+                new_dim
+            )))
         }
     }
-    pub fn set_focus(&mut self, scene: &Scene, new_focus: Coord) -> Result<(), String> {
+    pub fn set_focus(&mut self, scene: &Scene, new_focus: Coord) -> Result<(), CameraError> {
         if new_focus.x >= 0 && new_focus.x < scene.dim.x && new_focus.y >= 0 && new_focus.y < scene.dim.y {
             self.focus = new_focus;
             Ok(())
@@ -45,7 +77,7 @@ impl Camera {
             Err(format!("cannot set camera's focus to {} since image dimensions are {}", new_focus, scene.dim))
         }
     }
-    pub fn set_mult(&mut self, new_mult: isize) -> Result<(), String> {
+    pub fn set_mult(&mut self, new_mult: isize) -> Result<(), CameraError> {
         if new_mult > 0 {
             self.mult = new_mult;
             Ok(())
@@ -53,7 +85,7 @@ impl Camera {
             Err(format!("cannot set camera's multiplier to 0 or negative value, found {}", new_mult))
         }
     }
-    pub fn set_repeat(&mut self, new_repeat: Coord) -> Result<(), String> {
+    pub fn set_repeat(&mut self, new_repeat: Coord) -> Result<(), CameraError> {
         if new_repeat.x > 0 && new_repeat.y > 0 {
             self.repeat = new_repeat;
             Ok(())

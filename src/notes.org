@@ -7,6 +7,7 @@
   - [X] changeTo that takes direct hex value
   - [X] (libpyxelene) rectangularfill takes a palette_index too
 - [ ] layer error literature (Pixylene::export depends on Layer::merge returning 'can only merge >=2 layers')
+- [ ] Decorate::output()'s parameters need to be changed (String vs &static 'str)
 - [ ] action that lets you copy and paste pixels & doesn't lock the Action Manager
 - [ ] wrapper for Camera::render() so that a Scene doesn't need to be passed as parameter
 - [0/3] (pixylenetui)
