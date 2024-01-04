@@ -6,6 +6,8 @@
   - [X] changeToExisting that takes index of other color in palette
   - [X] changeTo that takes direct hex value
   - [X] (libpyxelene) rectangularfill takes a palette_index too
+- [ ] Change::Lock and Change::Unlock to signal to action-manager to lock, or
+      perform from an action that locks only causes action-manager to lock after Change::Start passed
 - [ ] layer error literature (Pixylene::export depends on Layer::merge returning 'can only merge >=2 layers')
 - [ ] Decorate::output()'s parameters need to be changed (String vs &static 'str)
 - [ ] action that lets you copy and paste pixels & doesn't lock the Action Manager
