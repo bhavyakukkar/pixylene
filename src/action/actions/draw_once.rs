@@ -3,7 +3,7 @@ use std::cell::RefCell;
 
 use crate::elements::common::{ Coord, Pixel };
 use crate::project::Project;
-use crate::action::{ Action, Change };
+use crate::action::{ Action, ActionError, Change };
 
 /* 
  * Draw Once
@@ -15,7 +15,7 @@ pub struct DrawOnce {
     pub color: Option<Pixel>,
 }
 impl Action for DrawOnce {
-    fn perform_action(&mut self, project: &mut Project) -> Result<Vec<Change>, String> {
+    fn perform_action(&mut self, project: &mut Project) -> Result<Vec<Change>, ActionError> {
         let old_pixel = project.layers[self.layer].scene.get_pixel(
             self.focus
         )?;

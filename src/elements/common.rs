@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Copy, Clone, Default, Savefile)]
+#[derive(Copy, Clone, Default, Debug, Savefile)]
 pub struct Coord { pub x: isize, pub y: isize }
 
 impl Coord {
@@ -32,22 +32,42 @@ pub struct Pixel {
     pub b: u8,  // b: blue (0-255)
     pub a: u8,  // a: alpha (0-255)
 }
+#[derive(Debug)]
+pub enum PixelError {
+    HexError(String, hex::FromHexError),
+    BytesLength(usize),
+}
+impl std::fmt::Display for PixelError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        use PixelError::*;
+        match self {
+            HexError(color, error) => write!(
+                f,
+                "failed to parse hex color '{}': {}",
+                color,
+                error,
+            ),
+            BytesLength(length) => write!(
+                f,
+                "invalid length of bytes for hex color, expecting 3 (RGB) or 4 (RGBA), found: {}",
+                length,
+            ),
+        }
+    }
+}
 
 impl Pixel {
-    pub fn from_hex(color_hex: String) -> Result<Pixel, String> {
-        match hex::decode(color_hex) {
+    pub fn from_hex(color_hex: String) -> Result<Pixel, PixelError> {
+        use PixelError::{ HexError, BytesLength };
+        match hex::decode(color_hex.clone()) {
             Ok(bytes) => {
                 match bytes.len() {
                     4 => Ok(Pixel{ r: bytes[0], g: bytes[1], b: bytes[2], a: bytes[3] }),
                     3 => Ok(Pixel{ r: bytes[0], g: bytes[1], b: bytes[2], a: 255 }),
-                    l => Err(format!(
-                            "Invalid length of bytes for hex triplet, expecting 3 (RGB) or 4 (RGBA), \
-                             found: {}",
-                             l
-                        )),
+                    l => Err(BytesLength(l)),
                 }
             },
-            Err(error) => Err(error.to_string())
+            Err(from_hex_error) => Err(HexError(color_hex, from_hex_error))
         }
     }
     pub fn empty() -> Pixel {

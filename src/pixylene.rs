@@ -1,14 +1,15 @@
 use crate::grammar::Decorate;
-use crate::elements::common::{ Coord, Pixel, BlendMode };
-use crate::elements::layer::{ Camera, Layer };
-use crate::elements::Palette;
+use crate::elements::{
+    common::{ Coord, Pixel, BlendMode },
+    layer::{ Scene, Camera, Layer },
+    palette::Palette,
+};
 use crate::file::{
     png_file::{ PngFile, PngFileError },
     project_file::{ ProjectFile, ProjectFileError }
 };
 use crate::project::Project;
-use crate::action::Action;
-use crate::action::action_manager::{ ActionManagerError, ActionManager };
+use crate::action::{ Action, action_manager::{ ActionManagerError, ActionManager } };
 
 use std::collections::HashMap;
 
@@ -21,26 +22,17 @@ pub enum PixyleneError {
     ActionManagerError(ActionManagerError),
     ProjectFileError(ProjectFileError),
     PngFileError(PngFileError),
+    NoLayersToExport,
 }
+//todo: fix
 impl std::fmt::Display for PixyleneError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use PixyleneError::*;
         match self {
-            ActionManagerError(error) => write!(f, "{}", Decorate::output(
-                "PixyleneError".to_string(),
-                None,
-                Some(error.to_string()),
-            )),
-            ProjectFileError(error) => write!(f, "{}", Decorate::output(
-                "PixyleneError".to_string(),
-                None,
-                Some(error.to_string()),
-            )),
-            PngFileError(error) => write!(f, "{}", Decorate::output(
-                "PixyleneError".to_string(),
-                None,
-                Some(error.to_string()),
-            )),
+            ActionManagerError(action_manager_error) => write!(f, "{}", action_manager_error),
+            ProjectFileError(project_file_error) => write!(f, "{}", project_file_error),
+            PngFileError(png_file_error) => write!(f, "{}", png_file_error),
+            NoLayersToExport => write!(f, "cannot export with 0 layers in the project"),
         }
     }
 }
@@ -75,7 +67,7 @@ impl Pixylene {
             Coord{ x: 8, y: 8 },
             1,
             Coord{ x: 1, y: 2 }
-            ).unwrap();
+        ).unwrap();
         let mut project = Project {
             layers: vec![Layer {
                 scene: scene,
@@ -101,21 +93,33 @@ impl Pixylene {
         })
     }
     pub fn export(&self, path: &str) -> Result<(), PixyleneError> {
-        let mut layer_refs: Vec<&Layer> = Vec::new();
-        for layer in &self.project.layers {
-            layer_refs.push(layer);
-        }
+        use PixyleneError::{ NoLayersToExport, PngFileError };
+        let merged_layer: Layer;
+
         match PngFile::from_scene(
-            //todo: remove unwrap when layer error literature
-            &Layer::merge(layer_refs, BlendMode::Normal).unwrap().scene,
+            match self.project.layers.len() {
+                0 => {
+                    return Err(NoLayersToExport);
+                },
+                1 => &self.project.layers[0].scene,
+                _ => {
+                    let mut layer_refs: Vec<&Layer> = Vec::new();
+                    for layer in &self.project.layers {
+                        layer_refs.push(layer);
+                    }
+                    merged_layer = Layer::merge(layer_refs, BlendMode::Normal).unwrap();
+                    &merged_layer.scene
+                },
+            },
+            //todo: use from Pixylene struct instead of defaults
             png::ColorType::Rgba,
             png::BitDepth::Eight,
         ) {
             Ok(png_file) => match png_file.write(path.to_string()) {
                 Ok(()) => Ok(()),
-                Err(error) => Err(PixyleneError::PngFileError(error)),
+                Err(png_file_error) => Err(PngFileError(png_file_error)),
             },
-            Err(error) => Err(PixyleneError::PngFileError(error)),
+            Err(png_file_error) => Err(PngFileError(png_file_error)),
         }
     }
     pub fn add_action(&mut self, action_name: &str, action: Box<dyn Action>) {

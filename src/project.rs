@@ -1,5 +1,4 @@
-use crate::elements::layer::{ Camera, Layer };
-use crate::elements::Palette;
+use crate::elements::{ palette::Palette, layer::{ Camera, Layer }};
 
 #[derive(Savefile)]
 pub struct Project {

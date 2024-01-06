@@ -1,13 +1,12 @@
 use crate::elements::common::{ Coord, Pixel };
 use crate::elements::layer::Scene;
-use crate::grammar::Decorate;
 
 #[derive(Debug)]
-enum CameraError {
-    NonNaturalDimensions(String),
-    FocusDoesntLieOnScene(String),
-    NonNaturalMultiplier(String),
-    NonNaturalRepeat(String),
+pub enum CameraError {
+    NonNaturalDimensions(Coord),
+    FocusDoesntLieOnScene(Coord, Coord),
+    NonNaturalMultiplier(isize),
+    NonNaturalRepeat(Coord),
 }
 use CameraError::*;
 
@@ -16,10 +15,30 @@ impl std::fmt::Display for CameraError {
         use CameraError::*;
         let n = String::from("CameraError");
         match self {
-            NonNaturalDimensions(desc) => Decorate::output(n, Some("NonNaturalDimensions"), Some(desc)),
-            FocusDoesntLieOnScene(desc) => Decorate::output(n, Some("FocusDoesLieOnScene"), Some(desc)),
-            NonNaturalMultiplier(desc) => Decorate::output(n, Some("NonNaturalMultiplier"), Some(desc)),
-            NonNaturalRepeat(desc) => Decorate::output(n, Some("NonNaturalRepeat"), Some(desc)),
+            NonNaturalDimensions(dim) => write!(
+                f,
+                "cannot set camera's dimensions to non-natural coordinates, found: {}",
+                dim,
+            ),
+            FocusDoesntLieOnScene(focus, scene_dim) => write!(
+                f,
+                "cannot set camera's focus to {} since image dimensions are {}, \
+                valid coordinates to focus on this scene lie between {} and {} (inclusive)",
+                focus,
+                scene_dim,
+                Coord{ x: 0, y: 0 },
+                scene_dim.add(Coord{ x: -1, y: -1 }),
+            ),
+            NonNaturalMultiplier(mult) => write!(
+                f,
+                "cannot set camera's multiplier to 0 or negative value, found {}",
+                mult,
+            ),
+            NonNaturalRepeat(repeat) => write!(
+                f,
+                "cannot set camera's repeat to non-natural coordinates, found: {}",
+                repeat,
+            ),
         }
     }
 }
@@ -63,18 +82,16 @@ impl Camera {
             self.dim = new_dim;
             Ok(())
         } else {
-            Err(NonNaturalDimensions(format!(
-                "cannot set camera's dimensions to negative coordinates, found: {}",
-                new_dim
-            )))
+            Err(NonNaturalDimensions(new_dim))
         }
     }
     pub fn set_focus(&mut self, scene: &Scene, new_focus: Coord) -> Result<(), CameraError> {
-        if new_focus.x >= 0 && new_focus.x < scene.dim.x && new_focus.y >= 0 && new_focus.y < scene.dim.y {
+        let scene_dim = scene.dim();
+        if new_focus.x >= 0 && new_focus.x < scene_dim.x && new_focus.y >= 0 && new_focus.y < scene_dim.y {
             self.focus = new_focus;
             Ok(())
         } else {
-            Err(format!("cannot set camera's focus to {} since image dimensions are {}", new_focus, scene.dim))
+            Err(FocusDoesntLieOnScene(new_focus, scene_dim))
         }
     }
     pub fn set_mult(&mut self, new_mult: isize) -> Result<(), CameraError> {
@@ -82,7 +99,7 @@ impl Camera {
             self.mult = new_mult;
             Ok(())
         } else {
-            Err(format!("cannot set camera's multiplier to 0 or negative value, found {}", new_mult))
+            Err(NonNaturalMultiplier(new_mult))
         }
     }
     pub fn set_repeat(&mut self, new_repeat: Coord) -> Result<(), CameraError> {
@@ -90,10 +107,11 @@ impl Camera {
             self.repeat = new_repeat;
             Ok(())
         } else {
-            Err(format!("cannot set camera's repeat to negative coordinates, found: {}", new_repeat))
+            Err(NonNaturalRepeat(new_repeat))
         }
     }
     pub fn render(&mut self, scene: &Scene) -> Vec<CameraPixel> {
+        let scene_dim = scene.dim();
         let mut grid: Vec<CameraPixel> = vec![CameraPixel::OutOfScene; (self.dim.x * self.dim.y) as usize];
         let mut render_pixel = |i: isize, j: isize, x: isize, y: isize, is_focus: bool| {
             for mi in 0..self.mult*self.repeat.x {

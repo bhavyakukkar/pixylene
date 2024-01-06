@@ -4,15 +4,14 @@ use std::cmp::{ min, max };
 
 use crate::elements::common::{ Coord, Pixel, BlendMode };
 use crate::project::Project;
-use crate::action::{ Action, Change };
-use crate::action::actions::draw_once::DrawOnce;
+use crate::action::{ Action, ActionError, Change, actions::draw_once::DrawOnce };
 
 pub struct RectangularFill {
     pub palette_index: usize,
     pub start_corner: Option<Coord>,
 }
 impl Action for RectangularFill {
-    fn perform_action(&mut self, project: &mut Project) -> Result<Vec<Change>, String> {
+    fn perform_action(&mut self, project: &mut Project) -> Result<Vec<Change>, ActionError> {
         if let Some(start_corner) = self.start_corner {
             let mut changes: Vec<Change> = Vec::new();
             changes.push(Change::Start);

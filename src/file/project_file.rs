@@ -5,23 +5,25 @@ use crate::project::Project;
 
 #[derive(Debug)]
 pub enum ProjectFileError {
-    LoadingError(SavefileError),
-    SavingError(SavefileError),
+    LoadingError(String, SavefileError),
+    SavingError(String, SavefileError),
 }
 impl std::fmt::Display for ProjectFileError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use ProjectFileError::*;
         match self {
-            LoadingError(error) => write!(f, "{}", Decorate::output(
-                "ProjectFileError".to_string(),
-                None,
-                Some(error.to_string()),
-            )),
-            SavingError(error) => write!(f, "{}", Decorate::output(
-                "ProjectFileError".to_string(),
-                None,
-                Some(error.to_string()),
-            )),
+            LoadingError(path, savefile_error) => write!(
+                f,
+                "failed to load project file '{}': {}",
+                path,
+                savefile_error,
+            ),
+            SavingError(path, savefile_error) => write!(
+                f,
+                "failed to save project file '{}': {}",
+                path,
+                savefile_error,
+            ),
         }
     }
 }
@@ -31,17 +33,17 @@ pub struct ProjectFile {
 }
 impl ProjectFile {
     pub fn read(&self, path: String) -> Result<Project, ProjectFileError> {
-        //version 0
-        match load_file(path, self.version) {
+        use ProjectFileError::{ LoadingError };
+        match load_file(path.clone(), self.version) {
             Ok(project) => Ok(project),
-            Err(error) => Err(ProjectFileError::LoadingError(error)),
+            Err(error) => Err(LoadingError(path, error)),
         }
     }
     pub fn write(&self, path: String, project: &Project) -> Result<(), ProjectFileError> {
-        //version 0
-        match save_file(path, self.version, project) {
+        use ProjectFileError::{ SavingError };
+        match save_file(path.clone(), self.version, project) {
             Ok(()) => Ok(()),
-            Err(error) => Err(ProjectFileError::SavingError(error)),
+            Err(error) => Err(SavingError(path, error)),
         }
     }
 }

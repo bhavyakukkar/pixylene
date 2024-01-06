@@ -1,4 +1,3 @@
-#![allow(warnings)]
 extern crate savefile;
 #[macro_use]
 extern crate savefile_derive;

@@ -3,15 +3,14 @@ use std::cell::RefCell;
 
 use crate::elements::common::{ Pixel, BlendMode };
 use crate::project::Project;
-use crate::action::{ Action, Change };
-use crate::action::actions::draw_once::DrawOnce;
+use crate::action::{ Action, ActionError, Change, actions::draw_once::DrawOnce };
 
 pub struct Pencil {
     pub palette_index: usize,
     pub new_pixel: Option<Option<Pixel>>,
 }
 impl Action for Pencil {
-    fn perform_action(&mut self, project: &mut Project) -> Result<Vec<Change>, String> {
+    fn perform_action(&mut self, project: &mut Project) -> Result<Vec<Change>, ActionError> {
         let mut changes: Vec<Change> = vec![Change::Start];
         let old_pixel = project.layers[project.selected_layer].scene.get_pixel(
             project.camera.focus

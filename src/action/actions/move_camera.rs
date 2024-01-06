@@ -3,13 +3,13 @@ use std::cell::RefCell;
 
 use crate::elements::common::Coord;
 use crate::project::Project;
-use crate::action::{ Action, Change };
+use crate::action::{ Action, ActionError, Change };
 
 pub struct MoveCamera {
     pub focus_move: Coord
 }
 impl Action for MoveCamera {
-    fn perform_action(&mut self, project: &mut Project) -> Result<Vec<Change>, String> {
+    fn perform_action(&mut self, project: &mut Project) -> Result<Vec<Change>, ActionError> {
         let old_focus = project.camera.focus;
         project.camera.set_focus(
             &project.layers[project.selected_layer].scene,
