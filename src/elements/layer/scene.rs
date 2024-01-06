@@ -46,7 +46,7 @@ pub struct Scene {
 impl Scene {
     pub fn new(dimensions: Coord, flattened_grid: Vec<Option<Pixel>>) -> Result<Self, SceneError> {
         use SceneError::{ DimensionMismatch };
-        if flattened_grid.len() as isize != (dimensions.x*dimensions.y) {
+        if flattened_grid.len() as isize != dimensions.area() {
             Err(DimensionMismatch(flattened_grid.len(), dimensions))
         }
         else {

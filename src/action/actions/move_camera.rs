@@ -12,8 +12,8 @@ impl Action for MoveCamera {
     fn perform_action(&mut self, project: &mut Project) -> Result<Vec<Change>, ActionError> {
         let old_focus = project.camera.focus;
         project.camera.set_focus(
-            &project.layers[project.selected_layer].scene,
-            old_focus.add(self.focus_move)
+            old_focus.add(self.focus_move),
+            project.layers[project.selected_layer].scene.dim(),
         )?;
         let mut move_camera_back = MoveCamera {
             focus_move: self.focus_move.multiply(Coord{ x: -1, y: -1 }),

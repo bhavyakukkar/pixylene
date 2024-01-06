@@ -4,7 +4,7 @@ use crate::elements::layer::Scene;
 #[derive(Debug)]
 pub enum CameraError {
     NonNaturalDimensions(Coord),
-    FocusDoesntLieOnScene(Coord, Coord),
+    FocusDoesntLieInDimensions(Coord, Coord),
     NonNaturalMultiplier(isize),
     NonNaturalRepeat(Coord),
 }
@@ -20,7 +20,7 @@ impl std::fmt::Display for CameraError {
                 "cannot set camera's dimensions to non-natural coordinates, found: {}",
                 dim,
             ),
-            FocusDoesntLieOnScene(focus, scene_dim) => write!(
+            FocusDoesntLieInDimensions(focus, scene_dim) => write!(
                 f,
                 "cannot set camera's focus to {} since image dimensions are {}, \
                 valid coordinates to focus on this scene lie between {} and {} (inclusive)",
@@ -64,15 +64,15 @@ pub struct Camera {
 
 impl Camera {
     pub fn new(
-        scene: &Scene,
-        dimensions: Coord,
+        camera_dimensions: Coord,
+        scene_dimensions: Coord,
         focus: Coord,
         multiplier: isize,
         camera_pixels_per_scene_pixel: Coord
     ) -> Result<Self, CameraError> {
         let mut camera: Self = Self{ ..Default::default() };
-        camera.set_dim(dimensions)?;
-        camera.set_focus(scene, focus)?;
+        camera.set_dim(camera_dimensions)?;
+        camera.set_focus(focus, scene_dimensions)?;
         camera.set_mult(multiplier)?;
         camera.set_repeat(camera_pixels_per_scene_pixel)?;
         Ok(camera)
@@ -85,13 +85,12 @@ impl Camera {
             Err(NonNaturalDimensions(new_dim))
         }
     }
-    pub fn set_focus(&mut self, scene: &Scene, new_focus: Coord) -> Result<(), CameraError> {
-        let scene_dim = scene.dim();
-        if new_focus.x >= 0 && new_focus.x < scene_dim.x && new_focus.y >= 0 && new_focus.y < scene_dim.y {
+    pub fn set_focus(&mut self, new_focus: Coord, dim: Coord) -> Result<(), CameraError> {
+        if new_focus.x >= 0 && new_focus.x < dim.x && new_focus.y >= 0 && new_focus.y < dim.y {
             self.focus = new_focus;
             Ok(())
         } else {
-            Err(FocusDoesntLieOnScene(new_focus, scene_dim))
+            Err(FocusDoesntLieInDimensions(new_focus, dim))
         }
     }
     pub fn set_mult(&mut self, new_mult: isize) -> Result<(), CameraError> {
@@ -110,7 +109,7 @@ impl Camera {
             Err(NonNaturalRepeat(new_repeat))
         }
     }
-    pub fn render(&mut self, scene: &Scene) -> Vec<CameraPixel> {
+    pub fn render_scene(&self, scene: &Scene) -> Vec<CameraPixel> {
         let scene_dim = scene.dim();
         let mut grid: Vec<CameraPixel> = vec![CameraPixel::OutOfScene; (self.dim.x * self.dim.y) as usize];
         let mut render_pixel = |i: isize, j: isize, x: isize, y: isize, is_focus: bool| {

@@ -1,7 +1,7 @@
 use crate::grammar::Decorate;
 use crate::elements::{
     common::{ Coord, Pixel, BlendMode },
-    layer::{ Scene, Camera, Layer },
+    layer::{ Scene, Camera, CameraPixel, Layer },
     palette::Palette,
 };
 use crate::file::{
@@ -62,16 +62,21 @@ impl Pixylene {
         let mut png_file = PngFile::read(String::from(path)).unwrap();
         let mut scene = png_file.to_scene().unwrap();
         let mut camera = Camera::new(
-            &scene,
-            Coord{ x: 36, y: 72 },
-            Coord{ x: 8, y: 8 },
+            Coord { x: 36, y: 72 }, //todo: dont use defalt
+            scene.dim(),
+            Coord {
+                x: scene.dim().x.checked_div(2).unwrap(),
+                y: scene.dim().y.checked_div(2).unwrap()
+            },
             1,
             Coord{ x: 1, y: 2 }
         ).unwrap();
         let mut project = Project {
+            dimensions: scene.dim(),
             layers: vec![Layer {
                 scene: scene,
-                opacity: 255
+                opacity: 255,
+                mute: false,
             }],
             selected_layer: 0,
             camera: camera,
@@ -97,20 +102,7 @@ impl Pixylene {
         let merged_layer: Layer;
 
         match PngFile::from_scene(
-            match self.project.layers.len() {
-                0 => {
-                    return Err(NoLayersToExport);
-                },
-                1 => &self.project.layers[0].scene,
-                _ => {
-                    let mut layer_refs: Vec<&Layer> = Vec::new();
-                    for layer in &self.project.layers {
-                        layer_refs.push(layer);
-                    }
-                    merged_layer = Layer::merge(layer_refs, BlendMode::Normal).unwrap();
-                    &merged_layer.scene
-                },
-            },
+            &self.project.merged_scene(),
             //todo: use from Pixylene struct instead of defaults
             png::ColorType::Rgba,
             png::BitDepth::Eight,
@@ -130,6 +122,9 @@ impl Pixylene {
             Ok(_) => Ok(()),
             Err(error) => Err(PixyleneError::ActionManagerError(error)),
         }
+    }
+    pub fn render(&self) -> Vec<CameraPixel> {
+        self.project.render()
     }
     pub fn undo(&mut self) -> Result<(), PixyleneError> {
         match self.action_manager.undo(&mut self.project) {

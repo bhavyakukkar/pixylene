@@ -1,6 +1,6 @@
 * TASKS [0/0]
 ** FUNCTIONAL [0/0]
-*** [8/18] NEXT
+*** [9/18] NEXT
 - [X] remove colored as dependency of libpyxlene
 - [3/3] (libpyxelene) palette has 2 methods to change specified color
   - [X] changeToExisting that takes index of other color in palette
@@ -8,8 +8,8 @@
   - [X] (libpyxelene) rectangularfill takes a palette_index too
 - [X] Change::Lock and Change::Unlock to signal to action-manager to lock, or perform from an action that locks only causes action-manager to lock after Change::Start passed
 - [X] failed action must enter a reset sequence. maybe make your life easier by making actions clonable?
-- [ ] layer error literature (Pixylene::export depends on Layer::merge returning 'can only merge >=2 layers')
-- [ ] Decorate::output()'s parameters need to be changed (String vs &static 'str)
+- [X] layer error literature (Pixylene::export depends on Layer::merge returning 'can only merge >=2 layers')
+- [ ] each layer has a blendmode (like in gimp) and tags are used at any time to render only tagged layers (dwm tags)
 - [ ] action that lets you copy and paste pixels & doesn't lock the Action Manager
 - [ ] wrapper for Camera::render() so that a Scene doesn't need to be passed as parameter
 - [0/3] (pixylenetui)
@@ -29,6 +29,7 @@
 - [X] new branch to implement savefile on Project
 *** AT SOME POINT IN TIME [0/0]
 **** [1/7] SMALL CHANGE
+- [ ] Decorate::output()'s parameters need to be changed (String vs &static 'str)
 - [ ] (pixylenetui) clear error after valid action has been entered and performed
 - [ ] perform_action returns VecDeque of Change's
 - [X] Png::open errors returned as debug strings similar to Png::save
@@ -43,7 +44,6 @@
 - [ ] an action that can let you write "tags" to pixels on a layer and let you search for them later
 - [ ] savefiles be plaintext so people can use vcs on them
 - [ ] better error reporting when action fails, maybe debug fmt for actions too?
-- [ ] each layer has a blendmode (like in gimp)
 - [ ] camera should be able to set focus to coord not in scene, just not be able to set_pixel there
 **** [0/4] LARGE CHANGE
 - [ ] builder pattern for app, so that can chain add_action and perform method calls
