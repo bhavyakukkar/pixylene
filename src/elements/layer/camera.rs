@@ -4,7 +4,6 @@ use crate::elements::layer::Scene;
 #[derive(Debug)]
 pub enum CameraError {
     NonNaturalDimensions(Coord),
-    FocusDoesntLieInDimensions(Coord, Coord),
     NonNaturalMultiplier(isize),
     NonNaturalRepeat(Coord),
 }
@@ -19,15 +18,6 @@ impl std::fmt::Display for CameraError {
                 f,
                 "cannot set camera's dimensions to non-natural coordinates, found: {}",
                 dim,
-            ),
-            FocusDoesntLieInDimensions(focus, scene_dim) => write!(
-                f,
-                "cannot set camera's focus to {} since image dimensions are {}, \
-                valid coordinates to focus on this scene lie between {} and {} (inclusive)",
-                focus,
-                scene_dim,
-                Coord{ x: 0, y: 0 },
-                scene_dim.add(Coord{ x: -1, y: -1 }),
             ),
             NonNaturalMultiplier(mult) => write!(
                 f,
@@ -46,18 +36,20 @@ impl std::fmt::Display for CameraError {
 #[derive(Copy, Clone)]
 pub enum CameraPixel {
     Filled {
+        scene_coord: Coord,
         brush: char,
         color: Pixel,
         is_focus: bool,
     },
-    Empty,
+    Empty {
+        scene_coord: Coord
+    },
     OutOfScene
 }
 
 #[derive(Default, Savefile)]
 pub struct Camera {
     pub dim: Coord,
-    pub focus: Coord,
     pub mult: isize,
     pub repeat: Coord,
 }
@@ -65,14 +57,11 @@ pub struct Camera {
 impl Camera {
     pub fn new(
         camera_dimensions: Coord,
-        scene_dimensions: Coord,
-        focus: Coord,
         multiplier: isize,
         camera_pixels_per_scene_pixel: Coord
     ) -> Result<Self, CameraError> {
         let mut camera: Self = Self{ ..Default::default() };
         camera.set_dim(camera_dimensions)?;
-        camera.set_focus(focus, scene_dimensions)?;
         camera.set_mult(multiplier)?;
         camera.set_repeat(camera_pixels_per_scene_pixel)?;
         Ok(camera)
@@ -83,14 +72,6 @@ impl Camera {
             Ok(())
         } else {
             Err(NonNaturalDimensions(new_dim))
-        }
-    }
-    pub fn set_focus(&mut self, new_focus: Coord, dim: Coord) -> Result<(), CameraError> {
-        if new_focus.x >= 0 && new_focus.x < dim.x && new_focus.y >= 0 && new_focus.y < dim.y {
-            self.focus = new_focus;
-            Ok(())
-        } else {
-            Err(FocusDoesntLieInDimensions(new_focus, dim))
         }
     }
     pub fn set_mult(&mut self, new_mult: isize) -> Result<(), CameraError> {
@@ -109,9 +90,12 @@ impl Camera {
             Err(NonNaturalRepeat(new_repeat))
         }
     }
-    pub fn render_scene(&self, scene: &Scene) -> Vec<CameraPixel> {
+    pub fn render_scene(&self, scene: &Scene, focus: Coord) -> Vec<CameraPixel> {
         let scene_dim = scene.dim();
-        let mut grid: Vec<CameraPixel> = vec![CameraPixel::OutOfScene; (self.dim.x * self.dim.y) as usize];
+        let mut grid: Vec<CameraPixel> = vec![
+            CameraPixel::OutOfScene;
+            (self.dim.x * self.dim.y) as usize
+        ];
         let mut render_pixel = |i: isize, j: isize, x: isize, y: isize, is_focus: bool| {
             for mi in 0..self.mult*self.repeat.x {
                 for mj in 0..self.mult*self.repeat.y {
@@ -123,13 +107,16 @@ impl Camera {
                             match pixel_maybe {
                                 Some(pixel) => {
                                     grid[((i+mi)*self.dim.y + (j+mj)) as usize] = CameraPixel::Filled{
+                                        scene_coord: Coord{x, y},
                                         brush: ' ',
                                         color: pixel,
                                         is_focus: is_focus,
                                     };
                                 },
                                 None => {
-                                    grid[((i+mi)*self.dim.y + (j+mj)) as usize] = CameraPixel::Empty;
+                                    grid[((i+mi)*self.dim.y + (j+mj)) as usize] = CameraPixel::Empty{
+                                        scene_coord: Coord{x, y},
+                                    };
                                 }
                             }
                         },
@@ -141,7 +128,6 @@ impl Camera {
             }
         };
         let dim = self.dim;
-        let focus = self.focus;
         let mult = self.mult;
         let repeat = self.repeat;
         let mid: Coord = Coord{ x: (dim.x - (mult*repeat.x))/2, y: (dim.y - (mult*repeat.y))/2 };

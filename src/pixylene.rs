@@ -8,7 +8,7 @@ use crate::file::{
     png_file::{ PngFile, PngFileError },
     project_file::{ ProjectFile, ProjectFileError }
 };
-use crate::project::Project;
+use crate::project::{ Project, Cursor };
 use crate::action::{ Action, action_manager::{ ActionManagerError, ActionManager } };
 
 use std::collections::HashMap;
@@ -61,26 +61,31 @@ impl Pixylene {
     pub fn import(path: &str) -> Result<Pixylene, PixyleneError> {
         let mut png_file = PngFile::read(String::from(path)).unwrap();
         let mut scene = png_file.to_scene().unwrap();
-        let mut camera = Camera::new(
-            Coord { x: 36, y: 72 }, //todo: dont use defalt
+        let dimensions = scene.dim();
+        let mut project = Project::new(
             scene.dim(),
-            Coord {
-                x: scene.dim().x.checked_div(2).unwrap(),
-                y: scene.dim().y.checked_div(2).unwrap()
-            },
-            1,
-            Coord{ x: 1, y: 2 }
-        ).unwrap();
-        let mut project = Project {
-            dimensions: scene.dim(),
-            layers: vec![Layer {
+            vec![Layer {
                 scene: scene,
                 opacity: 255,
                 mute: false,
             }],
-            selected_layer: 0,
-            camera: camera,
-            palette: Palette { colors: vec![
+            vec![Cursor {
+                layer: 0,
+                coord: Coord {
+                    x: dimensions.x.checked_div(2).unwrap(),
+                    y: dimensions.y.checked_div(2).unwrap()
+                },
+            }],
+            Camera::new(
+                Coord { x: 36, y: 72 }, //todo: dont use default
+                1,
+                Coord{ x: 1, y: 2 }
+            ).unwrap(),
+            Coord {
+                x: dimensions.x.checked_div(2).unwrap(),
+                y: dimensions.y.checked_div(2).unwrap()
+            },
+            Palette { colors: vec![
                 Some(Pixel{r: 81, g: 87, b: 109, a: 255}),
                 Some(Pixel{r: 231, g: 130, b: 132, a: 255}),
                 Some(Pixel{r: 166, g: 209, b: 137, a: 255}),
@@ -90,7 +95,7 @@ impl Pixylene {
                 Some(Pixel{r: 129, g: 200, b: 190, a: 255}),
                 Some(Pixel{r: 181, g: 191, b: 226, a: 255}),
             ] },
-        };
+        ).unwrap();
 
         Ok(Pixylene {
             project: project,

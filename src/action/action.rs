@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use crate::project::Project;
+use crate::project::{ Project, ProjectError, Cursor };
 use crate::elements::{ palette::PaletteError, layer::{ SceneError, CameraError } };
 
 #[derive(Debug)]
@@ -95,6 +95,8 @@ pub enum ActionError {
     CameraError(CameraError),
     PaletteError(PaletteError),
     ChangeError(ChangeError),
+    ProjectError(ProjectError),
+    OnlyNCursorsSupported(String, usize),
 }
 impl From<SceneError> for ActionError {
     fn from(item: SceneError) -> ActionError { ActionError::SceneError(item) }
@@ -108,6 +110,9 @@ impl From<PaletteError> for ActionError {
 impl From<ChangeError> for ActionError {
     fn from(item: ChangeError) -> ActionError { ActionError::ChangeError(item) }
 }
+impl From<ProjectError> for ActionError {
+    fn from(item: ProjectError) -> ActionError { ActionError::ProjectError(item) }
+}
 impl std::fmt::Display for ActionError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use ActionError::*;
@@ -116,6 +121,13 @@ impl std::fmt::Display for ActionError {
             CameraError(camera_error) => write!(f, "{}", camera_error),
             PaletteError(palette_error) => write!(f, "{}", palette_error),
             ChangeError(change_error) => write!(f, "{}", change_error),
+            ProjectError(project_error) => write!(f, "{}", project_error),
+            OnlyNCursorsSupported(supported, supplied) => write!(
+                f,
+                "this action only supports {} cursor/s, found {}",
+                supported,
+                supplied,
+            ),
         }
     }
 }

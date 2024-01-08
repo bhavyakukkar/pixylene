@@ -1,6 +1,7 @@
-* TASKS [0/0]
-** FUNCTIONAL [0/0]
-*** [9/18] NEXT
+* TASKS
+#+description: Tasks that need to be done
+** FUNCTIONAL
+*** [11/23] NEXT
 - [X] remove colored as dependency of libpyxlene
 - [3/3] (libpyxelene) palette has 2 methods to change specified color
   - [X] changeToExisting that takes index of other color in palette
@@ -9,6 +10,17 @@
 - [X] Change::Lock and Change::Unlock to signal to action-manager to lock, or perform from an action that locks only causes action-manager to lock after Change::Start passed
 - [X] failed action must enter a reset sequence. maybe make your life easier by making actions clonable?
 - [X] layer error literature (Pixylene::export depends on Layer::merge returning 'can only merge >=2 layers')
+- [2/2] Camera has vector of pixels called 'selection', empty by default
+  - [X] Focus already corresponds to pixel on the scene grid and not on the CameraPixel grid, move focus out of Camera (and call it cursor) and into Project, which is passed to Camera::render_scene as a parameter
+  - [X] New attribute selection is a vector of coords corresponding to Scene pixels
+- [X] DrawAllCursors uses DrawOnce in the same way MoveAllCursors uses MoveOneCursor
+- [X] Pencil is then a wrapper around DrawAllCursors to use project's palette-index for color
+- [1/2] PREVIEW MODE
+  - [X] view with merged_scene() ["Preview" Mode] is fundamentally different from a view of a single layer
+  - [ ] implement something to include new ProjectPixel in pixylenetui/main
+- [ ] ActionManager needs to detect overwriting of undo-history and cascade all changes after the overwriting change
+- [ ] restructure modules. layer, camera, scene & palette all are composed children of Project, so have them in a project module
+- [ ] wrappers/builders for each action, since, for eg., rectangularfill needs its struct to initialize with start_corner = None, and start_corner is not a parameter that user decide like the palette_index parameter
 - [ ] each layer has a blendmode (like in gimp) and tags are used at any time to render only tagged layers (dwm tags)
 - [ ] action that lets you copy and paste pixels & doesn't lock the Action Manager
 - [ ] wrapper for Camera::render() so that a Scene doesn't need to be passed as parameter
@@ -27,8 +39,8 @@
 - [ ] Pixylene::empty
 - [X] Action:redo because you did a bad job on Action:undo
 - [X] new branch to implement savefile on Project
-*** AT SOME POINT IN TIME [0/0]
-**** [1/7] SMALL CHANGE
+*** AT SOME POINT IN TIME
+**** [1/11] SMALL CHANGE
 - [ ] Decorate::output()'s parameters need to be changed (String vs &static 'str)
 - [ ] (pixylenetui) clear error after valid action has been entered and performed
 - [ ] perform_action returns VecDeque of Change's
@@ -40,25 +52,39 @@
 - [ ] RectangularOutline Action
 - [ ] Png to/fro Scene: fill more color-type/bit-depth combos
 - [ ] "Dependency Justification" for paper like done on crossterm's github
-**** [0/3] MEDIUM CHANGE
+**** [0/4] MEDIUM CHANGE
 - [ ] an action that can let you write "tags" to pixels on a layer and let you search for them later
 - [ ] savefiles be plaintext so people can use vcs on them
 - [ ] better error reporting when action fails, maybe debug fmt for actions too?
 - [ ] camera should be able to set focus to coord not in scene, just not be able to set_pixel there
-**** [0/4] LARGE CHANGE
+**** [0/3] LARGE CHANGE
 - [ ] builder pattern for app, so that can chain add_action and perform method calls
 - [ ] toml for default impl of Pixylene::import & Pixylene::new that includes palette
 - [ ] change-tree instead of change-stack, doesn't forget future changes after changes in undoed state
 *** MAYBE / MAYBE NOT
 **** [0/1] SMALL CHANGE
 - [ ] camera has group of selected pixels (for visual mode)
-**** MEDIUM CHANGE
+**** [0/1] MEDIUM CHANGE
 - [ ] ActionManager::perform() directly takes dyn Action
-**** LARGE CHANGE
+**** [0/0] LARGE CHANGE
 ** NON-FUNCTIONAL [0/0]
 *** NEXT [0/0]
 *** AT SOME POINT IN TIME [0/0]
 **** BIG CHANGE [0/1]
+* PROS & CONS
+#+description: I weight the pros and cons for a feature or decision here
+- [X] SELECTIONS MANAGED BY AN ACTION vs CAMERA HAS VECTOR OF PIXELS CALLED SELECTION
+  1. SELECTIONS MANAGED BY AN ACTION
+     _Pros:_
+     + no extra features need to be implemented
+     _Cons:_
+     + simple tasks like copy & paste are usually native behavior
+     + performing action for each pixel in selection will be really difficult since requires selection Action to perform unknown runtime chosen per-pixel Action [ deal-breaker ]
+  2. CAMERA HAS VECTOR OF PIXELS CALLED SELECTION
+     _Pros:_
+     _Cons:_
+     + medium feature integration
+     + selections might be native, copy and paste still needs an action but smaller
 * STRUCTURE
 ** MODES
 InCamera

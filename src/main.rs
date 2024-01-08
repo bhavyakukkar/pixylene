@@ -26,7 +26,7 @@ impl PixyleneDisplay for Pixylene {
         for i in 0..self.project.camera.dim.x {
             for j in 0..self.project.camera.dim.y {
                 match grid[i as usize*self.project.camera.dim.y as usize + j as usize] {
-                    CameraPixel::Filled{ brush, color } => {
+                    CameraPixel::Filled{ scene_coord, brush, color } => {
                         if color.a != 255 {
                             panic!("alpha not 255");
                         }

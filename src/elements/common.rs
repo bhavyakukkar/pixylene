@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Copy, Clone, Default, Debug, Savefile)]
+#[derive(Copy, Clone, PartialEq, Default, Debug, Savefile)]
 pub struct Coord { pub x: isize, pub y: isize }
 
 impl Coord {
@@ -17,7 +17,6 @@ impl Coord {
         Self{ x: self.x * coord.x, y: self.y * coord.y }
     }
 }
-
 impl fmt::Display for Coord {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "({},{})", self.x, self.y)
