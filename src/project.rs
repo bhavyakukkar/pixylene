@@ -169,7 +169,7 @@ impl Project {
                 has_cursor: match camera_pixel {
                     CameraPixel::Filled{ scene_coord, .. } |
                     CameraPixel::Empty{ scene_coord } => {
-                        self.is_coord_in_cursors(scene_coord)
+                        self.in_cursors(Cursor{ layer: layer_index, coord: scene_coord})
                     },
                     _ => { false }
                 }
@@ -180,9 +180,9 @@ impl Project {
     pub fn render(&self) -> Vec<CameraPixel> {
         self.camera.render_scene(&self.merged_scene(), self.focus)
     }
-    fn is_coord_in_cursors(&self, coord: Coord) -> bool {
-        for cursor in &self.cursors {
-            if cursor.coord == coord {
+    fn in_cursors(&self, cursor: Cursor) -> bool {
+        for ex_cursor in &self.cursors {
+            if ex_cursor.coord == cursor.coord && ex_cursor.layer == cursor.layer {
                 return true;
             }
         }
