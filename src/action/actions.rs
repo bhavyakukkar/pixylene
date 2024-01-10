@@ -8,5 +8,5 @@ pub mod change_camera_repeat;
 pub mod draw_at_one_cursor;
 pub mod draw_at_all_cursors;
 pub mod pencil;
-//pub mod rectangular_fill;
+pub mod rectangular_fill;
 //pub mod copy_and_paste;

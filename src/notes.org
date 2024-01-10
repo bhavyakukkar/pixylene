@@ -1,7 +1,9 @@
+#+title: Pixylene Notes
+#+author: Bhavya Kukkar
 * TASKS
 #+description: Tasks that need to be done
 ** FUNCTIONAL
-*** [11/23] NEXT
+*** [14/26] NEXT
 - [X] remove colored as dependency of libpyxlene
 - [3/3] (libpyxelene) palette has 2 methods to change specified color
   - [X] changeToExisting that takes index of other color in palette
@@ -15,24 +17,28 @@
   - [X] New attribute selection is a vector of coords corresponding to Scene pixels
 - [X] DrawAllCursors uses DrawOnce in the same way MoveAllCursors uses MoveOneCursor
 - [X] Pencil is then a wrapper around DrawAllCursors to use project's palette-index for color
-- [1/2] PREVIEW MODE
+- [2/2] PREVIEW MODE
   - [X] view with merged_scene() ["Preview" Mode] is fundamentally different from a view of a single layer
-  - [ ] implement something to include new ProjectPixel in pixylenetui/main
+  - [X] implement something to include new ProjectPixel in pixylenetui/main
+- [ ] action "add_cursor_at_focus()"
+- [ ] layer selection uses 1-based indexing
 - [ ] ActionManager needs to detect overwriting of undo-history and cascade all changes after the overwriting change
+- [ ] some kind of opacity control setting for pencils
+- [ ] use more iterators: impl iterator for scene, return of render_scene and return of render_layer
+- [ ] fix warnings
 - [ ] restructure modules. layer, camera, scene & palette all are composed children of Project, so have them in a project module
 - [ ] wrappers/builders for each action, since, for eg., rectangularfill needs its struct to initialize with start_corner = None, and start_corner is not a parameter that user decide like the palette_index parameter
-- [ ] each layer has a blendmode (like in gimp) and tags are used at any time to render only tagged layers (dwm tags)
+- [ ] each layer has a blendmode (like in gimp)
+- [X] each layer has a tag that are used at any time to render only tagged layers (dwm tags)
 - [ ] action that lets you copy and paste pixels & doesn't lock the Action Manager
-- [ ] wrapper for Camera::render() so that a Scene doesn't need to be passed as parameter
+- [X] wrapper for Camera::render() so that a Scene doesn't need to be passed as parameter
 - [0/3] (pixylenetui)
   - [ ] defined palette contains 10 colors, foreground+background+eight defined colors
   - [ ] switchForeground is a wrapper that performs Palette.changeTo(1, <input>)
   - [ ] switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
 - [ ] project is immutable, scene-locking actions receive the mutable scene but can use the immutable project for things like Project.getFocus(), similar for camera-locking actions
-- [ ] Action::perform_action returns Changes::Single or Change::Multiple
-- [ ] ActionManager::undo returns UndoError
+- [X] ActionManager::undo returns UndoError
 - [X] undo behavior as written on piece of paper
-- [ ] get rid of camera.repeat, something of that nature should be managed by PixyleneDisplay
 - [ ] Actions that work instantly like MoveCameraUp are fundamentally different from actions that require input like SetPaletteColor
 - [X] Actions in different directory actions/
 - [X] Pencil action that just does DrawOnce with blending
@@ -40,39 +46,42 @@
 - [X] Action:redo because you did a bad job on Action:undo
 - [X] new branch to implement savefile on Project
 *** AT SOME POINT IN TIME
-**** [1/11] SMALL CHANGE
-- [ ] Decorate::output()'s parameters need to be changed (String vs &static 'str)
+**** [2/11] SMALL CHANGE
 - [ ] (pixylenetui) clear error after valid action has been entered and performed
 - [ ] perform_action returns VecDeque of Change's
 - [X] Png::open errors returned as debug strings similar to Png::save
-- [ ] Mode that lets you 'write' colors line-by-line, left-to-right
 - [ ] add_action may throw err if action-name already exists
-- [ ] Mode that lets you draw the same color for a continued camera motion and pixels draw at every new camera focus
-- [ ] Camera.get_focus() so that Camera.focus can be made private
+- [ ] use Decorate::output() again & fix parameters (String vs &static 'str)
+- [X] Camera.get_focus() so that Camera.focus can be made private
 - [ ] RectangularOutline Action
+- [ ] Mode that lets you 'write' colors line-by-line, left-to-right
+- [ ] Mode that lets you draw the same color for a continued camera motion and pixels draw at every new camera focus
 - [ ] Png to/fro Scene: fill more color-type/bit-depth combos
 - [ ] "Dependency Justification" for paper like done on crossterm's github
-**** [0/4] MEDIUM CHANGE
-- [ ] an action that can let you write "tags" to pixels on a layer and let you search for them later
-- [ ] savefiles be plaintext so people can use vcs on them
+**** [1/4] MEDIUM CHANGE
+- [ ] metadata field on project that lets you write "tags" to pixels on a layer or directly to layer and lets you search for them later
+- [ ] projects can also be filed in plaintext so people can use vcs on them
 - [ ] better error reporting when action fails, maybe debug fmt for actions too?
-- [ ] camera should be able to set focus to coord not in scene, just not be able to set_pixel there
+- [X] camera should be able to set focus to coord not in scene, just not be able to set_pixel there
 **** [0/3] LARGE CHANGE
-- [ ] builder pattern for app, so that can chain add_action and perform method calls
-- [ ] toml for default impl of Pixylene::import & Pixylene::new that includes palette
 - [ ] change-tree instead of change-stack, doesn't forget future changes after changes in undoed state
+- [ ] toml for default impl of Pixylene::import & Pixylene::new that includes palette
+- [ ] builder pattern for app, so that can chain add_action and perform method calls
 *** MAYBE / MAYBE NOT
-**** [0/1] SMALL CHANGE
-- [ ] camera has group of selected pixels (for visual mode)
-**** [0/1] MEDIUM CHANGE
-- [ ] ActionManager::perform() directly takes dyn Action
+**** [1/2] SMALL CHANGE
+- [X] camera has group of selected pixels (for visual mode)
+- [ ] get rid of camera.repeat, something of that nature should be managed by PixyleneDisplay
+**** [0/2] MEDIUM CHANGE
+- [ ] alternative fn ActionManager::perform_directly() directly takes dyn Action
+- [ ] Action::perform_action returns Changes::Single or Change::Multiple
 **** [0/0] LARGE CHANGE
-** NON-FUNCTIONAL [0/0]
-*** NEXT [0/0]
-*** AT SOME POINT IN TIME [0/0]
-**** BIG CHANGE [0/1]
+** NON-FUNCTIONAL
+* PRESENTATION MATERIAL
+** PRESENTATION 3
+Implementation:
+- still need to iron out the undo/redo mechanism, and i hope to add an undo-tree functionality
 * PROS & CONS
-#+description: I weight the pros and cons for a feature or decision here
+#+description: I weigh the pros and cons for a feature or decision here
 - [X] SELECTIONS MANAGED BY AN ACTION vs CAMERA HAS VECTOR OF PIXELS CALLED SELECTION
   1. SELECTIONS MANAGED BY AN ACTION
      _Pros:_
@@ -85,11 +94,40 @@
      _Cons:_
      + medium feature integration
      + selections might be native, copy and paste still needs an action but smaller
+- [X] LAYER INDEX ARE 1-BASE INDEXED
+  _Pros:_
+  - index 0 can denote all layers, in Preview mode, 0 can be used to preview project
+  - dwm does it too (actually every wm)
+  _Cons:_
+  - none
+- [X] LAYER NEW/DELETE ARE PROJECT METHODS INSTEAD OF ACTIONS
+  _Pros:_
+  _Cons:_
+  - cannot be undoed
+  - more difficult to implement
+
 * STRUCTURE
+#+description: I document the structure of my application here
 ** MODES
-InCamera
-SettingLayer
-Setting
+*** NORMAL
+cc -> clear cursors (now no-cursor errors)
+cl -> add all pixels on layer to cursor
+ca -> add all pixels in project to
+
+*** PREVIEW
+0 -> entire project
+i -> layer i
+default -> last open or entire project is last open corresponds to deleted layer
+
+*** GRID SELECTION
+add cursors by dragging second corner of rectangle
+
+*** POINT SELECTION
+add cursors one by one by navigating and hitting Enter
+
+** STATUSLINE
+*([mode]) ([layer 1 of 5]) ([2+8 palette colors]) ([current-action] [scene-locked?] [camera-locked?]) ([3 cursors])*
+
 ** STATE
 |               | NoProjectOpen | ProjectOpen                         |
 |---------------+---------------+-------------------------------------|
@@ -97,22 +135,16 @@ Setting
 | ProjectOpen   | close_project |                                     |
 |               |               |                                     |
 
-- Action on performing may be complete/incomplete
-- Complete action on performing will return a new reverted Action
-- Incomplete action on performing will return nothing
-
-(or)
-
-- Action on performing may be complete/incomplete
-- Complete action on performing will become the reverted Action and return done
-- Incomplete action on performing will return 
-
-
-
-- value of action type will get created but wont be destroyed until it returns a Change::End or Change::StartEnd
+** OFFICIAL DOCUMENTATION
+Actions are of two types:
+    1. Primitive:
+    2. Complex:
 
 ** SESSION
-- project-path
+- Option<last_previewed_layer>
+- Option<imported_png_path>
+- Option<opened_project_path>
+
 ** COMMANDS
 | Command              | Arguments    | Session                                                           | Done |
 |----------------------+--------------+-------------------------------------------------------------------+------|
