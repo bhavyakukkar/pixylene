@@ -59,6 +59,7 @@
 - [ ] Png to/fro Scene: fill more color-type/bit-depth combos
 - [ ] "Dependency Justification" for paper like done on crossterm's github
 **** [1/4] MEDIUM CHANGE
+- [ ] complex actions that perform multiple smaller actions, when one of those smaller actions fail, should take the changes of the successfull and perform them to revert them back
 - [ ] metadata field on project that lets you write "tags" to pixels on a layer or directly to layer and lets you search for them later
 - [ ] projects can also be filed in plaintext so people can use vcs on them
 - [ ] better error reporting when action fails, maybe debug fmt for actions too?

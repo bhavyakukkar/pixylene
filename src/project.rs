@@ -62,7 +62,7 @@ impl std::fmt::Display for ProjectError {
     }
 }
 
-#[derive(Clone, Copy, Debug, Savefile)]
+#[derive(Clone, Copy, PartialEq, Debug, Savefile)]
 pub struct Cursor {
     pub layer: usize,
     pub coord: Coord,

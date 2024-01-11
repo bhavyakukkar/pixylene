@@ -9,4 +9,7 @@ pub mod draw_at_one_cursor;
 pub mod draw_at_all_cursors;
 pub mod pencil;
 pub mod rectangular_fill;
-//pub mod copy_and_paste;
+pub mod copy_paste_all_cursors;
+pub mod toggle_cursor_at_focus;
+pub mod toggle_cursor_at_cursor;
+
