@@ -79,7 +79,7 @@ pub struct Project {
     pub layers: Vec<Layer>,
     pub cursors: Vec<Cursor>,
     pub camera: Camera,
-    pub focus: Coord,
+    pub focus: Cursor,
     pub palette: Palette,
 }
 
@@ -89,7 +89,7 @@ impl Project {
         layers: Vec<Layer>,
         cursors: Vec<Cursor>,
         camera: Camera,
-        focus: Coord,
+        focus: Cursor,
         palette: Palette
     ) -> Result<Project, ProjectError> {
         use ProjectError::{ NonNaturalDimensions, LayerDimensionsMismatch, MultipleCursorsUnderDevelopment };
@@ -102,9 +102,11 @@ impl Project {
                 return Err(LayerDimensionsMismatch(index, layer_dim, dimensions));
             }
         }
+        /*
         if cursors.len() > 1 {
             return Err(MultipleCursorsUnderDevelopment);
         }
+        */
         let mut project = Project {
             dimensions: dimensions,
             layers: layers,
@@ -154,22 +156,22 @@ impl Project {
             None => Err(CursorIndexOutOfBounds(index, self.cursors.len())),
         }
     }
-    pub fn render_layer(&self, layer_index: usize) -> Result<Vec<ProjectPixel>, ProjectError> {
+    pub fn render_layer(&self) -> Result<Vec<ProjectPixel>, ProjectError> {
         use ProjectError::{ LayerOutOfBounds };
         let mut project_pixels: Vec<ProjectPixel> = Vec::new();
         for camera_pixel in self.camera.render_scene(
             &self.layers
-                .get(layer_index)
-                .ok_or(LayerOutOfBounds(layer_index, self.layers.len()))?
+                .get(self.focus.layer)
+                .ok_or(LayerOutOfBounds(self.focus.layer, self.layers.len()))?
                 .scene,
-            self.focus
+            self.focus.coord
         ) {
             project_pixels.push(ProjectPixel {
                 camera_pixel,
                 has_cursor: match camera_pixel {
                     CameraPixel::Filled{ scene_coord, .. } |
                     CameraPixel::Empty{ scene_coord } => {
-                        self.in_cursors(Cursor{ layer: layer_index, coord: scene_coord})
+                        self.in_cursors(Cursor{ layer: self.focus.layer, coord: scene_coord})
                     },
                     _ => { false }
                 }
@@ -178,7 +180,7 @@ impl Project {
         Ok(project_pixels)
     }
     pub fn render(&self) -> Vec<CameraPixel> {
-        self.camera.render_scene(&self.merged_scene(), self.focus)
+        self.camera.render_scene(&self.merged_scene(), self.focus.coord)
     }
     fn in_cursors(&self, cursor: Cursor) -> bool {
         for ex_cursor in &self.cursors {

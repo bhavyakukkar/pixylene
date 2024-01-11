@@ -71,6 +71,7 @@
 **** [1/2] SMALL CHANGE
 - [X] camera has group of selected pixels (for visual mode)
 - [ ] get rid of camera.repeat, something of that nature should be managed by PixyleneDisplay
+- [ ] validation to not let Project.focus.layer exceed number of layers in the project
 **** [0/2] MEDIUM CHANGE
 - [ ] alternative fn ActionManager::perform_directly() directly takes dyn Action
 - [ ] Action::perform_action returns Changes::Single or Change::Multiple

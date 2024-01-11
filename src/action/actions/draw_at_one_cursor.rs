@@ -6,7 +6,7 @@ use crate::project::{ Project, Cursor };
 use crate::action::{ Action, ActionError, Change };
 
 /* 
- * Draw At Once Cursor
+ * Draw At One Cursor
  * An action that draws once at the specified `cursor with the specified `color
  *
  */ 

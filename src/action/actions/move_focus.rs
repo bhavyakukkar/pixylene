@@ -10,7 +10,7 @@ pub struct MoveFocus {
 }
 impl Action for MoveFocus {
     fn perform_action(&mut self, project: &mut Project) -> Result<Vec<Change>, ActionError> {
-        project.focus = project.focus.add(self.displacement);
+        project.focus.coord = project.focus.coord.add(self.displacement);
         let mut move_focus_back = MoveFocus {
             displacement: self.displacement.multiply(Coord{ x: -1, y: -1 }),
         };

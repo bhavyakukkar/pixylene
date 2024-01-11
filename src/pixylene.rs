@@ -61,6 +61,7 @@ impl Pixylene {
     pub fn import(path: &str) -> Result<Pixylene, PixyleneError> {
         let mut png_file = PngFile::read(String::from(path)).unwrap();
         let mut scene = png_file.to_scene().unwrap();
+        let mut scene2 = Scene::new(scene.dim(), vec![None; scene.dim().area().try_into().unwrap()]).unwrap();
         let dimensions = scene.dim();
         let mut project = Project::new(
             scene.dim(),
@@ -68,12 +69,16 @@ impl Pixylene {
                 scene: scene,
                 opacity: 255,
                 mute: false,
+            }, Layer {
+                scene: scene2,
+                opacity: 255,
+                mute: false,
             }],
             vec![Cursor {
                 layer: 0,
                 coord: Coord {
                     x: dimensions.x.checked_div(2).unwrap(),
-                    y: dimensions.y.checked_div(2).unwrap()
+                    y: dimensions.y.checked_div(2).unwrap(),
                 },
             }],
             Camera::new(
@@ -81,9 +86,12 @@ impl Pixylene {
                 1,
                 Coord{ x: 1, y: 2 }
             ).unwrap(),
-            Coord {
-                x: dimensions.x.checked_div(2).unwrap(),
-                y: dimensions.y.checked_div(2).unwrap()
+            Cursor {
+                layer: 0,
+                coord: Coord {
+                    x: dimensions.x.checked_div(2).unwrap(),
+                    y: dimensions.y.checked_div(2).unwrap(),
+                },
             },
             Palette { colors: vec![
                 Some(Pixel{r: 81, g: 87, b: 109, a: 255}),

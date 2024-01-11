@@ -26,7 +26,7 @@ impl Action for Pencil {
                     Pixel::get_certain(
                         project
                             .layers[project.cursors[index].layer]
-                            .scene.get_pixel(project.focus)?
+                            .scene.get_pixel(project.cursors[index].coord)?
                     )
                 )),
             }).perform_action(project) {
