@@ -3,7 +3,7 @@
 * TASKS
 #+description: Tasks that need to be done
 ** FUNCTIONAL
-*** [14/26] NEXT
+*** [15/27] NEXT
 - [X] remove colored as dependency of libpyxlene
 - [3/3] (libpyxelene) palette has 2 methods to change specified color
   - [X] changeToExisting that takes index of other color in palette
@@ -20,7 +20,7 @@
 - [2/2] PREVIEW MODE
   - [X] view with merged_scene() ["Preview" Mode] is fundamentally different from a view of a single layer
   - [X] implement something to include new ProjectPixel in pixylenetui/main
-- [ ] action "add_cursor_at_focus()"
+- [X] action "add_cursor_at_focus()"
 - [ ] layer selection uses 1-based indexing
 - [ ] ActionManager needs to detect overwriting of undo-history and cascade all changes after the overwriting change
 - [ ] some kind of opacity control setting for pencils
@@ -59,6 +59,7 @@
 - [ ] Png to/fro Scene: fill more color-type/bit-depth combos
 - [ ] "Dependency Justification" for paper like done on crossterm's github
 **** [1/4] MEDIUM CHANGE
+- [ ] all project fields that have constraints should be private, for eg., project.cursors must be private, however, project.focus can be public (according to the system now at least). at the moment ToggleCursorAtFocus is able to create a cursor outside of the scene which bugs out every single action
 - [ ] complex actions that perform multiple smaller actions, when one of those smaller actions fail, should take the changes of the successfull and perform them to revert them back
 - [ ] metadata field on project that lets you write "tags" to pixels on a layer or directly to layer and lets you search for them later
 - [ ] projects can also be filed in plaintext so people can use vcs on them
