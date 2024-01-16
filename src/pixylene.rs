@@ -37,6 +37,10 @@ impl std::fmt::Display for PixyleneError {
     }
 }
 
+pub struct PixyleneDefaults {
+    pub camera_dim: Coord,
+}
+
 pub struct Pixylene {
     pub project: Project,
     pub action_manager: ActionManager,
@@ -58,7 +62,7 @@ impl Pixylene {
             Err(error) => Err(PixyleneError::ProjectFileError(error)),
         }
     }
-    pub fn import(path: &str) -> Result<Pixylene, PixyleneError> {
+    pub fn import(path: &str, defaults: &PixyleneDefaults) -> Result<Pixylene, PixyleneError> {
         let mut png_file = PngFile::read(String::from(path)).unwrap();
         let mut scene = png_file.to_scene().unwrap();
         let mut scene2 = Scene::new(scene.dim(), vec![None; scene.dim().area().try_into().unwrap()]).unwrap();
@@ -82,7 +86,8 @@ impl Pixylene {
                 },
             }],
             Camera::new(
-                Coord { x: 36, y: 72 }, //todo: dont use default
+                defaults.camera_dim,
+                //Coord { x: 36, y: 72 }, //todo: dont use default
                 1,
                 Coord{ x: 1, y: 2 }
             ).unwrap(),

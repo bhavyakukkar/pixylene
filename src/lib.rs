@@ -8,3 +8,4 @@ pub mod project;
 pub mod action;
 pub mod file;
 pub mod pixylene;
+pub use pixylene::Pixylene;
