@@ -128,7 +128,7 @@ impl Project {
             net_layer = Layer {
                 scene: Layer::merge(
                     self.dimensions,
-                    &self.layers[0],
+                    &self.layers[k],
                     &net_layer,
                     BlendMode::Normal
                 ).unwrap(),
