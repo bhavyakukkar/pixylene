@@ -3,7 +3,7 @@
 * TASKS
 #+description: Tasks that need to be done
 ** FUNCTIONAL
-*** [15/27] NEXT
+*** [15/32] NEXT
 - [X] remove colored as dependency of libpyxlene
 - [3/3] (libpyxelene) palette has 2 methods to change specified color
   - [X] changeToExisting that takes index of other color in palette
@@ -21,6 +21,9 @@
   - [X] view with merged_scene() ["Preview" Mode] is fundamentally different from a view of a single layer
   - [X] implement something to include new ProjectPixel in pixylenetui/main
 - [X] action "add_cursor_at_focus()"
+- [ ] actions to make/move/remove layers
+- [ ] Pixylene::import starts with single layer
+- [ ] camera_dim being in project gets persisted and reopening in different terminal size messed things up (since Pixylene::import doesnt take defaults). since focus and cursors are directly in project, consider moving camera out of project and directly in pixylene
 - [ ] since you will use methods to ensure project.cursors remains stable, make a non-result method to return pixel at given cursor
 - [ ] (pixylenetui) only enable raw mode during get_key instead of only disabling raw mode during cmdin
 - [ ] (pixylenetui) show cursor again during Command mode (impl in cmdin)

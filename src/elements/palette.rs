@@ -22,7 +22,7 @@ impl std::fmt::Display for PaletteError {
     }
 }
 
-#[derive(Savefile)]
+#[derive(Savefile, Clone)]
 pub struct Palette {
     pub colors: Vec<Option<Pixel>>
 }
