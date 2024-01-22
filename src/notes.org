@@ -2,93 +2,78 @@
 #+author: Bhavya Kukkar
 * TASKS
 #+description: Tasks that need to be done
-** FUNCTIONAL
-*** [15/32] NEXT
-- [X] remove colored as dependency of libpyxlene
-- [3/3] (libpyxelene) palette has 2 methods to change specified color
-  - [X] changeToExisting that takes index of other color in palette
-  - [X] changeTo that takes direct hex value
-  - [X] (libpyxelene) rectangularfill takes a palette_index too
-- [X] Change::Lock and Change::Unlock to signal to action-manager to lock, or perform from an action that locks only causes action-manager to lock after Change::Start passed
-- [X] failed action must enter a reset sequence. maybe make your life easier by making actions clonable?
-- [X] layer error literature (Pixylene::export depends on Layer::merge returning 'can only merge >=2 layers')
-- [2/2] Camera has vector of pixels called 'selection', empty by default
-  - [X] Focus already corresponds to pixel on the scene grid and not on the CameraPixel grid, move focus out of Camera (and call it cursor) and into Project, which is passed to Camera::render_scene as a parameter
-  - [X] New attribute selection is a vector of coords corresponding to Scene pixels
-- [X] DrawAllCursors uses DrawOnce in the same way MoveAllCursors uses MoveOneCursor
-- [X] Pencil is then a wrapper around DrawAllCursors to use project's palette-index for color
-- [2/2] PREVIEW MODE
-  - [X] view with merged_scene() ["Preview" Mode] is fundamentally different from a view of a single layer
-  - [X] implement something to include new ProjectPixel in pixylenetui/main
-- [X] action "add_cursor_at_focus()"
+** ROAD TO NEXT STOP
+*** PUBLIC
+- [ ] some kind of global opacity control setting for pencils
+- [ ] helper screen to show keybind <-> actions map
+
+*** PRIVATE
+- [0/3] (pixylenetui)
+  - [ ] defined palette contains 10 colors, foreground+background+eight defined colors
+  - [ ] switchForeground is a wrapper that performs Palette.changeTo(1, <input>)
+  - [ ] switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
+- [ ] clap initializer for Pixylene::new() that opens inquire menu when called "$ pixylenetui new". optional flag -y takes default for all settings
 - [ ] actions to make/move/remove layers
+- [ ] new ActionError::OnlyCursorsInFocusSupported
+
+** FUNCTIONAL
+*** [0/15] NEXT
+- [ ] a toggle-able setting where focus can neither go to non-existense layers nor non-existent coords on a layer
+- [ ] a way to let actions called by perform_action be untracked
 - [ ] Pixylene::import starts with single layer
 - [ ] camera_dim being in project gets persisted and reopening in different terminal size messed things up (since Pixylene::import doesnt take defaults). since focus and cursors are directly in project, consider moving camera out of project and directly in pixylene
+  alternatively, let Pixylene::import also use defaults
 - [ ] since you will use methods to ensure project.cursors remains stable, make a non-result method to return pixel at given cursor
 - [ ] (pixylenetui) only enable raw mode during get_key instead of only disabling raw mode during cmdin
 - [ ] (pixylenetui) show cursor again during Command mode (impl in cmdin)
 - [ ] layer selection uses 1-based indexing
 - [ ] ActionManager needs to detect overwriting of undo-history and cascade all changes after the overwriting change
-- [ ] some kind of opacity control setting for pencils
-- [ ] use more iterators: impl iterator for scene, return of render_scene and return of render_layer
 - [ ] fix warnings
-- [ ] restructure modules. layer, camera, scene & palette all are composed children of Project, so have them in a project module
 - [ ] wrappers/builders for each action, since, for eg., rectangularfill needs its struct to initialize with start_corner = None, and start_corner is not a parameter that user decide like the palette_index parameter
 - [ ] each layer has a blendmode (like in gimp)
-- [X] each layer has a tag that are used at any time to render only tagged layers (dwm tags)
-- [ ] action that lets you copy and paste pixels & doesn't lock the Action Manager
-- [X] wrapper for Camera::render() so that a Scene doesn't need to be passed as parameter
-- [0/3] (pixylenetui)
-  - [ ] defined palette contains 10 colors, foreground+background+eight defined colors
-  - [ ] switchForeground is a wrapper that performs Palette.changeTo(1, <input>)
-  - [ ] switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
 - [ ] project is immutable, scene-locking actions receive the mutable scene but can use the immutable project for things like Project.getFocus(), similar for camera-locking actions
-- [X] ActionManager::undo returns UndoError
-- [X] undo behavior as written on piece of paper
 - [ ] Actions that work instantly like MoveCameraUp are fundamentally different from actions that require input like SetPaletteColor
-- [X] Actions in different directory actions/
-- [X] Pencil action that just does DrawOnce with blending
-- [ ] Pixylene::empty
-- [X] Action:redo because you did a bad job on Action:undo
-- [X] new branch to implement savefile on Project
+- [ ] layer mute can be modified by giving user string like 1011101 indicating layers currently showing and user can modify and submit
+
 *** AT SOME POINT IN TIME
-**** [2/11] SMALL CHANGE
+**** [0/10] SMALL CHANGE
+- [ ] replace crossterm::execute!() with crossterm::queue!()
 - [ ] (pixylenetui) clear error after valid action has been entered and performed
 - [ ] perform_action returns VecDeque of Change's
-- [X] Png::open errors returned as debug strings similar to Png::save
 - [ ] add_action may throw err if action-name already exists
 - [ ] use Decorate::output() again & fix parameters (String vs &static 'str)
-- [X] Camera.get_focus() so that Camera.focus can be made private
 - [ ] RectangularOutline Action
 - [ ] Mode that lets you 'write' colors line-by-line, left-to-right
 - [ ] Mode that lets you draw the same color for a continued camera motion and pixels draw at every new camera focus
 - [ ] Png to/fro Scene: fill more color-type/bit-depth combos
 - [ ] "Dependency Justification" for paper like done on crossterm's github
-**** [1/4] MEDIUM CHANGE
+
+**** [0/5] MEDIUM CHANGE
 - [ ] all project fields that have constraints should be private, for eg., project.cursors must be private, however, project.focus can be public (according to the system now at least). at the moment ToggleCursorAtFocus is able to create a cursor outside of the scene which bugs out every single action
 - [ ] complex actions that perform multiple smaller actions, when one of those smaller actions fail, should take the changes of the successfull and perform them to revert them back
 - [ ] metadata field on project that lets you write "tags" to pixels on a layer or directly to layer and lets you search for them later
 - [ ] projects can also be filed in plaintext so people can use vcs on them
 - [ ] better error reporting when action fails, maybe debug fmt for actions too?
-- [X] camera should be able to set focus to coord not in scene, just not be able to set_pixel there
+
 **** [0/3] LARGE CHANGE
 - [ ] change-tree instead of change-stack, doesn't forget future changes after changes in undoed state
 - [ ] toml for default impl of Pixylene::import & Pixylene::new that includes palette
 - [ ] builder pattern for app, so that can chain add_action and perform method calls
+- [ ] copy-and-paste action that actually copies the pixels to clipboard
+
 *** MAYBE / MAYBE NOT
-**** [1/2] SMALL CHANGE
-- [X] camera has group of selected pixels (for visual mode)
+**** [0/3] SMALL CHANGE
+- [ ] restructure modules. layer, camera, scene & palette all are composed children of Project, so have them in a project module
 - [ ] get rid of camera.repeat, something of that nature should be managed by PixyleneDisplay
 - [ ] validation to not let Project.focus.layer exceed number of layers in the project
-**** [0/2] MEDIUM CHANGE
+
+**** [0/3] MEDIUM CHANGE
+- [ ] use more iterators: impl iterator for scene, return of render_scene and return of render_layer
 - [ ] alternative fn ActionManager::perform_directly() directly takes dyn Action
 - [ ] Action::perform_action returns Changes::Single or Change::Multiple
+
 **** [0/0] LARGE CHANGE
 ** NON-FUNCTIONAL
-* PRESENTATION MATERIAL
-** PRESENTATION 3
-Implementation:
-- still need to iron out the undo/redo mechanism, and i hope to add an undo-tree functionality
 * PROS & CONS
 #+description: I weigh the pros and cons for a feature or decision here
 - [X] SELECTIONS MANAGED BY AN ACTION vs CAMERA HAS VECTOR OF PIXELS CALLED SELECTION
