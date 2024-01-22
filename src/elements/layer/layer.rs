@@ -62,8 +62,8 @@ impl Layer {
                     }
                 );
                 //todo: needs replacing
-                top.a = ((((layer_top.opacity as u16) * (top.a as u16)) as f32)/255f32) as u8;
-                bottom.a = ((((layer_bottom.opacity as u16) * (bottom.a as u16)) as f32)/255f32) as u8;
+                //top.a = ((((layer_top.opacity as u16) * (top.a as u16)) as f32)/255f32) as u8;
+                //bottom.a = ((((layer_bottom.opacity as u16) * (bottom.a as u16)) as f32)/255f32) as u8;
                 merged_scene_grid.push(Some(blend_mode.merge_down(top, bottom)));
             }
         }
