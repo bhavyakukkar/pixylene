@@ -2,6 +2,7 @@ use crate::elements::common::{ Coord, Pixel };
 
 #[derive(Debug)]
 pub enum SceneError {
+    InvalidDimensions(Coord),
     DimensionMismatch(usize, Coord),
     NegativeCoordinates(Coord),
     OutOfBoundCoordinates(Coord, Coord),
@@ -11,6 +12,11 @@ impl std::fmt::Display for SceneError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use SceneError::*;
         match self {
+            InvalidDimensions(dim) => write!(
+                f,
+                "Cannot create scene with non-natural dimensions, found: {}",
+                dim,
+            ),
             DimensionMismatch(length, dim) => write!(
                 f,
                 "Flattened grid found of length {} which does not match {} from product of given \
@@ -45,8 +51,11 @@ pub struct Scene {
 
 impl Scene {
     pub fn new(dimensions: Coord, flattened_grid: Vec<Option<Pixel>>) -> Result<Self, SceneError> {
-        use SceneError::{ DimensionMismatch };
-        if flattened_grid.len() as isize != dimensions.area() {
+        use SceneError::{ InvalidDimensions, DimensionMismatch };
+        if dimensions.x <= 0 || dimensions.y <= 0 {
+            Err(InvalidDimensions(dimensions))
+        }
+        else if flattened_grid.len() as isize != dimensions.area() {
             Err(DimensionMismatch(flattened_grid.len(), dimensions))
         }
         else {
