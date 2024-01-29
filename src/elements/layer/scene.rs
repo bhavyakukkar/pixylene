@@ -1,4 +1,4 @@
-use crate::elements::common::{ Coord, Pixel };
+use crate::common::{ Coord, Pixel };
 
 #[derive(Debug)]
 pub enum SceneError {

@@ -2,7 +2,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::cmp::{ min, max };
 
-use crate::elements::common::{ Coord, Pixel, BlendMode };
+use crate::common::{ Coord, Pixel, BlendMode };
 use crate::project::{ Project, Cursor };
 use crate::action::{ Action, ActionError, Change, actions::draw_at_one_cursor::DrawAtOneCursor };
 

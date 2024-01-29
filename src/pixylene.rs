@@ -1,8 +1,10 @@
 use crate::grammar::Decorate;
-use crate::elements::{
+use crate::{
     common::{ Coord, Pixel, BlendMode },
-    layer::{ Scene, SceneError, Camera, CameraPixel, Layer },
-    palette::Palette,
+    elements::{
+        layer::{ Scene, SceneError, Camera, CameraPixel, Layer },
+        palette::Palette,
+    },
 };
 use crate::file::{
     png_file::{ PngFile, PngFileError },

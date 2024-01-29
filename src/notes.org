@@ -21,7 +21,9 @@
 - [X] show cursor even when on None pixel
 - [X] arrow keys instead of hjkl
 - [X] new pencil to act as eraser
-- [ ] new actions 'GoTo' and 'ClearAllCursors'
+- [ ] (pixylenetui) refresh on terminal resize [[https://docs.rs/crossterm/latest/crossterm/event/enum.Event.html#variant.Resize]]
+- [ ] only 1 mode for selections, and three kinds of selections allowed: block, row or column
+- [ ] new actions 'GoTo' (to get something like vim's 'gg' and 0) and 'ClearAllCursors'
 - [ ] replace rectangularfill color with palette color
 - [ ] divide pixylenetui/main.rs into two fns where second function returns result and main just logs all errors to cmdout()
 - [ ] dont let layer go past number of layers

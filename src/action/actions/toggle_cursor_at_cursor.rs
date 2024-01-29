@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use crate::elements::common::{ Coord, Pixel };
+use crate::common::{ Coord, Pixel };
 use crate::project::{ Project, Cursor };
 use crate::action::{ Action, ActionError, Change };
 

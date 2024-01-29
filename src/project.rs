@@ -1,7 +1,9 @@
-use crate::elements::{
+use crate::{
     common::{ Coord, Pixel, BlendMode },
-    palette::Palette,
-    layer::{ Scene, Camera, CameraPixel, Layer }
+    elements::{
+        palette::Palette,
+        layer::{ Scene, Camera, CameraPixel, Layer },
+    },
 };
 
 #[derive(Debug)]

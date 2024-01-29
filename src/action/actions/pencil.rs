@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use crate::elements::common::{ Pixel, BlendMode };
+use crate::common::{ Pixel, BlendMode };
 use crate::project::Project;
 use crate::action::{ Action, ActionError, Change, actions::draw_at_one_cursor::DrawAtOneCursor };
 

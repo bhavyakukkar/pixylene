@@ -1,4 +1,4 @@
-use crate::elements::common::{ Coord, Pixel, BlendMode };
+use crate::common::{ Coord, Pixel, BlendMode };
 use crate::elements::layer::{ self, Scene };
 
 #[derive(Debug)]
