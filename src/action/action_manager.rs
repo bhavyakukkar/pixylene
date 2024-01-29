@@ -68,8 +68,8 @@ impl std::fmt::Display for ActionManagerError {
 
 pub struct ActionManager {
     pub actions: HashMap<String, Box<dyn Action>>,
-    scene_lock: Option<String>,
-    camera_lock: Option<String>,
+    pub scene_lock: Option<String>,
+    pub camera_lock: Option<String>,
     pub change_stack: Vec<Change>, //todo: make private
     pub change_index: usize, //todo: make private
 }

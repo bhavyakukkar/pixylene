@@ -68,6 +68,7 @@ pub struct Cursor {
     pub coord: Coord,
 }
 
+#[derive(Clone)]
 pub struct ProjectPixel {
     pub camera_pixel: CameraPixel,
     pub has_cursor: bool,

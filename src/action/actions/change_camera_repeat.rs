@@ -11,6 +11,7 @@ pub struct ChangeCameraRepeat {
 impl Action for ChangeCameraRepeat {
     fn perform_action(&mut self, project: &mut Project) -> Result<Vec<Change>, ActionError> {
         project.camera.set_repeat(project.camera.repeat.add(self.repeat_diff))?;
+        println!("\n{}", self.repeat_diff);
         let mut change_camera_repeat_back = ChangeCameraRepeat {
             repeat_diff: self.repeat_diff.multiply(Coord{ x: -1, y: -1 }),
         };

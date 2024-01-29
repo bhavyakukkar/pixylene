@@ -25,7 +25,7 @@ pub enum PixyleneError {
     PngFileError(PngFileError),
     NoLayersToExport,
 }
-//todo: fix
+
 impl std::fmt::Display for PixyleneError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use PixyleneError::*;
@@ -74,6 +74,13 @@ impl Pixylene {
         let project = Project::new(
             defaults.dim,
             vec![Layer {
+                scene: Scene::new(
+                    defaults.dim,
+                    vec![None; defaults.dim.area().try_into().unwrap()],
+                )?,
+                opacity: 255,
+                mute: false,
+            }, Layer {
                 scene: Scene::new(
                     defaults.dim,
                     vec![None; defaults.dim.area().try_into().unwrap()],

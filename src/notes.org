@@ -17,9 +17,19 @@
 - [ ] new ActionError::OnlyCursorsInFocusSupported
 
 ** FUNCTIONAL
-*** [0/15] NEXT
-- [ ] a toggle-able setting where focus can neither go to non-existense layers nor non-existent coords on a layer
-- [ ] a way to let actions called by perform_action be untracked
+*** [5/24] NEXT
+- [X] show cursor even when on None pixel
+- [X] arrow keys instead of hjkl
+- [X] new pencil to act as eraser
+- [ ] new actions 'GoTo' and 'ClearAllCursors'
+- [ ] replace rectangularfill color with palette color
+- [ ] divide pixylenetui/main.rs into two fns where second function returns result and main just logs all errors to cmdout()
+- [ ] dont let layer go past number of layers
+- [X] add focus coordinates to statusline
+- [ ] pixylene::export adds black background that preview uses, let exports have transparent bgs
+- [X] pixylene_tui.rs:317 -> let user type project file if project_file_path is empty
+- [ ] a toggle-able strict setting where focus can neither go to non-existense layers nor non-existent coords on a layer
+- [ ] a way to let actions called by perform_action be untracked. they should be able to set with a boolean in pixylenetui/actions.rs
 - [ ] Pixylene::import starts with single layer
 - [ ] camera_dim being in project gets persisted and reopening in different terminal size messed things up (since Pixylene::import doesnt take defaults). since focus and cursors are directly in project, consider moving camera out of project and directly in pixylene
   alternatively, let Pixylene::import also use defaults
