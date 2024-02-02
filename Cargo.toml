@@ -1,12 +1,6 @@
-[package]
-name = "libpixylene"
-version = "0.1.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-hex = "0.4"
-png = "0.17.10"
-savefile = "0.16"
-savefile-derive = "0.16"
+[workspace]
+resolver = "2"
+members = [
+    "libpixylene",
+    "pixylenetui"
+]
