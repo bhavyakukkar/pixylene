@@ -1,0 +1,8 @@
+#+title: Pixylene
+#+date: <2024-02-02 Fri>
+
+* Pixylene
+An extensible pixel art editor.
+
+** Screenshots:
+[[./assets/screenshots/Screenshot.from.2024-01-28.at.15_22_11.293686511.png]]
