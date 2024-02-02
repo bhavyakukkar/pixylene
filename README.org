@@ -3,5 +3,30 @@
 
 An extensible pixel art editor.
 
+** Notice
+*This application is still in very early stages, lacks basic features, and is generally very not-fun to use.*
+
+** Build
+_Dependencies:_ Cargo
+
+After cloning,
+#+begin_src sh
+cd src
+cargo build
+#+end_src
+The executable will be built to *src/target/debug/pixylenetui*
+
+** Usage
+#+begin_src sh
+# new project
+pixylenetui new
+
+# open png
+pixylenetui import test.png
+
+# open saved project
+pixylenetui open pixylene_project
+#+end_src
+
 ** Screenshots:
 [[./assets/screenshots/Screenshot.from.2024-01-28.at.15_22_11.293686511.png]]
