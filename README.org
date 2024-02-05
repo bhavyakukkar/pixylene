@@ -5,6 +5,7 @@ An extensible pixel art editor.
 
 ** Notice
 *This application is still in very early stages, lacks basic features, and is generally very not-fun to use.*
+[[./src/libpixylene/src/notes.org][a roadmap of sorts]]
 
 ** Build
 _Dependencies:_ Cargo
