@@ -12,4 +12,5 @@ pub mod rectangular_fill;
 pub mod copy_paste_all_cursors;
 pub mod toggle_cursor_at_focus;
 pub mod toggle_cursor_at_cursor;
-
+pub mod set_one_cursor;
+pub mod set_focus;

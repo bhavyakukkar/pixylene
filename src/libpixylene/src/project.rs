@@ -141,6 +141,15 @@ impl Project {
         }
         net_layer.scene
     }
+    pub fn get_cursor(&self, index: usize) -> Result<Cursor, ProjectError> {
+        use ProjectError::{ CursorIndexOutOfBounds };
+        match self.cursors.get(index) {
+            Some(cursor) => {
+                Ok(cursor.clone())
+            },
+            None => Err(CursorIndexOutOfBounds(index, self.cursors.len())),
+        }
+    }
     pub fn set_cursor(&mut self, index: usize, new_cursor: Cursor) -> Result<(), ProjectError> {
         use ProjectError::{ CursorCoordOutOfBounds, LayerOutOfBounds, CursorIndexOutOfBounds };
         match self.cursors.get_mut(index) {

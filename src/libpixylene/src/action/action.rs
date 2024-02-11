@@ -97,6 +97,7 @@ pub enum ActionError {
     ChangeError(ChangeError),
     ProjectError(ProjectError),
     OnlyNCursorsSupported(String, usize),
+    InputsError(String),
 }
 impl From<SceneError> for ActionError {
     fn from(item: SceneError) -> ActionError { ActionError::SceneError(item) }
@@ -128,6 +129,7 @@ impl std::fmt::Display for ActionError {
                 supported,
                 supplied,
             ),
+            InputsError(desc) => write!(f, "{}", desc),
         }
     }
 }

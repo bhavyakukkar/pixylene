@@ -32,6 +32,11 @@ enum Commands {
     Import{ path: String },
 }
 
+enum KeyMode {
+    VimLike,
+    EmacsLike,
+}
+
 fn main() {
     use terminal::{
         size,
@@ -42,6 +47,7 @@ fn main() {
     };
     use cursor::{ Hide, Show };
     use event::{ KeyCode };
+    let key_mode = KeyMode::VimLike;
 
     let mut project_file_path: Option<String> = None;
     let camera_dim = Coord {
@@ -140,103 +146,113 @@ fn main() {
     //app.draw_info();
     // statusline decoration
 
-    loop {
-        match &mode {
-            Mode::Splash => {
-                todo!()
-            },
-            Mode::Command => {
-                //bring cmdin() logic here for input loop,
-                //since Esc must be accounted for for discarding a cmd
-                //also this will fix bug happening when incr camera_dim.x by 1
-                app.draw_statusline(&mode);
-                let command = app.cmdin(":");
-                match command.as_str() {
-                    "undo" => { app.undo(); },
-                    "redo" => { app.undo(); },
-                    "w" => { app.save(); },
-                    "ex" => { app.export(); }
-                    "q" => { break; },
-                    _ => { app.perform_action(&command); },
-                }
-                mode = last_mode;
-            },
-            Mode::Normal => {
-                app.show();
-                app.draw_statusline(&mode);
-                if let Some(key) = app.getkey() {
-                    if let KeyCode::Left = key { app.perform_action("cursor_left"); }
-                    if let KeyCode::Down = key { app.perform_action("cursor_down"); }
-                    if let KeyCode::Up = key { app.perform_action("cursor_up"); }
-                    if let KeyCode::Right = key { app.perform_action("cursor_right"); }
-                    if let KeyCode::Char(c) = key {
-                        match c {
-                            ':' => { mode = Mode::Command; },
-                            'P' => { mode = Mode::Preview; },
-                            'v' => { mode = Mode::GridSelect; },
-                            //todo: change to Ctrl+V instead
-                            'V' => { mode = Mode::PointSelect; },
-
-                            'h' => { app.perform_action("cursor_left"); },
-                            'j' => { app.perform_action("cursor_down"); },
-                            'k' => { app.perform_action("cursor_up"); },
-                            'l' => { app.perform_action("cursor_right"); },
-
-                            'c' => { app.perform_action("toggle_cursor"); },
-
-                            '1' => { app.perform_action("pencil1"); },
-                            '2' => { app.perform_action("pencil2"); },
-                            '3' => { app.perform_action("pencil3"); },
-                            '4' => { app.perform_action("pencil4"); },
-                            '5' => { app.perform_action("pencil5"); },
-                            '6' => { app.perform_action("pencil6"); },
-                            '7' => { app.perform_action("pencil7"); },
-                            '8' => { app.perform_action("pencil8"); },
-                            'f' => { app.perform_action("rectangular_fill"); },
-                            'e' => { app.perform_action("eraser"); },
-
-                            'y' => { app.perform_action("copy_paste_all_cursors"); },
-                            'p' => { app.perform_action("copy_paste_all_cursors"); },
-
-                            '-' => { app.pixylene.as_mut().unwrap().project.focus.layer = app.pixylene.as_mut().unwrap().project.focus.layer.checked_sub(1).unwrap_or(0); },
-                            '+' => { app.pixylene.as_mut().unwrap().project.focus.layer += 1; },
-
-                            ';' => { app.perform_prev_action(); },
-                            'u' => { app.undo(); },
-                            'r' => { app.redo(); },
-                            //'q' => { break; },
-                            _ => (),
+    match key_mode {
+        KeyMode::VimLike => {
+            loop {
+                match &mode {
+                    Mode::Splash => {
+                        todo!()
+                    },
+                    Mode::Command => {
+                        //bring cmdin() logic here for input loop,
+                        //since Esc must be accounted for for discarding a cmd
+                        //also this will fix bug happening when incr camera_dim.x by 1
+                        app.draw_statusline(&mode);
+                        let command = app.cmdin(":");
+                        match command.as_str() {
+                            "undo" => { app.undo(); },
+                            "redo" => { app.undo(); },
+                            "w" => { app.save(); },
+                            "ex" => { app.export(); }
+                            "q" => { break; },
+                            _ => { app.perform_action(&command); },
                         }
-                    }
-                }
-            },
-            Mode::Preview => {
-                app.preview();
-                app.draw_statusline(&mode);
-                //todo: add Esc
-                if let Some(key) = app.getkey() {
-                    if let KeyCode::Char(c) = key {
-                        match c {
-                            'P'|'q' => { mode = Mode::Normal; },
-                            ':' => { mode = Mode::Command; },
-                            'h' => { app.perform_action("focus_left"); },
-                            'j' => { app.perform_action("focus_down"); },
-                            'k' => { app.perform_action("focus_up"); },
-                            'l' => { app.perform_action("focus_right"); },
-                            '+' => { app.perform_action("zoom_in"); },
-                            '-' => { app.perform_action("zoom_out"); },
-                            _ => (),
+                        mode = last_mode;
+                    },
+                    Mode::Normal => {
+                        app.show();
+                        app.draw_statusline(&mode);
+                        if let Some(key) = app.getkey() {
+                            if let KeyCode::Left = key { app.perform_action("cursor_left"); }
+                            if let KeyCode::Down = key { app.perform_action("cursor_down"); }
+                            if let KeyCode::Up = key { app.perform_action("cursor_up"); }
+                            if let KeyCode::Right = key { app.perform_action("cursor_right"); }
+                            if let KeyCode::Char(c) = key {
+                                match c {
+                                    ':' => { mode = Mode::Command; },
+                                    'P' => { mode = Mode::Preview; },
+                                    'v' => { mode = Mode::GridSelect; },
+                                    //todo: change to Ctrl+V instead
+                                    'V' => { mode = Mode::PointSelect; },
+
+                                    'h' => { app.perform_action("cursor_left"); },
+                                    'j' => { app.perform_action("cursor_down"); },
+                                    'k' => { app.perform_action("cursor_up"); },
+                                    'l' => { app.perform_action("cursor_right"); },
+
+                                    'c' => { app.perform_action("toggle_cursor"); },
+
+                                    '1' => { app.perform_action("pencil1"); },
+                                    '2' => { app.perform_action("pencil2"); },
+                                    '3' => { app.perform_action("pencil3"); },
+                                    '4' => { app.perform_action("pencil4"); },
+                                    '5' => { app.perform_action("pencil5"); },
+                                    '6' => { app.perform_action("pencil6"); },
+                                    '7' => { app.perform_action("pencil7"); },
+                                    '8' => { app.perform_action("pencil8"); },
+                                    'f' => { app.perform_action("rectangular_fill"); },
+                                    'e' => { app.perform_action("eraser"); },
+
+                                    'y' => { app.perform_action("copy_paste_all_cursors"); },
+                                    'p' => { app.perform_action("copy_paste_all_cursors"); },
+
+                                    '-' => { app.perform_action("move_one_layer_up"); },
+                                    '+' => { app.perform_action("move_one_layer_down"); },
+                                    //'-' => { app.pixylene.as_mut().unwrap().project.focus.layer = app.pixylene.as_mut().unwrap().project.focus.layer.checked_sub(1).unwrap_or(0); },
+                                    //'+' => { app.pixylene.as_mut().unwrap().project.focus.layer += 1; },
+
+                                    ';' => { app.perform_prev_action(); },
+                                    'u' => { app.undo(); },
+                                    'r' => { app.redo(); },
+                                    //'q' => { break; },
+                                    _ => (),
+                                }
+                            }
                         }
-                    }
+                    },
+                    Mode::Preview => {
+                        app.preview();
+                        app.draw_statusline(&mode);
+                        //todo: add Esc
+                        if let Some(key) = app.getkey() {
+                            if let KeyCode::Char(c) = key {
+                                match c {
+                                    'P'|'q' => { mode = Mode::Normal; },
+                                    ':' => { mode = Mode::Command; },
+                                    'h' => { app.perform_action("focus_left"); },
+                                    'j' => { app.perform_action("focus_down"); },
+                                    'k' => { app.perform_action("focus_up"); },
+                                    'l' => { app.perform_action("focus_right"); },
+                                    '+' => { app.perform_action("zoom_in"); },
+                                    '-' => { app.perform_action("zoom_out"); },
+                                    _ => (),
+                                }
+                            }
+                        }
+                    },
+                    Mode::GridSelect => {
+                        todo!()
+                    },
+                    Mode::PointSelect => {
+                        todo!()
+                    },
                 }
-            },
-            Mode::GridSelect => {
-                todo!()
-            },
-            Mode::PointSelect => {
-                todo!()
-            },
-        }
+            }
+        },
+        KeyMode::EmacsLike => {
+            loop {
+            }
+        },
     }
 
     disable_raw_mode().unwrap();

@@ -21,12 +21,16 @@
 - [X] show cursor even when on None pixel
 - [X] arrow keys instead of hjkl
 - [X] new pencil to act as eraser
+- [ ] make application safer by having indexes like layer number only be something like u8 or u16
+- [ ] deprecate MoveOneCursor in favorof SetOneCursor
+- [ ] make fn to deal with cursors (for one, their shouldn't be able to be 2 cursors at the same place)
 - [ ] (pixylenetui) refresh on terminal resize [[https://docs.rs/crossterm/latest/crossterm/event/enum.Event.html#variant.Resize]]
 - [ ] only 1 mode for selections, and three kinds of selections allowed: block, row or column
 - [ ] new actions 'GoTo' (to get something like vim's 'gg' and 0) and 'ClearAllCursors'
 - [ ] replace rectangularfill color with palette color
 - [ ] divide pixylenetui/main.rs into two fns where second function returns result and main just logs all errors to cmdout()
 - [ ] dont let layer go past number of layers
+- [ ] not worth having complicated project files just to save cursors, camera & focus
 - [X] add focus coordinates to statusline
 - [ ] pixylene::export adds black background that preview uses, let exports have transparent bgs
 - [X] pixylene_tui.rs:317 -> let user type project file if project_file_path is empty
@@ -114,22 +118,56 @@
 
 * STRUCTURE
 #+description: I document the structure of my application here
-** MODES
-*** NORMAL
+** KEY MODES
+*** Vim Like
+**** NORMAL
 cc -> clear cursors (now no-cursor errors)
 cl -> add all pixels on layer to cursor
 ca -> add all pixels in project to
 
-*** PREVIEW
+**** PREVIEW
 0 -> entire project
 i -> layer i
 default -> last open or entire project is last open corresponds to deleted layer
 
-*** GRID SELECTION
+**** GRID SELECTION
 add cursors by dragging second corner of rectangle
 
-*** POINT SELECTION
+**** POINT SELECTION
 add cursors one by one by navigating and hitting Enter
+
+*** Emacs Like
+
+- *_Basic_*
+  - _Up, Down, Left, Right_
+
+- *_Project_*
+  - _Ctrl+O_: toggle ooze mode in which equipped color is filled to every new pixel that is navigated to
+    (other synonyms to use if name-collision: dispense, dribble, spill, drip, drizzle)
+  - _Ctrl+S_: start default or previous shape
+  - _Ctrl+Shift+S_: select new shape and then start
+    - _r_: rectangular
+    - _e_: ellipse
+  - _Ctrl+E_: start default or previously shaped eraser
+  - _Ctrl+Shift+E_: select new shape for eraser and then start
+    - _r_: rectangular
+    - _e_: ellipse
+  - _Ctrl+C_:
+  - _Ctrl+L_: manage layer
+    - _n_: new layer
+    - _d_: delete layer
+    - _r_: rename layer
+    - _c_: clone layer
+    - _-_: go to lower layer
+    - _+_: go to upper layer
+    - _[0-9]_: go to ith layer
+  - _Alt+x_: command
+
+- *_Session_*
+  - _Ctrl+S_: save project
+  - _Ctrl+Z_: undo
+  - _Ctrl+Y_: redo
+  - _command<ex>_: export
 
 ** STATUSLINE
 *([mode]) ([layer 1 of 5]) ([2+8 palette colors]) ([current-action] [scene-locked?] [camera-locked?]) ([3 cursors])*
