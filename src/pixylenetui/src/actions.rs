@@ -45,6 +45,7 @@ impl action::Action for SensiblyMoveToLayer {
         let actual_to: isize = if let Some(to) = self.to { to as isize - 1 } else { project.focus.layer as isize + self.by };
 
         //move focus's layer
+        /*
         if let Ok(set_focus) = (set_focus::SetFocus {
             coord: None,
             layer: Some(if actual_to >= 0 {
@@ -60,8 +61,21 @@ impl action::Action for SensiblyMoveToLayer {
                 changes.push(change.as_untracked()?);
             }
         }
+        */
+        action::include(Box::new(set_focus::SetFocus {
+            coord: None,
+            layer: Some(if actual_to >= 0 {
+                if actual_to as usize <= project.layers.len() { actual_to.try_into().unwrap() }
+                /* use when strict */
+                //else { return Err(ActionError::InputsError(format!("trying to move to layer {} when only {} layers present", actual_to + 1, project.layers.len()))); }
+                else { project.layers.len() - 1 }
+            } else {
+                return Err(action::ActionError::InputsError(format!("layers start from 1")));
+            }),
+        }), project, &mut changes);
 
         //move every cursor to focus's layer
+        /*
         for index in 0..project.cursors.len() {
             if let Ok(set_one_cursor) = (set_one_cursor::SetOneCursor {
                 index: index,
@@ -73,6 +87,15 @@ impl action::Action for SensiblyMoveToLayer {
                 }
             }
         }
+        */
+        for index in 0..project.cursors.len() {
+            action::include(Box::new(set_one_cursor::SetOneCursor {
+                index: index,
+                coord: None,
+                layer: Some(project.focus.layer),
+            }), project, &mut changes);
+        }
+
         changes.push(action::Change::End);
         Ok(changes)
     }

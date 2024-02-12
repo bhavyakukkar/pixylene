@@ -155,3 +155,11 @@ impl std::fmt::Debug for dyn Action {
         )
     }
 }
+
+pub fn include(mut action: Box<dyn Action>, project: &mut Project, changes: &mut Vec<Change>)
+    -> Result<(), ActionError> {
+    for change in (*action).perform_action(project)? {
+        changes.push(change.as_untracked()?);
+    }
+    Ok(())
+}
