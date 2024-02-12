@@ -17,7 +17,7 @@
 - [ ] new ActionError::OnlyCursorsInFocusSupported
 
 ** FUNCTIONAL
-*** [9/30] NEXT
+*** [10/30] NEXT
 - [X] show cursor even when on None pixel
 - [X] arrow keys instead of hjkl
 - [X] new pencil to act as eraser
@@ -47,7 +47,7 @@
 - [ ] wrappers/builders for each action, since, for eg., rectangularfill needs its struct to initialize with start_corner = None, and start_corner is not a parameter that user decide like the palette_index parameter
 - [ ] each layer has a blendmode (like in gimp)
 - [ ] project is immutable, scene-locking actions receive the mutable scene but can use the immutable project for things like Project.getFocus(), similar for camera-locking actions
-- [ ] Actions that work instantly like MoveCameraUp are fundamentally different from actions that require input like SetPaletteColor
+- [X] Actions that work instantly like MoveCameraUp are fundamentally different from actions that require input like SetPaletteColor
 - [ ] layer mute can be modified by giving user string like 1011101 indicating layers currently showing and user can modify and submit
 
 *** AT SOME POINT IN TIME

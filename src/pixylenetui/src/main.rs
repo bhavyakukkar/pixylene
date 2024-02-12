@@ -7,23 +7,24 @@ use libpixylene::{
 mod pixylene_tui;
 mod utils;
 mod modes;
-mod actions;
+mod app_actions;
 
-use pixylene_tui::PixyleneTUI;
+use pixylene_tui::{ PixyleneTUI, Console };
 use modes::*;
 
 use crossterm::{ queue, cursor, terminal, event };
 use clap::{ Parser, Subcommand };
+use std::collections::HashMap;
 
 #[derive(Parser)]
 #[command(arg_required_else_help = true, author, version, about, long_about = None)]
 struct Cli {
     #[command(subcommand)]
-    command: Option<Commands>,
+    command: Option<StartType>,
 }
 
 #[derive(Subcommand)]
-enum Commands {
+enum StartType {
     //New { dimensions: Option<Coord>, palette: Option<Palette> },
     //Open { path: String },
     //Import { path: String, palette: Option<Palette> },
@@ -63,23 +64,13 @@ fn main() {
         Some(Pixel::from_hex(String::from("8f4673")).unwrap()),
         Some(Pixel::from_hex(String::from("8ba59b")).unwrap()),
         Some(Pixel::from_hex(String::from("a89984")).unwrap()),
-        /*
-        Some(Pixel{r: 81, g: 87, b: 109, a: 255}),
-        Some(Pixel{r: 231, g: 130, b: 132, a: 255}),
-        Some(Pixel{r: 166, g: 209, b: 137, a: 255}),
-        Some(Pixel{r: 229, g: 200, b: 144, a: 255}),
-        Some(Pixel{r: 140, g: 170, b: 238, a: 255}),
-        Some(Pixel{r: 244, g: 184, b: 228, a: 255}),
-        Some(Pixel{r: 129, g: 200, b: 190, a: 255}),
-        Some(Pixel{r: 181, g: 191, b: 226, a: 255}),
-        */
         Some(Pixel{r: 0, g: 0, b: 0, a: 0}),
     ] };
     let mut pixylene: Pixylene;
     let cli = Cli::parse();
 
     match &cli.command {
-        Some(Commands::New) => {
+        Some(StartType::New) => {
             let palette = default_palette.clone();
             let new_defaults = PixyleneNewDefaults {
                 dim: Coord{ x: 64, y: 64 },
@@ -91,21 +82,19 @@ fn main() {
                 &new_defaults,
             ).unwrap();
         },
-        Some(Commands::Open{ path }) => {
-            //let path = String::from("/home/bhavya/pictures/trash/snowbrick.bin");
+        Some(StartType::Open{ path }) => {
             pixylene = Pixylene::open(
                 &path,
             ).unwrap();
             project_file_path = Some(path.clone());
         },
-        Some(Commands::Import{ path }) => {
+        Some(StartType::Import{ path }) => {
             let palette = default_palette.clone();
             let import_defaults = PixyleneImportDefaults {
                 camera_dim,
                 palette,
             };
             pixylene = Pixylene::import(
-                //"/home/bhavya/pictures/trash/snowbrick_rgba.png",
                 &path,
                 &import_defaults,
             ).unwrap();
@@ -116,17 +105,14 @@ fn main() {
         }
     }
 
-    //pixylene.project.camera.set_dim(camera_dim).unwrap();
-
-    let mut app = PixyleneTUI {
-        camera_corner: Coord{ x: 1, y: 2 },
-        console_corner: Coord{ x: 1+camera_dim.x+1+1, y: 0 },
-        statusline_corner: Coord{ x: 1+camera_dim.x+1, y: 2 },
-        info_corner: Coord{ x: 2, y: 86 },
-        pixylene: Some(pixylene),
-        last_action_name: None,
+    let mut app = PixyleneTUI::new(
+        /* console_corner */Coord{ x: 1+camera_dim.x+1+1, y: 0 },
+        /* camera_corner: */Coord{ x: 1, y: 2 },
+        /* statusline_corner: */Coord{ x: 1+camera_dim.x+1, y: 2 },
+        /* info_corner: */Coord{ x: 2, y: 86 },
+        Some(pixylene),
         project_file_path,
-    };
+    );
     let mut vim_mode = VimMode::Normal;
     let mut last_vim_mode = VimMode::Normal;
     let mut emacs_mode = EmacsMode::Normal;
@@ -139,12 +125,7 @@ fn main() {
         Hide,
     ).unwrap();
 
-    actions::add_my_actions(app.pixylene.as_mut().unwrap());
-
-    // remove later
-    //app.draw_grid_border();
-    //app.draw_info();
-    // statusline decoration
+    app_actions::add_raw_actions(app.pixylene.as_mut().unwrap());
 
     match behavior {
         Behavior::VimLike => {
@@ -155,7 +136,7 @@ fn main() {
                     },
                     VimMode::Command => {
                         app.draw_statusline(&vim_mode);
-                        if let Some(command) = app.cmdin(":") {
+                        if let Some(command) = app.console.cmdin(":") {
                             match command.as_str() {
                                 "undo" => { app.undo(); },
                                 "redo" => { app.undo(); },
