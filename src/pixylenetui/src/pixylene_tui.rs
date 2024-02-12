@@ -4,7 +4,7 @@ use libpixylene::{
     elements::layer::CameraPixel,
     project::ProjectPixel,
 };
-use crate::{ utils::LogType, modes::Mode };
+use crate::{ utils::LogType, modes::* };
 
 use crossterm::{
     execute,
@@ -21,7 +21,6 @@ pub struct PixyleneTUI {
     pub statusline_corner: Coord,
     pub info_corner: Coord,
     pub pixylene: Option<Pixylene>,
-    pub console: Console,
     pub last_action_name: Option<String>,
     pub project_file_path: Option<String>,
     //pub state: State,
@@ -181,23 +180,73 @@ impl PixyleneTUI {
             _ => None,
         }
     }
-    pub fn cmdin(&mut self, message: &str) -> String {
-        use terminal::{ disable_raw_mode, enable_raw_mode };
+    pub fn cmdin(&mut self, message: &str) -> Option<String> {
+        use terminal::{ Clear, ClearType, disable_raw_mode, enable_raw_mode };
+        use cursor::{ MoveTo, MoveRight, Show, Hide };
+        use style::{ SetForegroundColor, Color, Print, ResetColor };
+        use event::{ Event, KeyEvent, KeyCode, read };
 
-        disable_raw_mode().unwrap();
-        let input = self.console.ask(message.to_string(), self.console_corner);
-        enable_raw_mode().unwrap();
-        input
+        execute!(
+            std::io::stdout(),
+            ResetColor,
+            MoveTo(self.console_corner.y as u16, self.console_corner.x as u16),
+            Clear(ClearType::UntilNewLine),
+            SetForegroundColor(Color::Rgb{ r: 220, g: 220, b: 220 }),
+            Print(&message),
+            ResetColor,
+            MoveRight(1),
+            Show,
+        ).unwrap();
+
+        let mut input = String::new();
+        loop {
+            let event = read().unwrap();
+            if let Event::Key(KeyEvent { code, .. }) = event {
+                match code {
+                    KeyCode::Enter => {
+                        execute!(std::io::stdout(), Clear(ClearType::CurrentLine)).unwrap();
+                        return Some(input);
+                    }
+                    KeyCode::Esc => {
+                        execute!(std::io::stdout(), Clear(ClearType::CurrentLine)).unwrap();
+                        return None;
+                    }
+                    KeyCode::Char(c) => {
+                        execute!(std::io::stdout(), Print(c)).unwrap();
+                        input.push(c);
+                    }
+                    _ => {}
+                }
+            }
+        }
+        execute!(std::io::stdout(), Hide).unwrap();
+        Some(input)
     }
     pub fn cmdout(&mut self, message: &str, log_type: LogType) {
-        self.console.log(message.to_string(), log_type, self.console_corner.add(Coord{ x: 0, y: 0 }));
+        use terminal::{ Clear, ClearType };
+        use cursor::{ MoveTo };
+        use style::{ SetForegroundColor, Color, Print, ResetColor };
+        let corner = self.console_corner.add(Coord{ x: 0, y: 0 });
+        execute!(
+            std::io::stdout(),
+            ResetColor,
+            MoveTo(corner.y as u16, corner.x as u16),
+            Clear(ClearType::UntilNewLine),
+            SetForegroundColor(match log_type {
+                LogType::Info => Color::Rgb{ r: 240, g: 240, b: 240 },
+                LogType::Error => Color::Rgb{ r: 255, g: 70, b: 70 },
+                LogType::Warning => Color::Rgb{ r: 70, g: 235, b: 235 },
+            }),
+            Print(&message),
+            ResetColor,
+        ).unwrap();
     }
-    pub fn draw_statusline(&mut self, mode: &Mode) {
+    pub fn draw_statusline(&mut self, mode: &VimMode) {
         use terminal::{ size, Clear, ClearType };
         use cursor::{ MoveTo };
         use style::{ Print, SetForegroundColor, SetBackgroundColor, Color, ResetColor };
         use std::io::Write;
-        use Mode::*;
+        use VimMode::*;
 
         let PixyleneTUI { pixylene: p, statusline_corner: corner, .. } = self;
         let p: &mut Pixylene = p.as_mut().unwrap();
@@ -304,78 +353,28 @@ impl PixyleneTUI {
                 Err(desc) => self.cmdout(&desc.to_string(), LogType::Error),
             },
             None => {
-                let path = self.cmdin("save project as: ");
-                match self.pixylene.as_mut().unwrap().save(&path) {
-                    Ok(()) => {
-                        let message = format!("project saved to {}", path);
-                        self.project_file_path = Some(path.clone());
-                        self.cmdout(&message, LogType::Info);
-                    },
-                    Err(desc) => self.cmdout(&desc.to_string(), LogType::Error),
+                if let Some(path) = self.cmdin("save project as: ") {
+                    match self.pixylene.as_mut().unwrap().save(&path) {
+                        Ok(()) => {
+                            let message = format!("project saved to {}", path);
+                            self.project_file_path = Some(path.clone());
+                            self.cmdout(&message, LogType::Info);
+                        },
+                        Err(desc) => self.cmdout(&desc.to_string(), LogType::Error),
+                    }
                 }
             }
         }
     }
     pub fn export(&mut self) {
-        let path = self.cmdin("export project as: ");
-        match self.pixylene.as_mut().unwrap().export(&path) {
-            Ok(()) => {
-                let message = format!("project exported to {}", path);
-                self.cmdout(&message, LogType::Info);
-            },
-            Err(desc) => self.cmdout(&desc.to_string(), LogType::Error),
-        }
-    }
-}
-
-pub struct Console;
-impl Console {
-    pub fn ask(&self, message: String, corner: Coord) -> String {
-        use terminal::{ Clear, ClearType };
-        use cursor::{ MoveTo, MoveRight };
-        use style::{ SetForegroundColor, Color, Print, ResetColor };
-        use event::{ Event, KeyEvent, KeyCode, read };
-        execute!(
-            std::io::stdout(),
-            ResetColor,
-            MoveTo(corner.y as u16, corner.x as u16),
-            Clear(ClearType::UntilNewLine),
-            SetForegroundColor(Color::Rgb{ r: 220, g: 220, b: 220 }),
-            Print(&message),
-            ResetColor,
-            MoveRight(1),
-        ).unwrap();
-
-        let mut input = String::new();
-        while let Event::Key(KeyEvent { code, .. }) = read().unwrap() {
-            match code {
-                KeyCode::Enter => {
-                    break;
-                }
-                KeyCode::Char(c) => {
-                    input.push(c);
-                }
-                _ => {}
+        if let Some(path) = self.cmdin("export project as: ") {
+            match self.pixylene.as_mut().unwrap().export(&path) {
+                Ok(()) => {
+                    let message = format!("project exported to {}", path);
+                    self.cmdout(&message, LogType::Info);
+                },
+                Err(desc) => self.cmdout(&desc.to_string(), LogType::Error),
             }
         }
-        input
-    }
-    pub fn log(&self, message: String, log_type: LogType, corner: Coord) {
-        use terminal::{ Clear, ClearType };
-        use cursor::{ MoveTo };
-        use style::{ SetForegroundColor, Color, Print, ResetColor };
-        execute!(
-            std::io::stdout(),
-            ResetColor,
-            MoveTo(corner.y as u16, corner.x as u16),
-            Clear(ClearType::UntilNewLine),
-            SetForegroundColor(match log_type {
-                LogType::Info => Color::Rgb{ r: 240, g: 240, b: 240 },
-                LogType::Error => Color::Rgb{ r: 255, g: 70, b: 70 },
-                LogType::Warning => Color::Rgb{ r: 70, g: 235, b: 235 },
-            }),
-            Print(&message),
-            ResetColor,
-        ).unwrap();
     }
 }

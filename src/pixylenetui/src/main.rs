@@ -9,8 +9,8 @@ mod utils;
 mod modes;
 mod actions;
 
-use pixylene_tui::{ PixyleneTUI, Console };
-use modes::Mode;
+use pixylene_tui::PixyleneTUI;
+use modes::*;
 
 use crossterm::{ queue, cursor, terminal, event };
 use clap::{ Parser, Subcommand };
@@ -32,7 +32,7 @@ enum Commands {
     Import{ path: String },
 }
 
-enum KeyMode {
+enum Behavior {
     VimLike,
     EmacsLike,
 }
@@ -47,7 +47,7 @@ fn main() {
     };
     use cursor::{ Hide, Show };
     use event::{ KeyCode };
-    let key_mode = KeyMode::VimLike;
+    let behavior = Behavior::VimLike;
 
     let mut project_file_path: Option<String> = None;
     let camera_dim = Coord {
@@ -124,12 +124,12 @@ fn main() {
         statusline_corner: Coord{ x: 1+camera_dim.x+1, y: 2 },
         info_corner: Coord{ x: 2, y: 86 },
         pixylene: Some(pixylene),
-        console: Console,
         last_action_name: None,
         project_file_path,
     };
-    let mut mode = Mode::Normal;
-    let mut last_mode = Mode::Normal;
+    let mut vim_mode = VimMode::Normal;
+    let mut last_vim_mode = VimMode::Normal;
+    let mut emacs_mode = EmacsMode::Normal;
 
     let mut stdout = std::io::stdout();
     enable_raw_mode().unwrap();
@@ -146,32 +146,30 @@ fn main() {
     //app.draw_info();
     // statusline decoration
 
-    match key_mode {
-        KeyMode::VimLike => {
+    match behavior {
+        Behavior::VimLike => {
             loop {
-                match &mode {
-                    Mode::Splash => {
+                match &vim_mode {
+                    VimMode::Splash => {
                         todo!()
                     },
-                    Mode::Command => {
-                        //bring cmdin() logic here for input loop,
-                        //since Esc must be accounted for for discarding a cmd
-                        //also this will fix bug happening when incr camera_dim.x by 1
-                        app.draw_statusline(&mode);
-                        let command = app.cmdin(":");
-                        match command.as_str() {
-                            "undo" => { app.undo(); },
-                            "redo" => { app.undo(); },
-                            "w" => { app.save(); },
-                            "ex" => { app.export(); }
-                            "q" => { break; },
-                            _ => { app.perform_action(&command); },
+                    VimMode::Command => {
+                        app.draw_statusline(&vim_mode);
+                        if let Some(command) = app.cmdin(":") {
+                            match command.as_str() {
+                                "undo" => { app.undo(); },
+                                "redo" => { app.undo(); },
+                                "w" => { app.save(); },
+                                "ex" => { app.export(); }
+                                "q" => { break; },
+                                _ => { app.perform_action(&command); },
+                            }
                         }
-                        mode = last_mode;
+                        vim_mode = last_vim_mode;
                     },
-                    Mode::Normal => {
+                    VimMode::Normal => {
                         app.show();
-                        app.draw_statusline(&mode);
+                        app.draw_statusline(&vim_mode);
                         if let Some(key) = app.getkey() {
                             if let KeyCode::Left = key { app.perform_action("cursor_left"); }
                             if let KeyCode::Down = key { app.perform_action("cursor_down"); }
@@ -179,11 +177,11 @@ fn main() {
                             if let KeyCode::Right = key { app.perform_action("cursor_right"); }
                             if let KeyCode::Char(c) = key {
                                 match c {
-                                    ':' => { mode = Mode::Command; },
-                                    'P' => { mode = Mode::Preview; },
-                                    'v' => { mode = Mode::GridSelect; },
+                                    ':' => { vim_mode = VimMode::Command; },
+                                    'P' => { vim_mode = VimMode::Preview; },
+                                    'v' => { vim_mode = VimMode::GridSelect; },
                                     //todo: change to Ctrl+V instead
-                                    'V' => { mode = Mode::PointSelect; },
+                                    'V' => { vim_mode = VimMode::PointSelect; },
 
                                     'h' => { app.perform_action("cursor_left"); },
                                     'j' => { app.perform_action("cursor_down"); },
@@ -220,15 +218,15 @@ fn main() {
                             }
                         }
                     },
-                    Mode::Preview => {
+                    VimMode::Preview => {
                         app.preview();
-                        app.draw_statusline(&mode);
+                        app.draw_statusline(&vim_mode);
                         //todo: add Esc
                         if let Some(key) = app.getkey() {
                             if let KeyCode::Char(c) = key {
                                 match c {
-                                    'P'|'q' => { mode = Mode::Normal; },
-                                    ':' => { mode = Mode::Command; },
+                                    'P'|'q' => { vim_mode = VimMode::Normal; },
+                                    ':' => { vim_mode = VimMode::Command; },
                                     'h' => { app.perform_action("focus_left"); },
                                     'j' => { app.perform_action("focus_down"); },
                                     'k' => { app.perform_action("focus_up"); },
@@ -240,17 +238,31 @@ fn main() {
                             }
                         }
                     },
-                    Mode::GridSelect => {
+                    VimMode::GridSelect => {
                         todo!()
                     },
-                    Mode::PointSelect => {
+                    VimMode::PointSelect => {
                         todo!()
                     },
                 }
             }
         },
-        KeyMode::EmacsLike => {
+        Behavior::EmacsLike => {
             loop {
+                match &emacs_mode {
+                    EmacsMode::Normal => {
+                    }
+                    EmacsMode::Layer => {
+                    }
+                    EmacsMode::Command => {
+                    }
+                    EmacsMode::Ooze{ color } => {
+                    }
+                    EmacsMode::Shape{ shape } => {
+                    }
+                    EmacsMode::Eraser{ shape } => {
+                    }
+                }
             }
         },
     }
