@@ -7,7 +7,8 @@ use libpixylene::{
 mod pixylene_tui;
 mod utils;
 mod modes;
-mod app_actions;
+mod raw_actions;
+mod tui_actions;
 
 use pixylene_tui::{ PixyleneTUI, Console };
 use modes::*;
@@ -124,8 +125,6 @@ fn main() {
         EnterAlternateScreen,
         Hide,
     ).unwrap();
-
-    app_actions::add_raw_actions(app.pixylene.as_mut().unwrap());
 
     match behavior {
         Behavior::VimLike => {
