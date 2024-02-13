@@ -2,7 +2,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::cmp::{ min, max };
 
-use crate::common::{ Coord, Pixel };
+use crate::common::{ Coord, Pixel, BlendMode };
 use crate::project::Project;
 use crate::action::{ Action, ActionError, Change, actions::draw_at_one_cursor::DrawAtOneCursor };
 
@@ -45,6 +45,7 @@ impl Action for CopyPasteAllCursors {
                             if let Ok(draw_at_one_cursor) = (DrawAtOneCursor {
                                 cursor: project.cursors[i].clone(),
                                 color: Some(color),
+                                blend_mode: BlendMode::Overwrite,
                             }).perform_action(project) {
                                 for change in draw_at_one_cursor {
                                     changes.push(change.as_untracked()?);

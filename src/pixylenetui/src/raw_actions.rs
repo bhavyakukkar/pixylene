@@ -1,11 +1,11 @@
-use libpixylene::{ self, Pixylene, common::Coord, action::{ self, actions::* }};
+use libpixylene::{ self, Pixylene, common::{ Coord, BlendMode }, action::{ self, actions::* }};
 use std::collections::HashMap;
 
 pub fn add_raw_actions(actions: &mut HashMap<String, Box<dyn action::Action>>) {
     for i in 0..8 {
         actions.insert(format!("pencil{}", i+1), Box::new(pencil::Pencil{palette_index: i+1}));
     }
-    actions.insert(String::from("eraser"), Box::new(draw_at_all_cursors::DrawAtAllCursors{color: None}));
+    actions.insert(String::from("eraser"), Box::new(draw_at_all_cursors::DrawAtAllCursors{color: None, blend_mode: BlendMode::Overwrite}));
 
     actions.insert(String::from("rectangular_fill"), Box::new(rectangular_fill::RectangularFill{palette_index: 1, start_corner: None}));
     actions.insert(String::from("cursor_up"), Box::new(move_all_cursors::MoveAllCursors{displacement: Coord{ x: -1, y: 0 }}));

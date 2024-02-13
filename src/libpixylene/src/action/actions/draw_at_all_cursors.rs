@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use crate::common::{ Coord, Pixel };
+use crate::common::{ Coord, Pixel, BlendMode };
 use crate::project::{ Project, Cursor };
 use crate::action::{ Action, ActionError, Change, actions::draw_at_one_cursor::DrawAtOneCursor };
 
@@ -13,6 +13,7 @@ use crate::action::{ Action, ActionError, Change, actions::draw_at_one_cursor::D
 
 pub struct DrawAtAllCursors {
     pub color: Option<Pixel>,
+    pub blend_mode: BlendMode,
 }
 impl Action for DrawAtAllCursors {
     fn perform_action(&mut self, project: &mut Project) -> Result<Vec<Change>, ActionError> {
@@ -21,6 +22,7 @@ impl Action for DrawAtAllCursors {
             if let Ok(draw_at_one_cursor) = (DrawAtOneCursor {
                 cursor: project.cursors[index].clone(),
                 color: self.color,
+                blend_mode: self.blend_mode.clone(),
             }).perform_action(project) {
                 for change in draw_at_one_cursor {
                     changes.push(change.as_untracked()?);

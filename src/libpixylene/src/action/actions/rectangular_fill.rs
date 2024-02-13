@@ -32,14 +32,8 @@ impl Action for RectangularFill {
                             layer: project.cursors[0].layer,
                             coord: Coord{ x: i, y: j }, 
                         },
-                        color: Some(BlendMode::Normal.merge_down(
-                            Pixel::get_certain(project.palette.get_color((&self).palette_index)?),
-                            Pixel::get_certain(
-                                project
-                                    .layers[project.cursors[0].layer]
-                                    .scene.get_pixel(Coord{ x: i, y: j })?
-                            )
-                        ))
+                        color: project.palette.get_color((&self).palette_index)?,
+                        blend_mode: BlendMode::Normal,
                     }
                         .perform_action(project)?;
                     for change in draw_at_one_cursor {

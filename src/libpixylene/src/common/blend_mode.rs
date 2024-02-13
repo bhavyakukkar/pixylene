@@ -1,5 +1,6 @@
 use crate::common::Pixel;
 
+#[derive(Clone)]
 pub enum BlendMode {
     Overwrite,
     Normal,
