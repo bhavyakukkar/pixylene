@@ -2,94 +2,76 @@
 #+author: Bhavya Kukkar
 * TASKS
 #+description: Tasks that need to be done
-** ROAD TO NEXT STOP
-*** PUBLIC
-- [ ] some kind of global opacity control setting for pencils
-- [ ] helper screen to show keybind <-> actions map
+** FOCUSSED "SPRINT"
+:PROPERTIES:
+:COOKIE_DATA: todo
+:END:
+*** Making It Usable [0%]
+:PROPERTIES:
+:COOKIE_DATA: todo recursive
+:END:
+**** TODO _CORE_ [0/5]
+***** TODO make application safer by having indexes like layer number only be something like u8 or u16 (this is very important now) this does not let the approach of move_to_last_layer work, and is probably what's crashing CircularOutline make new types PInt with From impl for primitives
+***** TODO each layer has a blendmode (like in gimp)
+***** TODO actions to make/move/remove layers
+***** TODO ActionManager needs to detect overwriting of undo-history and cascade all changes after the overwriting change
+***** TODO make fn to deal with cursors (for one, there shouldn't be able to be 2 cursors at the same place), then make a non-result method to return pixel at given cursor
+***** TODO all project fields that have constraints should be private, for eg., project.cursors must be private, however, project.focus can be public (according to the system now at least). at the moment ToggleCursorAtFocus is able to create a cursor outside of the scene which bugs out every single action
 
-*** PRIVATE
-- [0/3] (pixylenetui)
-  - [ ] defined palette contains 10 colors, foreground+background+eight defined colors
-  - [ ] switchForeground is a wrapper that performs Palette.changeTo(1, <input>)
-  - [ ] switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
-- [ ] clap initializer for Pixylene::new() that opens inquire menu when called "$ pixylenetui new". optional flag -y takes default for all settings
-- [ ] actions to make/move/remove layers
-- [ ] new ActionError::OnlyCursorsInFocusSupported
+**** TODO _ACTIONS_ [0/2]
+***** TODO wrappers/builders for each action, since, for eg., rectangularfill needs its struct to initialize with start_corner = None, and start_corner is not a parameter that user decide like the palette_index parameter
+***** TODO RectangularOutline Action
 
-** FUNCTIONAL
-*** [11/30] NEXT
-- [X] show cursor even when on None pixel
-- [X] arrow keys instead of hjkl
-- [X] new pencil to act as eraser
-- [ ] make application safer by having indexes like layer number only be something like u8 or u16 (this is very important now)
-  this does not let the approach of move_to_last_layer work, and is probably what's crashing CircularOutline
-- [ ] deprecate MoveOneCursor in favorof SetOneCursor
-- [ ] make fn to deal with cursors (for one, there shouldn't be able to be 2 cursors at the same place)
-- [ ] (pixylenetui) refresh on terminal resize [[https://docs.rs/crossterm/latest/crossterm/event/enum.Event.html#variant.Resize]]
-- [ ] only 1 mode for selections, and three kinds of selections allowed: block, row or column
-- [ ] new actions 'GoTo' (to get something like vim's 'gg' and 0) and 'ClearAllCursors'
-- [X] replace rectangularfill color with palette color
-- [ ] divide pixylenetui/main.rs into two fns where second function returns result and main just logs all errors to cmdout()
-- [X] dont let layer go past number of layers
-- [ ] not worth having complicated project files just to save cursors, camera & focus
-- [X] add focus coordinates to statusline
-- [ ] pixylene::export adds black background that preview uses, let exports have transparent bgs
-- [X] pixylene_tui.rs:317 -> let user type project file if project_file_path is empty
-- [ ] a toggle-able strict setting where focus can neither go to non-existense layers nor non-existent coords on a layer
-- [ ] a way to let actions called by perform_action be untracked. they should be able to set with a boolean in pixylenetui/actions.rs
-- [ ] camera_dim being in project gets persisted and reopening in different terminal size messed things up (since Pixylene::import doesnt take defaults). since focus and cursors are directly in project, consider moving camera out of project and directly in pixylene
-  alternatively, let Pixylene::import also use defaults
-- [ ] since you will use methods to ensure project.cursors remains stable, make a non-result method to return pixel at given cursor
-- [X] (pixylenetui) only enable raw mode during get_key instead of only disabling raw mode during cmdin
-- [X] (pixylenetui) show cursor again during Command mode (impl in cmdin)
-- [X] layer selection uses 1-based indexing
-- [ ] ActionManager needs to detect overwriting of undo-history and cascade all changes after the overwriting change
-- [ ] fix warnings
-- [ ] wrappers/builders for each action, since, for eg., rectangularfill needs its struct to initialize with start_corner = None, and start_corner is not a parameter that user decide like the palette_index parameter
-- [ ] each layer has a blendmode (like in gimp)
-- [ ] project is immutable, scene-locking actions receive the mutable scene but can use the immutable project for things like Project.getFocus(), similar for camera-locking actions
-- [X] Actions that work instantly like MoveCameraUp are fundamentally different from actions that require input like SetPaletteColor
-- [ ] layer mute can be modified by giving user string like 1011101 indicating layers currently showing and user can modify and submit
+**** TODO _EXPORTS_ [0/3]
+***** TODO scaling of artwork while exporting (64x64 "x20" = 1280x1280)
+***** TODO Png to/fro Scene: fill more color-type/bit-depth combos
+***** TODO pixylene::export adds black background that preview uses, let exports have transparent bgs
 
-*** AT SOME POINT IN TIME
-**** [0/10] SMALL CHANGE
-- [ ] replace crossterm::execute!() with crossterm::queue!()
-- [ ] (pixylenetui) clear error after valid action has been entered and performed
-- [ ] perform_action returns VecDeque of Change's
-- [ ] add_action may throw err if action-name already exists
-- [ ] use Decorate::output() again & fix parameters (String vs &static 'str)
-- [ ] RectangularOutline Action
-- [ ] Mode that lets you 'write' colors line-by-line, left-to-right
-- [ ] Mode that lets you draw the same color for a continued camera motion and pixels draw at every new camera focus
-- [ ] Png to/fro Scene: fill more color-type/bit-depth combos
-- [ ] "Dependency Justification" for paper like done on crossterm's github
+**** TODO _UI_ [0/1]
+***** TODO (pixylenetui) refresh on terminal resize [[https://docs.rs/crossterm/latest/crossterm/event/enum.Event.html#variant.Resize]]
 
-**** [0/5] MEDIUM CHANGE
-- [ ] all project fields that have constraints should be private, for eg., project.cursors must be private, however, project.focus can be public (according to the system now at least). at the moment ToggleCursorAtFocus is able to create a cursor outside of the scene which bugs out every single action
-- [ ] complex actions that perform multiple smaller actions, when one of those smaller actions fail, should take the changes of the successfull and perform them to revert them back
-- [ ] metadata field on project that lets you write "tags" to pixels on a layer or directly to layer and lets you search for them later
-- [ ] projects can also be filed in plaintext so people can use vcs on them
-- [ ] better error reporting when action fails, maybe debug fmt for actions too?
+*** Making It Enjoyable To Use [0%]
+**** TODO restructuring: rename common to types and put layer mod in project mod (layer, camera, scene & palette all are composed children of Project)
+**** TODO a way to let actions called by perform_action be untracked. they should be able to set with a boolean in pixylenetui/actions.rs
+**** TODO copy-and-paste action that actually copies the pixels to clipboard
+**** TODO _PROJECT FILE_ [0/3]
+***** TODO projects can also be filed in plaintext so people can use vcs on them. its slightly overkill to be saving cursors and focus and camera anyway
+***** TODO plaintext config for default impl of Pixylene::import & Pixylene::new that includes palette (emphasis on palette and not the other struct fields)
+***** TODO there should be a straightforward way to change the palette of an existing project. plaintext project files will make this so so easy
+**** TODO new actions 'GoTo' (to get something like vim's 'gg' and 0) and 'ClearAllCursors'
+**** TODO complex actions that perform multiple smaller actions, when one of those smaller actions fail, should take the changes of the successfull and perform them to revert them back
+**** TODO downscaling of artwork while importing (1280x1280 "/10" = 128x128)
+**** TODO add_action may throw err if action-name already exists
+**** TODO fully replace crossterm::execute!() with crossterm::queue!()
+**** TODO get rid of warnings & dead code. p.s. PixyleneDisplay is not being used anywhere
+**** TODO use more iterators: impl iterator for scene, return of render_scene and return of render_layer
 
-**** [0/3] LARGE CHANGE
-- [ ] change-tree instead of change-stack, doesn't forget future changes after changes in undoed state
-- [ ] toml for default impl of Pixylene::import & Pixylene::new that includes palette
-- [ ] builder pattern for app, so that can chain add_action and perform method calls
-- [ ] copy-and-paste action that actually copies the pixels to clipboard
+*** Finishing Touches [0%]
+**** TODO helper screen to show keybind <-> actions map
 
-*** MAYBE / MAYBE NOT
-**** [0/3] SMALL CHANGE
-- [ ] restructure modules. layer, camera, scene & palette all are composed children of Project, so have them in a project module
-- [ ] get rid of camera.repeat, something of that nature should be managed by PixyleneDisplay
-- [ ] validation to not let Project.focus.layer exceed number of layers in the project
+*** Dont Feel Proud About Doing This Tiny Tasks [0%]
+**** TODO deprecate MoveOneCursor in favorof SetOneCursor
+**** TODO divide pixylenetui/main.rs into two fns where second function returns result and main just logs all errors to cmdout()
 
-**** [0/3] MEDIUM CHANGE
-- [ ] use more iterators: impl iterator for scene, return of render_scene and return of render_layer
-- [ ] alternative fn ActionManager::perform_directly() directly takes dyn Action
-- [ ] Action::perform_action returns Changes::Single or Change::Multiple
+*** Making It Pretentious/Prestigious [0%]
+**** TODO clap initializer for Pixylene::new() that opens inquire menu when called "$ pixylenetui new". optional flag -y takes default for all settings
+**** TODO perform_action returns VecDeque of Change's
+**** TODO Mode that lets you 'write' colors line-by-line, left-to-right
+**** TODO use Decorate::output() again & fix parameters (String vs &static 'str)
+**** TODO "Dependency Justification" for paper like done on crossterm's github
+**** TODO metadata field on project that lets you write "tags" to pixels on a layer or directly to layer and lets you search for them later
+**** TODO change-tree instead of change-stack, doesn't forget future changes after changes in undoed state
+**** TODO alternative fn ActionManager::perform_directly() directly takes dyn Action
 
-**** [0/0] LARGE CHANGE
-** NON-FUNCTIONAL
+*** Needs Debate [0%]
+**** TODO only 1 mode for selections, and three kinds of selections allowed: block, row or column
+**** TODO some kind of global opacity control setting for pencils
+**** TODO consider moving camera out of project and directly in pixylene
+**** TODO project is immutable, scene-locking actions receive the mutable scene but can use the immutable project for things like Project.getFocus(), similar for camera-locking actions; criticize the difference between a "scene-locking" action & a "camera-locking" action
+**** TODO layer mute can be modified by giving user string like 1011101 indicating layers currently showing and user can modify and submit (like dwm)
+**** TODO defined palette contains 10 colors, foreground+background+eight defined colors. switchForeground is a wrapper that performs Palette.changeTo(1, <input>). switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
+**** TODO Action::perform_action returns Changes::Single or Change::Multiple
+
 * PROS & CONS
 #+description: I weigh the pros and cons for a feature or decision here
 - [X] SELECTIONS MANAGED BY AN ACTION vs CAMERA HAS VECTOR OF PIXELS CALLED SELECTION
