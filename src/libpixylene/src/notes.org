@@ -17,17 +17,18 @@
 - [ ] new ActionError::OnlyCursorsInFocusSupported
 
 ** FUNCTIONAL
-*** [10/30] NEXT
+*** [11/30] NEXT
 - [X] show cursor even when on None pixel
 - [X] arrow keys instead of hjkl
 - [X] new pencil to act as eraser
-- [ ] make application safer by having indexes like layer number only be something like u8 or u16
+- [ ] make application safer by having indexes like layer number only be something like u8 or u16 (this is very important now)
+  this does not let the approach of move_to_last_layer work, and is probably what's crashing CircularOutline
 - [ ] deprecate MoveOneCursor in favorof SetOneCursor
-- [ ] make fn to deal with cursors (for one, their shouldn't be able to be 2 cursors at the same place)
+- [ ] make fn to deal with cursors (for one, there shouldn't be able to be 2 cursors at the same place)
 - [ ] (pixylenetui) refresh on terminal resize [[https://docs.rs/crossterm/latest/crossterm/event/enum.Event.html#variant.Resize]]
 - [ ] only 1 mode for selections, and three kinds of selections allowed: block, row or column
 - [ ] new actions 'GoTo' (to get something like vim's 'gg' and 0) and 'ClearAllCursors'
-- [ ] replace rectangularfill color with palette color
+- [X] replace rectangularfill color with palette color
 - [ ] divide pixylenetui/main.rs into two fns where second function returns result and main just logs all errors to cmdout()
 - [X] dont let layer go past number of layers
 - [ ] not worth having complicated project files just to save cursors, camera & focus

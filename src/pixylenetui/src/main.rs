@@ -168,7 +168,8 @@ fn main() {
                                     'k' => { app.perform_action("cursor_up"); },
                                     'l' => { app.perform_action("cursor_right"); },
 
-                                    'c' => { app.perform_action("toggle_cursor"); },
+                                    //'c' => { app.perform_action("toggle_cursor"); },
+                                    'c' => { app.perform_action("circular_outline"); },
 
                                     '1' => { app.perform_action("pencil1"); },
                                     '2' => { app.perform_action("pencil2"); },

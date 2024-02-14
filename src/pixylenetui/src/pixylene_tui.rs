@@ -34,7 +34,7 @@ impl Console {
     //pub fn cmdin(&mut self, message: &str, discard_char: event::KeyEvent) -> Option<String> {
     pub fn cmdin(&self, message: &str) -> Option<String> {
         use terminal::{ Clear, ClearType };
-        use cursor::{ MoveTo, MoveRight, Show, Hide };
+        use cursor::{ MoveTo, MoveRight, MoveLeft, Show, Hide };
         use style::{ SetForegroundColor, Color, Print, ResetColor };
         use event::{ Event, KeyEvent, KeyCode, read };
 
@@ -58,16 +58,22 @@ impl Console {
                     KeyCode::Enter => {
                         execute!(std::io::stdout(), Clear(ClearType::CurrentLine)).unwrap();
                         return Some(input);
-                    }
+                    },
                     KeyCode::Esc => {
                         execute!(std::io::stdout(), Clear(ClearType::CurrentLine)).unwrap();
                         return None;
-                    }
+                    },
+                    KeyCode::Backspace => {
+                        if input.len() > 0 {
+                            execute!(std::io::stdout(), MoveLeft(1), Clear(ClearType::UntilNewLine)).unwrap();
+                            input.pop();
+                        }
+                    },
                     KeyCode::Char(c) => {
                         execute!(std::io::stdout(), Print(c)).unwrap();
                         input.push(c);
-                    }
-                    _ => {}
+                    },
+                    _ => {},
                 }
             }
         }

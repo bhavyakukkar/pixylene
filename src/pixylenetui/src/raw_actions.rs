@@ -7,7 +7,7 @@ pub fn add_raw_actions(actions: &mut HashMap<String, Box<dyn action::Action>>) {
     }
     actions.insert(String::from("eraser"), Box::new(draw_at_all_cursors::DrawAtAllCursors{color: None, blend_mode: BlendMode::Overwrite}));
 
-    actions.insert(String::from("rectangular_fill"), Box::new(rectangular_fill::RectangularFill{palette_index: 1, start_corner: None}));
+    actions.insert(String::from("rectangular_fill"), Box::new(rectangular_fill::RectangularFill{palette_index: 6, start_corner: None}));
     actions.insert(String::from("cursor_up"), Box::new(move_all_cursors::MoveAllCursors{displacement: Coord{ x: -1, y: 0 }}));
     actions.insert(String::from("cursor_down"), Box::new(move_all_cursors::MoveAllCursors{displacement: Coord{ x: 1, y: 0 }}));
     actions.insert(String::from("cursor_left"), Box::new(move_all_cursors::MoveAllCursors{displacement: Coord{ x: 0, y: -1 }}));
