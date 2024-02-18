@@ -1,6 +1,6 @@
 use libpixylene::{
     pixylene::{ Pixylene, PixyleneNewDefaults, PixyleneImportDefaults },
-    common::{ Coord, Pixel },
+    types::{ Coord, Pixel },
     elements::palette::Palette,
 };
 
@@ -34,9 +34,38 @@ enum StartType {
     Import{ path: String },
 }
 
+/*
+enum Key {
+    kind: event::KeyEvent,
+}
+impl PartialEq<Key> for Key {
+    fn eq(&self, other: &Key) -> bool {
+        (self.code == other.code) && (self.modifiers == )
+    }
+}
+*/
+
 enum Behavior {
     VimLike,
     EmacsLike,
+}
+impl Behavior {
+    const VIM_DISCARD_KEY: event::KeyEvent = event::KeyEvent::new(
+        event::KeyCode::Esc,
+        event::KeyModifiers::empty()
+    );
+
+    const EMACS_DISCARD_KEY: event::KeyEvent = event::KeyEvent::new(
+        event::KeyCode::Char('g'),
+        event::KeyModifiers::CONTROL
+    );
+
+    fn discard_key(&self) -> event::KeyEvent {
+        match self {
+            Behavior::VimLike => Self::VIM_DISCARD_KEY,
+            Behavior::EmacsLike => Self::EMACS_DISCARD_KEY,
+        }
+    }
 }
 
 fn main() {
@@ -113,6 +142,7 @@ fn main() {
         /* info_corner: */Coord{ x: 2, y: 86 },
         Some(pixylene),
         project_file_path,
+        behavior.discard_key().clone(),
     );
     let mut vim_mode = VimMode::Normal;
     let mut last_vim_mode = VimMode::Normal;
@@ -135,13 +165,14 @@ fn main() {
                     },
                     VimMode::Command => {
                         app.draw_statusline(&vim_mode);
-                        if let Some(command) = app.console.cmdin(":") {
+                        if let Some(command) = app.cmdin(":") {
                             match command.as_str() {
                                 "undo" => { app.undo(); },
                                 "redo" => { app.undo(); },
                                 "w" => { app.save(); },
                                 "ex" => { app.export(); }
                                 "q" => { break; },
+                                "" => { },
                                 _ => { app.perform_action(&command); },
                             }
                         }
@@ -187,8 +218,6 @@ fn main() {
 
                                     '-' => { app.perform_action("move_one_layer_up"); },
                                     '+' => { app.perform_action("move_one_layer_down"); },
-                                    //'-' => { app.pixylene.as_mut().unwrap().project.focus.layer = app.pixylene.as_mut().unwrap().project.focus.layer.checked_sub(1).unwrap_or(0); },
-                                    //'+' => { app.pixylene.as_mut().unwrap().project.focus.layer += 1; },
 
                                     ';' => { app.perform_prev_action(); },
                                     'u' => { app.undo(); },

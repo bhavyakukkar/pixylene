@@ -6,7 +6,7 @@ use ColorType::*;
 use BitDepth::*;
 
 use crate::grammar::Decorate;
-use crate::common::{ Coord, Pixel };
+use crate::types::{ Coord, Pixel };
 use crate::elements::layer::{ Scene, SceneError };
 
 #[derive(Debug)]

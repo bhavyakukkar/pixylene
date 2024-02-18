@@ -1,4 +1,4 @@
-use crate::common::Pixel;
+use crate::types::Pixel;
 
 #[derive(Clone)]
 pub enum BlendMode {

@@ -1,8 +1,10 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use crate::project::{ Project, ProjectError, Cursor };
-use crate::elements::{ palette::PaletteError, layer::{ SceneError, CameraError } };
+use crate::{
+    project::{ Project, ProjectError, Cursor },
+    elements::{ palette::PaletteError, layer::{ SceneError, CameraError } }
+};
 
 #[derive(Debug)]
 pub enum UntrackError {
@@ -35,7 +37,7 @@ impl std::fmt::Display for ChangeError {
         }
     }
 }
-#[derive(Debug)]
+//#[derive(Debug)]
 pub enum Change {
     Start,
     End,
@@ -50,6 +52,17 @@ impl std::fmt::Display for Change {
             End => write!(f, "Change::End"),
             StartEnd(_) => write!(f, "Change::StartEnd"),
             Untracked(_) => write!(f, "Change::Untracked"),
+        }
+    }
+}
+impl std::fmt::Debug for Change {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        use Change::*;
+        match self {
+            Start => write!(f, "S"),
+            End => write!(f, "E"),
+            StartEnd(_) => write!(f, "SE"),
+            Untracked(_) => write!(f, "U"),
         }
     }
 }

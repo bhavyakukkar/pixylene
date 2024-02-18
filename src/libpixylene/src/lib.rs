@@ -3,7 +3,7 @@ extern crate savefile;
 extern crate savefile_derive;
 
 pub mod grammar;
-pub mod common;
+pub mod types;
 pub mod elements;
 pub mod project;
 pub mod action;

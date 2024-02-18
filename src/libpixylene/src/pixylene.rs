@@ -1,6 +1,6 @@
 use crate::grammar::Decorate;
 use crate::{
-    common::{ Coord, Pixel, BlendMode },
+    types::{ Coord, Pixel, BlendMode },
     elements::{
         layer::{ Scene, SceneError, Camera, CameraPixel, Layer },
         palette::Palette,

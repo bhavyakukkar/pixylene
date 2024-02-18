@@ -1,4 +1,4 @@
-use libpixylene::common::Pixel;
+use libpixylene::types::Pixel;
 
 #[derive(Clone, Copy)]
 pub enum VimMode {

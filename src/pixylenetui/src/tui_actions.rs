@@ -1,7 +1,7 @@
 use libpixylene::{
     self,
     Pixylene,
-    common::{ Coord, BlendMode },
+    types::{ Coord, BlendMode },
     project::{ Cursor },
     action::{ self, actions::* }
 };
@@ -126,7 +126,20 @@ impl action::Action for CircularOutline {
          * End
          */
 
+        changes.push(action::Change::End);
         Ok(changes)
+    }
+}
+
+struct Echo {
+    console: Rc<Console>,
+}
+impl action::Action for Echo {
+    fn perform_action(&mut self, project: &mut libpixylene::project::Project) -> Result<Vec<action::Change>, action::ActionError> {
+        if let Some(string) = self.console.cmdin(":echo ") {
+            self.console.cmdout(&string, LogType::Info);
+        }
+        Ok(Vec::new())
     }
 }
 
@@ -146,5 +159,8 @@ pub fn add_tui_actions(actions: &mut HashMap<String, Box<dyn action::Action>>, c
 
     actions.insert(String::from("circular_outline"), Box::new(CircularOutline{
         palette_index: 4, console: Rc::clone(console),
+    }));
+    actions.insert(String::from("echo"), Box::new(Echo{
+        console: Rc::clone(console),
     }));
 }

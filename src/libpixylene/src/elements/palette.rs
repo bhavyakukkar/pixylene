@@ -1,4 +1,4 @@
-use crate::common::{ Pixel, PixelError };
+use crate::types::{ Pixel, PixelError };
 
 #[derive(Debug)]
 pub enum PaletteError {

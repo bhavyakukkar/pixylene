@@ -1,4 +1,4 @@
-use libpixylene::{ self, Pixylene, common::{ Coord, BlendMode }, action::{ self, actions::* }};
+use libpixylene::{ self, Pixylene, types::{ Coord, BlendMode }, action::{ self, actions::* }};
 use std::collections::HashMap;
 
 pub fn add_raw_actions(actions: &mut HashMap<String, Box<dyn action::Action>>) {

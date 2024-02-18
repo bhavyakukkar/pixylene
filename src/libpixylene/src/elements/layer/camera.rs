@@ -1,4 +1,4 @@
-use crate::common::{ Coord, Pixel };
+use crate::types::{ Coord, Pixel };
 use crate::elements::layer::Scene;
 
 #[derive(Debug)]

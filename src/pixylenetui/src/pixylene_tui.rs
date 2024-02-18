@@ -1,6 +1,6 @@
 use libpixylene::{
     Pixylene,
-    common::Coord, 
+    types::Coord,
     elements::layer::CameraPixel,
     project::ProjectPixel,
     action,
@@ -26,17 +26,21 @@ use std::rc::Rc;
 
 pub struct Console {
     console_corner: Coord,
+    discard_key: event::KeyEvent,
 }
 impl Console {
+    /*
     pub fn new(console_corner: Coord) -> Console {
         Console { console_corner }
     }
-    //pub fn cmdin(&mut self, message: &str, discard_char: event::KeyEvent) -> Option<String> {
+    */
     pub fn cmdin(&self, message: &str) -> Option<String> {
         use terminal::{ Clear, ClearType };
         use cursor::{ MoveTo, MoveRight, MoveLeft, Show, Hide };
         use style::{ SetForegroundColor, Color, Print, ResetColor };
         use event::{ Event, KeyEvent, KeyCode, read };
+
+        let mut out: Option<String> = None;
 
         execute!(
             std::io::stdout(),
@@ -46,22 +50,26 @@ impl Console {
             SetForegroundColor(Color::Rgb{ r: 220, g: 220, b: 220 }),
             Print(&message),
             ResetColor,
-            MoveRight(1),
             Show,
         ).unwrap();
 
         let mut input = String::new();
         loop {
             let event = read().unwrap();
-            if let Event::Key(KeyEvent { code, .. }) = event {
+            if let Event::Key(key) = event {
+                if key == self.discard_key {
+                    execute!(std::io::stdout(), Clear(ClearType::CurrentLine)).unwrap();
+                    out = None;
+                    break;
+                }
+                let KeyEvent { code, .. } = key;
                 match code {
                     KeyCode::Enter => {
                         execute!(std::io::stdout(), Clear(ClearType::CurrentLine)).unwrap();
-                        return Some(input);
+                        out = Some(input);
+                        break;
                     },
                     KeyCode::Esc => {
-                        execute!(std::io::stdout(), Clear(ClearType::CurrentLine)).unwrap();
-                        return None;
                     },
                     KeyCode::Backspace => {
                         if input.len() > 0 {
@@ -78,7 +86,7 @@ impl Console {
             }
         }
         execute!(std::io::stdout(), Hide).unwrap();
-        Some(input)
+        out
     }
     pub fn cmdout(&self, message: &str, log_type: LogType) {
         use terminal::{ Clear, ClearType };
@@ -102,14 +110,15 @@ impl Console {
 }
 
 pub struct PixyleneTUI {
-    pub console: Rc<Console>,
-    pub camera_corner: Coord,
-    pub statusline_corner: Coord,
-    pub info_corner: Coord,
-    pub pixylene: Option<Pixylene>,
-    pub last_action_name: Option<String>,
-    pub project_file_path: Option<String>,
-    pub actions: HashMap<String, Box<dyn action::Action>>,
+    console: Rc<Console>,
+    camera_corner: Coord,
+    statusline_corner: Coord,
+    info_corner: Coord,
+    pixylene: Option<Pixylene>,
+    last_action_name: Option<String>,
+    project_file_path: Option<String>,
+    actions: HashMap<String, Box<dyn action::Action>>,
+    discard_key: event::KeyEvent,
 }
 impl PixyleneTUI {
     pub fn new(
@@ -119,8 +128,9 @@ impl PixyleneTUI {
         info_corner: Coord,
         pixylene: Option<Pixylene>,
         project_file_path: Option<String>,
+        discard_key: event::KeyEvent,
     ) -> PixyleneTUI {
-        let console = Console{ console_corner };
+        let console = Console{ console_corner, discard_key };
         let mut pixylene_tui = PixyleneTUI {
             console: Rc::new(console),
             camera_corner,
@@ -130,15 +140,18 @@ impl PixyleneTUI {
             last_action_name: None,
             project_file_path,
             actions: HashMap::new(),
+            discard_key,
         };
         add_raw_actions(&mut pixylene_tui.actions);
         add_tui_actions(&mut pixylene_tui.actions, &pixylene_tui.console);
         pixylene_tui.dispatch_actions();
         return pixylene_tui;
     }
+    /*
     pub fn create_console(console_corner: Coord) -> Console {
         Console{ console_corner }
     }
+    */
     pub fn cmdin(&self, message: &str) -> Option<String> {
         self.console.cmdin(message)
     }
@@ -228,7 +241,7 @@ impl PixyleneTUI {
                 match project_pixel.camera_pixel {
                     CameraPixel::Filled{ color, .. } => {
                         if color.a != 255 {
-                            panic!("alpha not 255");
+                            panic!("alpha not 255, color: {} at ({},{})\n", color, i, j);
                         }
                         queue!(
                             stdout,
@@ -391,19 +404,19 @@ impl PixyleneTUI {
             Ok(()) => {
                 self.last_action_name = Some(String::from(action_name));
             },
-            Err(desc) => self.console.cmdout(&desc.to_string(), LogType::Error),
+            Err(desc) => self.cmdout(&desc.to_string(), LogType::Error),
         }
     }
     pub fn undo(&mut self) {
         match self.pixylene.as_mut().unwrap().undo() {
             Ok(()) => (),
-            Err(desc) => self.console.cmdout(&desc.to_string(), LogType::Error),
+            Err(desc) => self.cmdout(&desc.to_string(), LogType::Error),
         }
     }
     pub fn redo(&mut self) {
         match self.pixylene.as_mut().unwrap().redo() {
             Ok(()) => (),
-            Err(desc) => self.console.cmdout(&desc.to_string(), LogType::Error),
+            Err(desc) => self.cmdout(&desc.to_string(), LogType::Error),
         }
     }
     pub fn save(&mut self) {
@@ -411,32 +424,32 @@ impl PixyleneTUI {
             Some(path) => match self.pixylene.as_mut().unwrap().save(&path) {
                 Ok(()) => {
                     let message = format!("project saved to {}", path);
-                    self.console.cmdout(&message, LogType::Info);
+                    self.cmdout(&message, LogType::Info);
                 },
-                Err(desc) => self.console.cmdout(&desc.to_string(), LogType::Error),
+                Err(desc) => self.cmdout(&desc.to_string(), LogType::Error),
             },
             None => {
-                if let Some(path) = self.console.cmdin("save project as: ") {
+                if let Some(path) = self.cmdin("save project as: ") {
                     match self.pixylene.as_mut().unwrap().save(&path) {
                         Ok(()) => {
                             let message = format!("project saved to {}", path);
                             self.project_file_path = Some(path.clone());
-                            self.console.cmdout(&message, LogType::Info);
+                            self.cmdout(&message, LogType::Info);
                         },
-                        Err(desc) => self.console.cmdout(&desc.to_string(), LogType::Error),
+                        Err(desc) => self.cmdout(&desc.to_string(), LogType::Error),
                     }
                 }
             }
         }
     }
     pub fn export(&mut self) {
-        if let Some(path) = self.console.cmdin("export project as: ") {
+        if let Some(path) = self.cmdin("export project as: ") {
             match self.pixylene.as_mut().unwrap().export(&path) {
                 Ok(()) => {
                     let message = format!("project exported to {}", path);
-                    self.console.cmdout(&message, LogType::Info);
+                    self.cmdout(&message, LogType::Info);
                 },
-                Err(desc) => self.console.cmdout(&desc.to_string(), LogType::Error),
+                Err(desc) => self.cmdout(&desc.to_string(), LogType::Error),
             }
         }
     }

@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use crate::common::Coord;
+use crate::types::Coord;
 use crate::project::Project;
 use crate::action::{ Action, ActionError, Change };
 

@@ -1,5 +1,5 @@
 use crate::{
-    common::{ Coord, Pixel, BlendMode },
+    types::{ Coord, Pixel, BlendMode },
     elements::{
         palette::Palette,
         layer::{ Scene, Camera, CameraPixel, Layer },
@@ -155,7 +155,8 @@ impl Project {
         match self.cursors.get_mut(index) {
             Some(cursor) => {
                 let Cursor { coord: coord, layer: layer } = new_cursor;
-                if coord.x < 0 || coord.y < 0 || coord.x >= self.dimensions.x || coord.y >= self.dimensions.y {
+                if coord.x < 0 || coord.y < 0 ||
+                    coord.x >= self.dimensions.x || coord.y >= self.dimensions.y {
                     return Err(CursorCoordOutOfBounds(index, new_cursor, self.dimensions));
                 }
                 if layer >= self.layers.len() {
@@ -170,12 +171,18 @@ impl Project {
     }
     pub fn render_layer(&self) -> Result<Vec<ProjectPixel>, ProjectError> {
         use ProjectError::{ LayerOutOfBounds };
+        let net_scene = Layer::merge(
+            self.dimensions,
+            self.layers
+                .get(self.focus.layer)
+                .ok_or(LayerOutOfBounds(self.focus.layer, self.layers.len()))?,
+            &Layer::new_with_solid_color(self.dimensions, Some(Pixel::background())),
+            BlendMode::Normal
+        ).unwrap();
+
         let mut project_pixels: Vec<ProjectPixel> = Vec::new();
         for camera_pixel in self.camera.render_scene(
-            &self.layers
-                .get(self.focus.layer)
-                .ok_or(LayerOutOfBounds(self.focus.layer, self.layers.len()))?
-                .scene,
+            &net_scene,
             self.focus.coord
         ) {
             project_pixels.push(ProjectPixel {
