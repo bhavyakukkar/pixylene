@@ -221,7 +221,7 @@ impl ActionManager {
         use ActionManagerError::{ NothingToRedo, ActionFailedToPerform };
         use ActionNameOrChangeIndex::*;
 
-        if self.change_stack.len() == 0 || self.change_index == self.change_stack.len() - 1 {
+        if self.change_stack.len() == 0 || self.change_index == self.change_stack.len() {
             return Err(NothingToRedo)
         }
         let mut new_change: Change;
