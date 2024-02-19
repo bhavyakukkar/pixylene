@@ -1,7 +1,7 @@
 use libpixylene::{
     pixylene::{ Pixylene, PixyleneNewDefaults, PixyleneImportDefaults },
     types::{ Coord, Pixel },
-    elements::palette::Palette,
+    project::Palette,
 };
 
 mod pixylene_tui;

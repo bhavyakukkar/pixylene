@@ -1,9 +1,12 @@
+use crate::{
+    types::{ Coord, Cursor },
+    project::{ ProjectError, Project },
+    action::{ Action, ActionError, Change },
+};
+
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use crate::types::Coord;
-use crate::project::{ Project, ProjectError, Cursor };
-use crate::action::{ Action, ActionError, Change };
 
 pub struct SetFocus {
     pub coord: Option<Coord>,

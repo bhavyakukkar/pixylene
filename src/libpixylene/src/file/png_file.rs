@@ -7,7 +7,7 @@ use BitDepth::*;
 
 use crate::grammar::Decorate;
 use crate::types::{ Coord, Pixel };
-use crate::elements::layer::{ Scene, SceneError };
+use crate::project::{ SceneError, Scene };
 
 #[derive(Debug)]
 pub enum PngFileError {

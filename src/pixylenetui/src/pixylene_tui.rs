@@ -1,8 +1,7 @@
 use libpixylene::{
     Pixylene,
     types::Coord,
-    elements::layer::CameraPixel,
-    project::ProjectPixel,
+    project::{ CameraPixel, ProjectPixel },
     action,
 };
 use crate::{

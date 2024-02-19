@@ -1,17 +1,13 @@
-use crate::grammar::Decorate;
 use crate::{
-    types::{ Coord, Pixel, BlendMode },
-    elements::{
-        layer::{ Scene, SceneError, Camera, CameraPixel, Layer },
-        palette::Palette,
+    grammar::Decorate,
+    types::{ Coord, Pixel, BlendMode, Cursor },
+    project::{ Scene, SceneError, Camera, CameraPixel, Layer, Palette, Project },
+    file::{
+        png_file::{ PngFile, PngFileError },
+        project_file::{ ProjectFile, ProjectFileError }
     },
+    action::{ Action, action_manager::{ ActionManagerError, ActionManager } },
 };
-use crate::file::{
-    png_file::{ PngFile, PngFileError },
-    project_file::{ ProjectFile, ProjectFileError }
-};
-use crate::project::{ Project, Cursor };
-use crate::action::{ Action, action_manager::{ ActionManagerError, ActionManager } };
 
 use std::collections::HashMap;
 

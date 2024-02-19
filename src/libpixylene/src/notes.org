@@ -30,9 +30,9 @@
 **** TODO _UI_ [0/1]
 ***** TODO (pixylenetui) refresh on terminal resize [[https://docs.rs/crossterm/latest/crossterm/event/enum.Event.html#variant.Resize]]
 
-*** Making It Enjoyable To Use [0%]
+*** Making It Enjoyable To Use [8%]
 **** TODO Flexbox to arrange statusbar items
-**** TODO restructuring: rename common to types and put layer mod in project mod (layer, camera, scene & palette all are composed children of Project)
+**** DONE restructuring: rename common to types and put layer mod in project mod (layer, camera, scene & palette all are composed children of Project)
 **** TODO a way to let actions called by perform_action be untracked. they should be able to set with a boolean in pixylenetui/actions.rs
 **** TODO copy-and-paste action that actually copies the pixels to clipboard
 **** TODO _PROJECT FILE_ [0/3]

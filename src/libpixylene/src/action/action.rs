@@ -1,10 +1,11 @@
+use crate::{
+    types::{ Cursor },
+    project::{ PaletteError, SceneError, CameraError, ProjectError, Project },
+};
+
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use crate::{
-    project::{ Project, ProjectError, Cursor },
-    elements::{ palette::PaletteError, layer::{ SceneError, CameraError } }
-};
 
 #[derive(Debug)]
 pub enum UntrackError {

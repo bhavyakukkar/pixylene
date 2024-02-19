@@ -1,9 +1,12 @@
+use crate::{
+    types::{ Coord, Pixel, Cursor },
+    project::{ Project },
+    action::{ Action, ActionError, Change },
+};
+
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use crate::types::{ Coord, Pixel };
-use crate::project::{ Project, Cursor };
-use crate::action::{ Action, ActionError, Change };
 
 pub struct ToggleCursorAtCursor {
     pub cursor: Cursor,

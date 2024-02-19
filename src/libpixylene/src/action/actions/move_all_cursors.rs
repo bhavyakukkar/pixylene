@@ -1,9 +1,12 @@
+use crate::{
+    types::{ Coord, Cursor },
+    project::{ Project },
+    action::{ Action, ActionError, Change, actions::move_one_cursor::MoveOneCursor },
+};
+
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use crate::types::Coord;
-use crate::project::{ Project, Cursor };
-use crate::action::{ Action, ActionError, Change, actions::move_one_cursor::MoveOneCursor };
 
 pub struct MoveAllCursors {
     pub displacement: Coord,

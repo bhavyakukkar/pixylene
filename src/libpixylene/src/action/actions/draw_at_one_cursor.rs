@@ -1,9 +1,11 @@
+use crate::{
+    types::{ Coord, Pixel, BlendMode, Cursor },
+    project::{ Project },
+    action::{ Action, ActionError, Change },
+};
+
 use std::rc::Rc;
 use std::cell::RefCell;
-
-use crate::types::{ Coord, Pixel, BlendMode };
-use crate::project::{ Project, Cursor };
-use crate::action::{ Action, ActionError, Change };
 
 /* 
  * Draw At One Cursor

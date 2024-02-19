@@ -1,10 +1,13 @@
+use crate::{
+    types::{ Coord, Pixel, BlendMode, Cursor },
+    project::{ Project },
+    action::{ Action, ActionError, Change, actions::draw_at_one_cursor::DrawAtOneCursor },
+};
+
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::cmp::{ min, max };
 
-use crate::types::{ Coord, Pixel, BlendMode };
-use crate::project::{ Project, Cursor };
-use crate::action::{ Action, ActionError, Change, actions::draw_at_one_cursor::DrawAtOneCursor };
 
 pub struct RectangularFill {
     pub palette_index: usize,

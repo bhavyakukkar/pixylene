@@ -1,9 +1,12 @@
+use crate::{
+    types::{ Coord },
+    project::{ Project },
+    action::{ Action, ActionError, Change },
+};
+
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use crate::types::Coord;
-use crate::project::Project;
-use crate::action::{ Action, ActionError, Change };
 
 pub struct ZoomCamera {
     pub mult_incr: isize

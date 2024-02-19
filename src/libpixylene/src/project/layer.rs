@@ -1,9 +1,9 @@
 use crate::types::{ Coord, Pixel, BlendMode };
-use crate::elements::layer::{ self, Scene };
+use crate::project::{ self, Scene };
 
 #[derive(Debug)]
 pub enum LayerError {
-    SceneError(bool, Coord, layer::SceneError),
+    SceneError(bool, Coord, project::SceneError),
 }
 impl std::fmt::Display for LayerError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {

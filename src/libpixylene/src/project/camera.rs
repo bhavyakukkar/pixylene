@@ -1,5 +1,4 @@
-use crate::types::{ Coord, Pixel };
-use crate::elements::layer::Scene;
+use crate::{ types::{ Coord, Pixel }, project::{ Scene } };
 
 #[derive(Debug)]
 pub enum CameraError {

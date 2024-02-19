@@ -1,10 +1,8 @@
 use crate::{
-    types::{ Coord, Pixel, BlendMode },
-    elements::{
-        palette::Palette,
-        layer::{ Scene, Camera, CameraPixel, Layer },
-    },
+    types::{ Coord, Pixel, BlendMode, Cursor },
+    project::{ Palette, Scene, CameraPixel, Camera, Layer },
 };
+
 
 #[derive(Debug)]
 pub enum ProjectError {
@@ -62,12 +60,6 @@ impl std::fmt::Display for ProjectError {
             ),
         }
     }
-}
-
-#[derive(Clone, Copy, PartialEq, Debug, Savefile)]
-pub struct Cursor {
-    pub layer: usize,
-    pub coord: Coord,
 }
 
 #[derive(Clone)]
