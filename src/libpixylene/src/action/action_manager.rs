@@ -67,11 +67,11 @@ impl std::fmt::Display for ActionManagerError {
 }
 
 pub struct ActionManager {
-    pub actions: HashMap<String, Box<dyn Action>>,
-    pub scene_lock: Option<String>,
-    pub camera_lock: Option<String>,
-    pub change_stack: Vec<Change>, //todo: make private
-    pub change_index: usize, //todo: make private
+    actions: HashMap<String, Box<dyn Action>>,
+    pub scene_lock: Option<String>, //todo: make private when better 'lock' purpose
+    pub camera_lock: Option<String>, //todo: make private
+    change_stack: Vec<Change>,
+    change_index: usize,
 }
 impl ActionManager {
     pub fn new(actions: HashMap<String, Box<dyn Action>>) -> Self {
@@ -127,6 +127,10 @@ impl ActionManager {
                             break;
                         }
                         self.change_index += 1;
+                        if self.change_index <= self.change_stack.len() {
+                            //perform called at non-latest state
+                            self.change_stack.drain((self.change_index - 1)..);
+                        }
                         self.change_stack.push(change);
                         i += 1;
                     }
@@ -280,5 +284,11 @@ impl ActionManager {
             }
         }
         Ok(())
+    }
+    pub fn add_action(&mut self, action_name: String, action: Box<dyn Action>) {
+        self.actions.insert(action_name, action);
+    }
+    pub fn list_actions(&self) -> Vec<String> {
+        (&self.actions).into_iter().map(|(action_name, _)| action_name.clone()).collect()
     }
 }

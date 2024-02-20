@@ -293,8 +293,7 @@ impl PixyleneTUI {
             MoveTo(self.info_corner.y as u16, self.info_corner.x as u16 + 2),
         ).unwrap();
 
-        //let action_names = &self.pixylene.as_mut().unwrap().action_manager.actions.collect();
-        for (action_name, _) in &self.pixylene.as_mut().unwrap().action_manager.actions {
+        for action_name in &self.pixylene.as_mut().unwrap().action_manager.list_actions() {
             execute!(
                 std::io::stdout(),
                 Print(&action_name),

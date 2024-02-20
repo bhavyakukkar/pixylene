@@ -186,7 +186,7 @@ impl Pixylene {
         Ok(())
     }
     pub fn add_action(&mut self, action_name: &str, action: Box<dyn Action>) {
-        self.action_manager.actions.insert(action_name.to_string(), action);
+        self.action_manager.add_action(action_name.to_string(), action);
     }
     pub fn perform(&mut self, action_name: &str) -> Result<(), PixyleneError> {
         match self.action_manager.perform(&mut self.project, action_name.to_string()) {
