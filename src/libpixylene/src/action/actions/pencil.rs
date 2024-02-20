@@ -24,7 +24,7 @@ impl Action for Pencil {
         for index in 0..project.cursors.len() {
             if let Ok(draw_at_one_cursor) = (DrawAtOneCursor {
                 cursor: project.cursors[index].clone(),
-                color: project.palette.get_color((&self).palette_index)?,
+                color: project.canvas.palette.get_color((&self).palette_index)?,
                 blend_mode: BlendMode::Normal,
             }).perform_action(project) {
                 for change in draw_at_one_cursor {

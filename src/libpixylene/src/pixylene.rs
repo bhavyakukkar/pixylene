@@ -177,7 +177,7 @@ impl Pixylene {
         let merged_layer: Layer;
 
         PngFile::from_scene(
-            &self.project.merged_scene(),
+            &self.project.canvas.merged_scene(),
             //todo: use from Pixylene struct instead of defaults
             png::ColorType::Rgba,
             png::BitDepth::Eight,

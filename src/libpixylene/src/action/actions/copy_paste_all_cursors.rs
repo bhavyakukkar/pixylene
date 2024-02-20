@@ -22,7 +22,7 @@ impl Action for CopyPasteAllCursors {
                 //first iteration: copying
                 for i in 0..project.cursors.len() {
                     self.selected_pixels.push(
-                        project
+                        project.canvas
                             .layers[project.cursors[i].layer]
                             .scene.get_pixel(project.cursors[i].coord).unwrap(),
                     );

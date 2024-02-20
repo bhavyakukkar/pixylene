@@ -22,10 +22,10 @@ impl action::Action for SensiblyMoveToLayer {
         action::include(Box::new(action::actions::set_focus::SetFocus {
             coord: None,
             layer: Some(if actual_to >= 0 {
-                if (actual_to as usize) < project.layers.len() { actual_to.try_into().unwrap() }
+                if (actual_to as usize) < project.canvas.layers.len() { actual_to.try_into().unwrap() }
                 /* use when strict */
                 //else { return Err(ActionError::InputsError(format!("trying to move to layer {} when only {} layers present", actual_to + 1, project.layers.len()))); }
-                else { project.layers.len() - 1 }
+                else { project.canvas.layers.len() - 1 }
             } else {
                 return Err(action::ActionError::InputsError(format!("layers start from 1")));
             }),

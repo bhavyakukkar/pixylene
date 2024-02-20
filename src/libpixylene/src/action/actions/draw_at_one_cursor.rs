@@ -20,8 +20,8 @@ pub struct DrawAtOneCursor {
 }
 impl Action for DrawAtOneCursor {
     fn perform_action(&mut self, project: &mut Project) -> Result<Vec<Change>, ActionError> {
-        let old_pixel = project.layers[self.cursor.layer].scene.get_pixel(self.cursor.coord)?;
-        project.layers[self.cursor.layer].scene.set_pixel(
+        let old_pixel = project.canvas.layers[self.cursor.layer].scene.get_pixel(self.cursor.coord)?;
+        project.canvas.layers[self.cursor.layer].scene.set_pixel(
             self.cursor.coord,
             Some(self.blend_mode.merge_down(
                 Pixel::get_certain(self.color),

@@ -35,7 +35,7 @@ impl Action for RectangularFill {
                             layer: project.cursors[0].layer,
                             coord: Coord{ x: i, y: j }, 
                         },
-                        color: project.palette.get_color((&self).palette_index)?,
+                        color: project.canvas.palette.get_color((&self).palette_index)?,
                         blend_mode: BlendMode::Normal,
                     }
                         .perform_action(project)?;

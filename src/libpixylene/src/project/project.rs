@@ -1,6 +1,6 @@
 use crate::{
     types::{ Coord, Pixel, BlendMode, Cursor },
-    project::{ Palette, Scene, CameraPixel, Camera, Layer },
+    project::{ Palette, Scene, CameraPixel, Camera, Layer, Canvas },
 };
 
 
@@ -70,12 +70,10 @@ pub struct ProjectPixel {
 
 #[derive(Savefile)]
 pub struct Project {
-    pub dimensions: Coord,
-    pub layers: Vec<Layer>,
+    pub canvas: Canvas,
     pub cursors: Vec<Cursor>,
     pub camera: Camera,
     pub focus: Cursor,
-    pub palette: Palette,
 }
 
 impl Project {
@@ -102,36 +100,19 @@ impl Project {
             return Err(MultipleCursorsUnderDevelopment);
         }
         */
+        let canvas = Canvas {
+            dimensions,
+            layers,
+            palette,
+        };
         let mut project = Project {
-            dimensions: dimensions,
-            layers: layers,
+            canvas,
             cursors: vec![Cursor { layer: 0, coord: Coord { x: 0, y: 0 }}; cursors.len()],
-            camera: camera,
-            focus: focus,
-            palette: palette,
+            camera,
+            focus,
         };
         for (index, cursor) in cursors.iter().enumerate() { project.set_cursor(index, *cursor)?; }
         Ok(project)
-    }
-    pub fn get_num_layers(&self) -> usize {
-        self.layers.len()
-    }
-    pub fn merged_scene(&self) -> Scene {
-        let mut net_layer = Layer::new_with_solid_color(self.dimensions, Some(Pixel::background()));
-        for k in 0..self.layers.len() {
-            if self.layers[k].mute { continue; }
-            net_layer = Layer {
-                scene: Layer::merge(
-                    self.dimensions,
-                    &self.layers[k],
-                    &net_layer,
-                    BlendMode::Normal
-                ).unwrap(),
-                opacity: 255,
-                mute: false,
-            };
-        }
-        net_layer.scene
     }
     pub fn get_cursor(&self, index: usize) -> Result<Cursor, ProjectError> {
         use ProjectError::{ CursorIndexOutOfBounds };
@@ -148,11 +129,11 @@ impl Project {
             Some(cursor) => {
                 let Cursor { coord: coord, layer: layer } = new_cursor;
                 if coord.x < 0 || coord.y < 0 ||
-                    coord.x >= self.dimensions.x || coord.y >= self.dimensions.y {
-                    return Err(CursorCoordOutOfBounds(index, new_cursor, self.dimensions));
+                    coord.x >= self.canvas.dimensions.x || coord.y >= self.canvas.dimensions.y {
+                    return Err(CursorCoordOutOfBounds(index, new_cursor, self.canvas.dimensions));
                 }
-                if layer >= self.layers.len() {
-                    return Err(LayerOutOfBounds(layer, self.layers.len()));
+                if layer >= self.canvas.layers.len() {
+                    return Err(LayerOutOfBounds(layer, self.canvas.layers.len()));
                 }
                 cursor.coord = new_cursor.coord;
                 cursor.layer = new_cursor.layer;
@@ -164,11 +145,11 @@ impl Project {
     pub fn render_layer(&self) -> Result<Vec<ProjectPixel>, ProjectError> {
         use ProjectError::{ LayerOutOfBounds };
         let net_scene = Layer::merge(
-            self.dimensions,
-            self.layers
+            self.canvas.dimensions,
+            self.canvas.layers
                 .get(self.focus.layer)
-                .ok_or(LayerOutOfBounds(self.focus.layer, self.layers.len()))?,
-            &Layer::new_with_solid_color(self.dimensions, Some(Pixel::background())),
+                .ok_or(LayerOutOfBounds(self.focus.layer, self.canvas.get_num_layers()))?,
+            &Layer::new_with_solid_color(self.canvas.dimensions, Some(Pixel::background())),
             BlendMode::Normal
         ).unwrap();
 
@@ -191,7 +172,7 @@ impl Project {
         Ok(project_pixels)
     }
     pub fn render(&self) -> Vec<CameraPixel> {
-        self.camera.render_scene(&self.merged_scene(), self.focus.coord)
+        self.camera.render_scene(&self.canvas.merged_scene(), self.focus.coord)
     }
     fn in_cursors(&self, cursor: Cursor) -> bool {
         for ex_cursor in &self.cursors {

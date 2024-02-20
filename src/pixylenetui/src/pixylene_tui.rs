@@ -352,7 +352,7 @@ impl PixyleneTUI {
                 },
                 padding,
                 p.project.focus.layer + 1,
-                p.project.layers.len(),
+                p.project.canvas.get_num_layers(),
                 padding,
                 p.project.focus.coord,
                 padding,
@@ -360,8 +360,8 @@ impl PixyleneTUI {
             SetForegroundColor(Color::Rgb{r:30,g:30,b:30}),
         ).unwrap();
 
-        for i in 0..p.project.palette.colors.len() {
-            if let Some(color) = p.project.palette.get_color(i+1).unwrap() {
+        for i in 0..p.project.canvas.palette.colors.len() {
+            if let Some(color) = p.project.canvas.palette.get_color(i+1).unwrap() {
                 queue!(
                     stdout,
                     SetBackgroundColor(Color::Rgb{r: color.r, g: color.g, b: color.b}),

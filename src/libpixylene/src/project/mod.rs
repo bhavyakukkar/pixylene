@@ -7,6 +7,9 @@ mod scene;
 pub use self::layer::{ LayerError, Layer };
 mod layer;
 
+pub use self::canvas::{ Canvas };
+mod canvas;
+
 pub use self::camera::{ CameraPixel, CameraError, Camera };
 mod camera;
 

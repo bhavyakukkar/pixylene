@@ -21,7 +21,7 @@ impl action::Action for CircularOutline {
         if project.cursors.len() != 1 {
             return Err(action::ActionError::OnlyNCursorsSupported(String::from("1"), project.cursors.len()));
         }
-        project.palette.get_color((&self).palette_index)?;
+        project.canvas.palette.get_color((&self).palette_index)?;
 
         let mut changes: Vec<action::Change> = vec![action::Change::Start];
         let radius: u16 = match self.console.cmdin("Radius: ") {
@@ -49,7 +49,7 @@ impl action::Action for CircularOutline {
         let mut plot = | x: isize, y: isize | {
             action::include(Box::new(DrawAtOneCursor{
                 cursor: Cursor { coord: Coord{ x, y }, layer: project.cursors[0].layer },
-                color: project.palette.get_color((&self).palette_index).unwrap(),
+                color: project.canvas.palette.get_color((&self).palette_index).unwrap(),
                 blend_mode: BlendMode::Normal,
             }), project, &mut changes);
         };
