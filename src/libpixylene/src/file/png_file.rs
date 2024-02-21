@@ -170,12 +170,13 @@ impl PngFile {
     pub fn from_scene(
         scene: &Scene,
         color_type: ColorType,
-        bit_depth: BitDepth
+        bit_depth: BitDepth,
+        scale_up: u16,
     ) -> Result<Self, PngFileError> {
         use PngFileError::Unsupported;
         let mut png = PngFile {
-            height: scene.dim().x as u32,
-            width: scene.dim().y as u32,
+            height: (<isize as TryInto<u32>>::try_into(scene.dim().x).unwrap() * u32::from(scale_up)),
+            width: (<isize as TryInto<u32>>::try_into(scene.dim().y).unwrap() * u32::from(scale_up)),
             color_type: color_type,
             bit_depth: bit_depth,
             bytes: Vec::new(),
@@ -197,19 +198,23 @@ impl PngFile {
                 match bit_depth {
                     Eight => {
                         for i in 0..scene.dim().x {
-                            for j in 0..scene.dim().y {
-                                let Pixel {
-                                    r: red,
-                                    g: green,
-                                    b: blue,
-                                    a: alpha
-                                } = Pixel::get_certain(scene.get_pixel(
-                                    Coord{ x: i as isize, y: j as isize }
-                                ).unwrap());
-                                png.bytes.push(red);
-                                png.bytes.push(green);
-                                png.bytes.push(blue);
-                                png.bytes.push(alpha);
+                            for _ in 0..scale_up {
+                                for j in 0..scene.dim().y {
+                                    let Pixel {
+                                        r: red,
+                                        g: green,
+                                        b: blue,
+                                        a: alpha
+                                    } = Pixel::get_certain(scene.get_pixel(
+                                        Coord{ x: i as isize, y: j as isize }
+                                    ).unwrap());
+                                    for _ in 0..scale_up {
+                                        png.bytes.push(red);
+                                        png.bytes.push(green);
+                                        png.bytes.push(blue);
+                                        png.bytes.push(alpha);
+                                    }
+                                }
                             }
                         }
                     },

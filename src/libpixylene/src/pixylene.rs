@@ -153,7 +153,6 @@ impl Pixylene {
             }],
             Camera::new(
                 defaults.camera_dim,
-                //Coord { x: 36, y: 72 }, //todo: dont use default
                 1,
                 Coord{ x: 1, y: 2 }
             ).unwrap(),
@@ -172,7 +171,7 @@ impl Pixylene {
             action_manager: ActionManager::new(HashMap::new()),
         })
     }
-    pub fn export(&self, path: &str) -> Result<(), PixyleneError> {
+    pub fn export(&self, path: &str, scale_up: u16) -> Result<(), PixyleneError> {
         use PixyleneError::{ NoLayersToExport, PngFileError };
         let merged_layer: Layer;
 
@@ -181,6 +180,7 @@ impl Pixylene {
             //todo: use from Pixylene struct instead of defaults
             png::ColorType::Rgba,
             png::BitDepth::Eight,
+            scale_up,
         )?
             .write(path.to_string())?;
         Ok(())

@@ -6,15 +6,15 @@
 :PROPERTIES:
 :COOKIE_DATA: todo
 :END:
-*** Making It Usable [0%]
+*** Making It Usable [12%]
 :PROPERTIES:
 :COOKIE_DATA: todo recursive
 :END:
-**** TODO _CORE_ [0/5]
+**** TODO _CORE_ [1/6]
 ***** TODO make application safer by having indexes like layer number only be something like u8 or u16 (this is very important now) this does not let the approach of move_to_last_layer work, and is probably what's crashing CircularOutline make new types PInt with From impl for primitives
 ***** TODO each layer has a blendmode (like in gimp)
 ***** TODO actions to make/move/remove layers
-***** TODO ActionManager needs to detect overwriting of undo-history and cascade all changes after the overwriting change
+***** DONE ActionManager needs to detect overwriting of undo-history and cascade all changes after the overwriting change
 ***** TODO make fn to deal with cursors (for one, there shouldn't be able to be 2 cursors at the same place), then make a non-result method to return pixel at given cursor
 ***** TODO all project fields that have constraints should be private, for eg., project.cursors must be private, however, project.focus can be public (according to the system now at least). at the moment ToggleCursorAtFocus is able to create a cursor outside of the scene which bugs out every single action
 
@@ -22,8 +22,8 @@
 ***** TODO wrappers/builders for each action, since, for eg., rectangularfill needs its struct to initialize with start_corner = None, and start_corner is not a parameter that user decide like the palette_index parameter
 ***** TODO RectangularOutline Action
 
-**** TODO _EXPORTS_ [0/3]
-***** TODO scaling of artwork while exporting (64x64 "x20" = 1280x1280)
+**** TODO _EXPORTS_ [1/3]
+***** DONE scaling of artwork while exporting (64x64 "x20" = 1280x1280)
 ***** TODO Png to/fro Scene: fill more color-type/bit-depth combos
 ***** TODO pixylene::export adds black background that preview uses, let exports have transparent bgs
 
@@ -72,6 +72,7 @@
 **** TODO layer mute can be modified by giving user string like 1011101 indicating layers currently showing and user can modify and submit (like dwm)
 **** TODO defined palette contains 10 colors, foreground+background+eight defined colors. switchForeground is a wrapper that performs Palette.changeTo(1, <input>). switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
 **** TODO Action::perform_action returns Changes::Single or Change::Multiple
+**** TODO PixyleneError::NoLayersToExport
 
 * PROS & CONS
 #+description: I weigh the pros and cons for a feature or decision here

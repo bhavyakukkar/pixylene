@@ -101,6 +101,7 @@ impl Console {
                 LogType::Info => Color::Rgb{ r: 240, g: 240, b: 240 },
                 LogType::Error => Color::Rgb{ r: 255, g: 70, b: 70 },
                 LogType::Warning => Color::Rgb{ r: 70, g: 235, b: 235 },
+                LogType::Success => Color::Rgb{ r: 70, g: 255, b: 70 },
             }),
             Print(&message),
             ResetColor,
@@ -442,12 +443,20 @@ impl PixyleneTUI {
     }
     pub fn export(&mut self) {
         if let Some(path) = self.cmdin("export project as: ") {
-            match self.pixylene.as_mut().unwrap().export(&path) {
-                Ok(()) => {
-                    let message = format!("project exported to {}", path);
-                    self.cmdout(&message, LogType::Info);
-                },
-                Err(desc) => self.cmdout(&desc.to_string(), LogType::Error),
+            if let Some(scale_up_str) = self.cmdin("scale up by: ") {
+                if let Ok(scale_up) = str::parse::<u16>(&scale_up_str) {
+                    self.cmdout("exporting...", LogType::Info);
+                    match self.pixylene.as_mut().unwrap().export(&path, scale_up) {
+                        Ok(()) => {
+                            let message = format!("project exported to {}", path);
+                            self.cmdout(&message, LogType::Success);
+                        },
+                        Err(desc) => self.cmdout(&desc.to_string(), LogType::Error),
+                    }
+                } else {
+                    let message = format!("invalid value");
+                    self.cmdout(&message, LogType::Error);
+                }
             }
         }
     }
