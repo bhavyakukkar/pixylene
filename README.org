@@ -5,12 +5,20 @@ An extensible pixel art editor.
 
 ** Notice
 *This application is still in very early stages, lacks basic features, and is generally very not-fun to use.*
+
 [[./src/libpixylene/src/notes.org][a roadmap of sorts]]
 
 ** Build
 _Dependencies:_ Cargo
 
-After cloning,
+Clone the last working commit (i forgot to split into stable/unstable branches)
+#+begin_src sh
+git clone https://github.com/bhavyakukkar/pixylene.git
+cd pixylene
+git checkout a0dbf79
+#+end_src
+
+Then enter src and build
 #+begin_src sh
 cd src
 cargo build
