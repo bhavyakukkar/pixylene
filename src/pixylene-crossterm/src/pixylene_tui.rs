@@ -376,8 +376,8 @@ impl PixyleneTUI {
         queue!(
             stdout,
             ResetColor,
-            SetBackgroundColor(Color::Rgb{r:50,g:50,b:50,}),
-            SetForegroundColor(Color::Rgb{r:255,g:255,b:255,}),
+            SetBackgroundColor(Color::Rgb{r:50,g:50,b:50}),
+            SetForegroundColor(Color::Rgb{r:255,g:255,b:255}),
             Print(format!(
                 "|{}(S:'{}' C:'{}'){}|{}|",
                 padding,

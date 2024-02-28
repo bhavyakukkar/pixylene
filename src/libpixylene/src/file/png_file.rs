@@ -1,3 +1,10 @@
+use crate::{
+    types::{ PCoord, UCoord, Pixel },
+    project::{ Scene },
+    utils::messages::U32TOUSIZE,
+};
+
+use std::fmt;
 use std::fs::File;
 use std::path::Path;
 use std::io::BufWriter;
@@ -5,56 +12,11 @@ use png::{ Decoder, ColorType, BitDepth };
 use ColorType::*;
 use BitDepth::*;
 
-use crate::grammar::Decorate;
-use crate::types::{ Coord, Pixel };
-use crate::project::{ SceneError, Scene };
 
-#[derive(Debug)]
-pub enum PngFileError {
-    Unsupported(ColorType, BitDepth),
-    DecodingError(String, png::DecodingError),
-    EncodingError(String, png::EncodingError),
-    FileNotFoundError(String, std::io::Error),
-    DirectoryNotFoundError(String, std::io::Error),
-}
-impl std::fmt::Display for PngFileError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        use PngFileError::*;
-        match self {
-            Unsupported(color_type, bit_depth) => write!(
-                f,
-                "{:?}-bit {:?} PNGs are current not supported",
-                bit_depth,
-                color_type,
-            ),
-            DecodingError(path, decoding_error) => write!(
-                f,
-                "failed to decode png from file '{}': {}",
-                path,
-                decoding_error,
-            ),
-            EncodingError(path, encoding_error) => write!(
-                f,
-                "failed to encode png to file '{}': {}",
-                path,
-                encoding_error,
-            ),
-            FileNotFoundError(path, io_error) => write!(
-                f,
-                "file '{}' was not found: {}",
-                path,
-                io_error,
-            ),
-            DirectoryNotFoundError(path, io_error) => write!(
-                f,
-                "file '{}' could not be created (hint: the enclosing directory may not exist): {}",
-                path,
-                io_error,
-            ),
-        }
-    }
-}
+const MAX_HEIGHT: u16 = u16::MAX;
+const MAX_WIDTH: u16 = u16::MAX;
 
+//can export to u32::MAX x u32::MAX PNGs but can only import from u16::MAX x u16::MAX PNGs
 pub struct PngFile {
     height: u32,
     width: u32,
@@ -65,20 +27,25 @@ pub struct PngFile {
 
 impl PngFile {
     pub fn read(path: String) -> Result<Self, PngFileError> {
-        use PngFileError::{ DecodingError, FileNotFoundError };
+        use PngFileError::{ DecodingError, SizeError, FileNotFoundError };
         match File::open(&path) {
             Ok(file) => {
                 let decoder = Decoder::new(file);
                 match decoder.read_info() {
                     Ok(mut reader) => {
                         let mut buf = vec![0; reader.output_buffer_size()];
-                        let info: png::OutputInfo;
                         match reader.next_frame(&mut buf) {
                             Ok(info) => {
                                 let bytes = buf[..info.buffer_size()].to_vec();
                                 return Ok(PngFile {
-                                    height: info.height,
-                                    width: info.width,
+                                    height: u32::from(
+                                        u16::try_from(info.height)
+                                        .or(Err(SizeError(info.height, info.width)))?
+                                    ),
+                                    width: u32::from(
+                                        u16::try_from(info.width)
+                                        .or(Err(SizeError(info.height, info.width)))?
+                                    ),
                                     color_type: info.color_type,
                                     bit_depth: info.bit_depth,
                                     bytes: bytes
@@ -127,8 +94,14 @@ impl PngFile {
     }
     pub fn to_scene(self) -> Result<Scene, PngFileError> {
         use PngFileError::Unsupported;
-        let dim = Coord{ x: self.height as isize, y: self.width as isize };
-        let mut scene: Scene = Scene::new(dim, vec![None; dim.area() as usize]).unwrap();
+        let dim = PCoord::new(
+            u16::try_from(self.height).unwrap(),
+            u16::try_from(self.width).unwrap()
+        ).unwrap();
+        let mut scene: Scene = Scene::new(
+            dim,
+            vec![None; usize::try_from(dim.area()).expect(U32TOUSIZE)]
+        ).unwrap();
         match self.color_type {
             Grayscale => {
                 return Err(Unsupported(self.color_type, self.bit_depth));
@@ -145,15 +118,15 @@ impl PngFile {
             Rgba => {
                 match self.bit_depth {
                     Eight => {
-                        for i in 0..self.height {
-                            for j in 0..self.width {
+                        for i in 0..scene.dim().x() {
+                            for j in 0..scene.dim().y() {
                                 scene.set_pixel(
-                                    Coord{ x: i as isize, y: j as isize },
+                                    UCoord::new(i, j),
                                     Some(Pixel {
-                                        r: self.bytes[((4*i*self.width) + (4*j) + 0) as usize],
-                                        g: self.bytes[((4*i*self.width) + (4*j) + 1) as usize],
-                                        b: self.bytes[((4*i*self.width) + (4*j) + 2) as usize],
-                                        a: self.bytes[((4*i*self.width) + (4*j) + 3) as usize],
+                                        r: self.bytes[((4*i*scene.dim().y()) + (4*j) + 0) as usize],
+                                        g: self.bytes[((4*i*scene.dim().y()) + (4*j) + 1) as usize],
+                                        b: self.bytes[((4*i*scene.dim().y()) + (4*j) + 2) as usize],
+                                        a: self.bytes[((4*i*scene.dim().y()) + (4*j) + 3) as usize],
                                     })
                                 ).unwrap();
                             }
@@ -175,8 +148,8 @@ impl PngFile {
     ) -> Result<Self, PngFileError> {
         use PngFileError::Unsupported;
         let mut png = PngFile {
-            height: (<isize as TryInto<u32>>::try_into(scene.dim().x).unwrap() * u32::from(scale_up)),
-            width: (<isize as TryInto<u32>>::try_into(scene.dim().y).unwrap() * u32::from(scale_up)),
+            height: u32::from(scene.dim().x()) * u32::from(scale_up),
+            width: u32::from(scene.dim().y()) * u32::from(scale_up),
             color_type: color_type,
             bit_depth: bit_depth,
             bytes: Vec::new(),
@@ -197,16 +170,16 @@ impl PngFile {
             Rgba => {
                 match bit_depth {
                     Eight => {
-                        for i in 0..scene.dim().x {
+                        for i in 0..scene.dim().x() {
                             for _ in 0..scale_up {
-                                for j in 0..scene.dim().y {
+                                for j in 0..scene.dim().y() {
                                     let Pixel {
                                         r: red,
                                         g: green,
                                         b: blue,
                                         a: alpha
                                     } = Pixel::get_certain(scene.get_pixel(
-                                        Coord{ x: i as isize, y: j as isize }
+                                        UCoord::new(i, j)
                                     ).unwrap());
                                     for _ in 0..scale_up {
                                         png.bytes.push(red);
@@ -225,5 +198,64 @@ impl PngFile {
             }
         }
         Ok(png)
+    }
+}
+
+
+// Error Types
+
+#[derive(Debug)]
+pub enum PngFileError {
+    Unsupported(ColorType, BitDepth),
+    DecodingError(String, png::DecodingError),
+    EncodingError(String, png::EncodingError),
+    FileNotFoundError(String, std::io::Error),
+    DirectoryNotFoundError(String, std::io::Error),
+    SizeError(u32, u32),
+}
+impl fmt::Display for PngFileError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use PngFileError::*;
+        match self {
+            Unsupported(color_type, bit_depth) => write!(
+                f,
+                "{:?}-bit {:?} PNGs are current not supported",
+                bit_depth,
+                color_type,
+            ),
+            DecodingError(path, decoding_error) => write!(
+                f,
+                "failed to decode png from file '{}': {}",
+                path,
+                decoding_error,
+            ),
+            EncodingError(path, encoding_error) => write!(
+                f,
+                "failed to encode png to file '{}': {}",
+                path,
+                encoding_error,
+            ),
+            FileNotFoundError(path, io_error) => write!(
+                f,
+                "file '{}' was not found: {}",
+                path,
+                io_error,
+            ),
+            DirectoryNotFoundError(path, io_error) => write!(
+                f,
+                "file '{}' could not be created (hint: the enclosing directory may not exist): {}",
+                path,
+                io_error,
+            ),
+            SizeError(height, width) => write!(
+                f,
+                "cannot encode the given file of dimensions {}x{}px as it is too large, largest \
+                dimensions supported are {}x{}px",
+                width,
+                height,
+                MAX_WIDTH,
+                MAX_HEIGHT,
+            ),
+        }
     }
 }

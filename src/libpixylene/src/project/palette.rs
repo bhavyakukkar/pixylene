@@ -1,27 +1,5 @@
 use crate::types::{ Pixel, PixelError };
 
-#[derive(Debug)]
-pub enum PaletteError {
-    InvalidIndex(usize, usize),
-    PixelError(PixelError),
-}
-
-impl std::fmt::Display for PaletteError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        use PaletteError::*;
-        match self {
-            InvalidIndex(index, length) => write!(
-                f,
-                "cannot get color {} from palette of {} colors (hint: palette indexing starts from \
-                1)",
-                index,
-                length,
-            ),
-            PixelError(pixel_error) => write!(f, "{}", pixel_error),
-        }
-    }
-}
-
 #[derive(Savefile, Clone)]
 pub struct Palette {
     pub colors: Vec<Option<Pixel>>
@@ -60,6 +38,31 @@ impl Palette {
             Ok(())
         } else {
             Err(InvalidIndex(index, self.colors.len()))
+        }
+    }
+}
+
+
+// Error Types
+
+#[derive(Debug)]
+pub enum PaletteError {
+    InvalidIndex(usize, usize),
+    PixelError(PixelError),
+}
+
+impl std::fmt::Display for PaletteError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        use PaletteError::*;
+        match self {
+            InvalidIndex(index, length) => write!(
+                f,
+                "cannot get color {} from palette of {} colors (hint: palette indexing starts from \
+                1)",
+                index,
+                length,
+            ),
+            PixelError(pixel_error) => write!(f, "{}", pixel_error),
         }
     }
 }

@@ -1,3 +1,4 @@
+/*
 use libpixylene::{
     pixylene::{ Pixylene, PixyleneNewDefaults, PixyleneImportDefaults },
     types::{ Coord, Pixel },
@@ -34,17 +35,6 @@ enum StartType {
     Import{ path: String },
 }
 
-/*
-enum Key {
-    kind: event::KeyEvent,
-}
-impl PartialEq<Key> for Key {
-    fn eq(&self, other: &Key) -> bool {
-        (self.code == other.code) && (self.modifiers == )
-    }
-}
-*/
-
 enum Behavior {
     VimLike,
     EmacsLike,
@@ -68,7 +58,68 @@ impl Behavior {
     }
 }
 
+
+*/
+struct Echo;
+impl pixylene_actions::Action for Echo {
+    fn perform_action(
+        &mut self,
+        _project: &mut libpixylene::project::Project,
+        console: &pixylene_ui::Console
+    ) -> Result<Vec<pixylene_actions::Change>, pixylene_actions::ActionError> {
+        if let Some(string) = (console.cmdin)(String::from(":echo ")) {
+            (console.cmdout)(string, pixylene_ui::LogType::Info);
+        }
+        Ok(Vec::new())
+    }
+}
+
 fn main() {
+    use libpixylene::{
+        Pixylene,
+        pixylene::PixyleneNewDefaults, 
+        project::{ Project, Palette },
+        types::{ PCoord, Pixel },
+    };
+    use pixylene_actions::action_manager::ActionManager;
+    use pixylene_ui::{ Console, LogType };
+
+    use std::collections::HashMap;
+
+
+    let pixylene_defaults = PixyleneNewDefaults {
+        dim: PCoord::from((10, 10)),
+        camera_dim: PCoord::from((10, 10)),
+        camera_repeat: (1, 2),
+        palette: Palette{
+            colors: vec![Some(Pixel{r:255,g:255,b:255,a:255}),Some(Pixel{r:0,g:0,b:0,a:255})]
+        },
+    };
+    let mut pixylene = Pixylene::new(&pixylene_defaults).unwrap();
+    let mut project: &mut Project = &mut pixylene.project;
+
+    let mut action_manager = ActionManager::new(HashMap::new());
+
+    let console = Console {
+        cmdin: |message: String| -> Option<String> {
+            println!("{}?", message);
+            let mut buffer = String::new();
+            std::io::stdin().read_line(&mut buffer).unwrap();
+            Some(buffer)
+        },
+        cmdout: |message: String, log_type: LogType| {
+            println!("{:?} => {}", log_type, message);
+        },
+    };
+
+    //^ all that, for these 2 lines:
+    action_manager.add_action(String::from("echo"), Box::new(Echo));
+    action_manager.perform(&mut project, &console, String::from("echo"));
+}
+/*
+
+
+fn main2() {
     use terminal::{
         size,
         enable_raw_mode,
@@ -286,3 +337,4 @@ fn main() {
 
     //app.export("/home/bhavya/pictures/trash/snowbrick_export.png").unwrap();
 }
+*/

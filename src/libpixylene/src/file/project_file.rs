@@ -1,7 +1,30 @@
+use crate::project::{ Project };
+
 use savefile::prelude::*;
 
-use crate::grammar::Decorate;
-use crate::project::Project;
+
+pub struct ProjectFile {
+    pub version: u32,
+}
+impl ProjectFile {
+    pub fn read(&self, path: String) -> Result<Project, ProjectFileError> {
+        use ProjectFileError::{ LoadingError };
+        match load_file(path.clone(), self.version) {
+            Ok(project) => Ok(project),
+            Err(error) => Err(LoadingError(path, error)),
+        }
+    }
+    pub fn write(&self, path: String, project: &Project) -> Result<(), ProjectFileError> {
+        use ProjectFileError::{ SavingError };
+        match save_file(path.clone(), self.version, project) {
+            Ok(()) => Ok(()),
+            Err(error) => Err(SavingError(path, error)),
+        }
+    }
+}
+
+
+// Error Types
 
 #[derive(Debug)]
 pub enum ProjectFileError {
@@ -24,26 +47,6 @@ impl std::fmt::Display for ProjectFileError {
                 path,
                 savefile_error,
             ),
-        }
-    }
-}
-
-pub struct ProjectFile {
-    pub version: u32,
-}
-impl ProjectFile {
-    pub fn read(&self, path: String) -> Result<Project, ProjectFileError> {
-        use ProjectFileError::{ LoadingError };
-        match load_file(path.clone(), self.version) {
-            Ok(project) => Ok(project),
-            Err(error) => Err(LoadingError(path, error)),
-        }
-    }
-    pub fn write(&self, path: String, project: &Project) -> Result<(), ProjectFileError> {
-        use ProjectFileError::{ SavingError };
-        match save_file(path.clone(), self.version, project) {
-            Ok(()) => Ok(()),
-            Err(error) => Err(SavingError(path, error)),
         }
     }
 }
