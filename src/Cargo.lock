@@ -664,7 +664,6 @@ name = "pixylene-actions"
 version = "0.1.0"
 dependencies = [
  "libpixylene",
- "pixylene-ui",
 ]
 
 [[package]]
@@ -672,7 +671,6 @@ name = "pixylene-actions-lua"
 version = "0.1.0"
 dependencies = [
  "libpixylene",
- "mlua",
  "pixylene-ui",
  "tealr",
 ]
@@ -692,6 +690,10 @@ dependencies = [
 [[package]]
 name = "pixylene-ui"
 version = "0.1.0"
+dependencies = [
+ "libpixylene",
+ "pixylene-actions",
+]
 
 [[package]]
 name = "pkg-config"

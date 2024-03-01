@@ -56,6 +56,7 @@
 **** TODO divide pixylenetui/main.rs into two fns where second function returns result and main just logs all errors to cmdout()
 
 *** Making It Pretentious/Prestigious [0%]
+**** TODO safe Coord (& other types) methods like add_safe, add_mut_safe, mult_safe & mult_mut_safe
 **** TODO clap initializer for Pixylene::new() that opens inquire menu when called "$ pixylenetui new". optional flag -y takes default for all settings
 **** TODO perform_action returns VecDeque of Change's
 **** TODO Mode that lets you 'write' colors line-by-line, left-to-right

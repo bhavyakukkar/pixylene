@@ -90,7 +90,7 @@ impl Project {
             self.focus.0
         )
     }
-    fn toggle_cursor_at(&mut self, coord: UCoord, layer: u16) -> Result<(), ProjectError> {
+    pub fn toggle_cursor_at(&mut self, coord: UCoord, layer: u16) -> Result<(), ProjectError> {
         use ProjectError::{ CursorLayerOutOfBounds };
         if layer < self.canvas.num_layers() {
             if self.cursors.get(&(coord, layer)).is_some() {

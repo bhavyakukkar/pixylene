@@ -1,10 +1,12 @@
 use tealr::{
     mlu::{
+        self,
         mlua::{
+            self,
             prelude::{ LuaValue, LuaUserData },
-            FromLua, Value, Lua, Result, UserData, UserDataMethods, MetaMethod,
+            FromLua, Value, Lua, Result, UserData, UserDataFields, UserDataMethods, MetaMethod,
         },
-        self, TealData, TealDataMethods, UserDataWrapper,
+        TealData, TealDataMethods, UserDataWrapper,
     },
     ToTypename, TypeBody, TypeWalker, mlua_create_named_parameters,
 };
@@ -12,7 +14,7 @@ use tealr::{
 use libpixylene::types;
 
 
-/// Lua interface to [`types::UCoord`]
+/// Lua interface to libpixylene's [`UCoord`][types::UCoord]
 #[derive(Copy, Clone)]
 pub struct UCoord(pub types::UCoord);
 
@@ -34,7 +36,29 @@ impl TealData for UCoord {
         methods.document_type("An unsigned integer coordinate type composed of two 16-bit unsigned \
                              integers.");
 
-        //Lua interface to [`types::UCoord::new`]
+        //Flexible Lua metamethod Call interface to construct a new UCoord
+        //
+        // u = UCoord(1, 2)   -- ->(1,2). or,
+        // u = UCoord(1)      -- ->(1,0). or,
+        // u = UCoord(nil, 1) -- ->(0,1). or,
+        // u = UCoord()       -- ->(0,0)
+        {
+            mlua_create_named_parameters!(
+                UCoordArgs with
+                    x : Option<u16>,
+                    y : Option<u16>,
+            );
+            methods.document("Create & return a new UCoord with optional 'x' and 'y' coordinates \
+                             that default to 0");
+            methods.add_meta_method(MetaMethod::Call, |_, _, a: UCoordArgs| {
+                Ok(UCoord(types::UCoord{
+                    x: a.x.unwrap_or(0),
+                    y: a.y.unwrap_or(0),
+                }))
+            });
+        }
+
+        //Lua interface to construct a new UCoord
         {
             mlua_create_named_parameters!(
                 UCoordNewArgs with
@@ -47,7 +71,7 @@ impl TealData for UCoord {
             });
         }
 
-        //Lua interface to [`types::UCoord::zero`]
+        //Lua interface to UCoord::zero
         {
             methods.document("Create & return a new (0,0) UCoord");
             methods.add_function("zero", |_, _: ()| {
@@ -55,7 +79,7 @@ impl TealData for UCoord {
             });
         }
 
-        //Lua interface to [`types::UCoord::area`]
+        //Lua interface to UCoord::area
         {
             methods.document("Return the 'area' of a UCoord, i.e., product of x and y");
             methods.add_method("area", |_, this, _: ()| -> Result<u32> {
@@ -63,7 +87,7 @@ impl TealData for UCoord {
             });
         }
 
-        //Lua metamethod '+' interface to [`types::UCoord::add`]
+        //Lua metamethod '+' interface to UCoord::add
         {
             mlua_create_named_parameters!(
                 UCoordAddArgs with
@@ -83,11 +107,15 @@ impl TealData for UCoord {
         methods.generate_help();
     }
     fn add_fields<'lua, F: tealr::mlu::TealDataFields<'lua, Self>>(fields: &mut F) {
+
+        fields.document("the 'x' coordinate of the UCoord");
         fields.add_field_method_get("x", |_, this| Ok(this.0.x));
         fields.add_field_method_set("x", |_, this, value| {
             this.0.x = value;
             Ok(())
         });
+
+        fields.document("the 'y' coordinate of the UCoord");
         fields.add_field_method_get("y", |_, this| Ok(this.0.y));
         fields.add_field_method_set("y", |_, this, value| {
             this.0.y = value;
@@ -97,7 +125,6 @@ impl TealData for UCoord {
 }
 
 impl ToTypename for UCoord {
-    //how the type should be called in lua.
     fn to_typename() -> tealr::Type {
         tealr::Type::new_single("UCoord", tealr::KindOfType::External)
     }
@@ -108,7 +135,7 @@ impl UserData for UCoord {
         let mut wrapper = UserDataWrapper::from_user_data_methods(methods);
         <Self as TealData>::add_methods(&mut wrapper)
     }
-    fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(fields: &mut F) {
+    fn add_fields<'lua, F: UserDataFields<'lua, Self>>(fields: &mut F) {
         let mut wrapper = UserDataWrapper::from_user_data_fields(fields);
         <Self as TealData>::add_fields(&mut wrapper)
     }

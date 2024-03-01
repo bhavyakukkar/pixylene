@@ -1,4 +1,3 @@
-/*
 use libpixylene::{
     pixylene::{ Pixylene, PixyleneNewDefaults, PixyleneImportDefaults },
     types::{ Coord, Pixel },
@@ -59,7 +58,7 @@ impl Behavior {
 }
 
 
-*/
+/*
 struct Echo;
 impl pixylene_actions::Action for Echo {
     fn perform_action(
@@ -116,10 +115,10 @@ fn main() {
     action_manager.add_action(String::from("echo"), Box::new(Echo));
     action_manager.perform(&mut project, &console, String::from("echo"));
 }
-/*
+*/
 
 
-fn main2() {
+fn main() {
     use terminal::{
         size,
         enable_raw_mode,
@@ -337,4 +336,3 @@ fn main2() {
 
     //app.export("/home/bhavya/pictures/trash/snowbrick_export.png").unwrap();
 }
-*/

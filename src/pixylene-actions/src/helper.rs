@@ -1,7 +1,6 @@
-use crate::{ Action, ActionError, Change };
+use crate::{ Action, ActionError, Change, Console };
 
 use libpixylene::project::Project;
-use pixylene_ui::Console;
 
 
 pub fn include(mut action: Box<dyn Action>, project: &mut Project, console: &Console, changes: &mut Vec<Change>)

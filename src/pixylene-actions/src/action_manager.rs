@@ -1,7 +1,6 @@
-use crate::{ Action, ActionError, Change, ChangeError };
+use crate::{ Action, ActionError, Change, ChangeError, Console };
 
 use libpixylene::project::Project;
-use pixylene_ui::Console;
 use std::collections::HashMap;
 
 

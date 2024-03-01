@@ -1,5 +1,5 @@
 mod coord;
-pub use self::coord::{ Coord };
+pub use self::coord::{ Coord, CoordError };
 
 mod ucoord;
 pub use self::ucoord::{ UCoord };

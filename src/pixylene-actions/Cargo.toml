@@ -7,4 +7,3 @@ edition = "2021"
 
 [dependencies]
 libpixylene = { path = "../libpixylene" }
-pixylene-ui = { path = "../pixylene-ui" }

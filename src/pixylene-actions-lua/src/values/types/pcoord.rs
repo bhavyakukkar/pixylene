@@ -3,18 +3,20 @@ use crate::utils::messages;
 use tealr::{
     mlu::{
         mlua::{
+            self,
             prelude::{ LuaValue, LuaUserData },
-            FromLua, Value, Lua, Result, UserData, UserDataMethods, MetaMethod,
+            FromLua, Value, Lua, Result, UserData, UserDataFields, UserDataMethods, MetaMethod,
         },
         self, TealData, TealDataMethods, UserDataWrapper,
     },
     ToTypename, TypeBody, TypeWalker, mlua_create_named_parameters,
 };
+
 use std::sync::Arc;
 use libpixylene::types;
 
 
-/// Lua interface to [`types::PCoord`]
+/// Lua interface to libpixylene's [`PCoord`][types::PCoord]
 #[derive(Copy, Clone)]
 pub struct PCoord(pub types::PCoord);
 
@@ -33,11 +35,48 @@ impl<'lua> FromLua<'lua> for PCoord {
 
 impl TealData for PCoord {
     fn add_methods<'lua, T: TealDataMethods<'lua, Self>>(methods: &mut T) {
-        use mlu::mlua::Error::{ ExternalError };
+        use mlua::Error::{ ExternalError };
+
+        methods.document_type("An unsigned integer coordinate type composed of two 16-bit unsigned \
+                             integers greater than or equal to 1.");
+
+
+        //Flexible Lua metamethod Call interface to construct a new PCoord
+        //
+        // p = PCoord(3, 2)   -- ->(3,2). or,
+        // p = PCoord(3)      -- ->(3,1). or,
+        // p = PCoord(nil, 2) -- ->(1,2). or,
+        // p = PCoord()       -- ->(1,1)
+        {
+            mlua_create_named_parameters!(
+                CoordArgs with
+                    x : Option<u16>,
+                    y : Option<u16>,
+            );
+            methods.document("Create & return a new PCoord with optional 'x' and 'y' coordinates \
+                             that default to 1");
+            methods.add_meta_method(MetaMethod::Call, |_, _, a: CoordArgs| {
+                // thanks to https://github.com/Blightmud/Blightmud/blob/dev/src/lua/timer.rs for
+                // this
+                let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
+
+                match types::PCoord::new(a.x.unwrap_or(1), a.y.unwrap_or(1)) {
+                    Ok(p) => Ok(PCoord(p)),
+                    Err(()) => Err(ExternalError(Arc::from(boxed_error(
+                        &format!(
+                            "Parameters passed to PCoord.new were found not to be positive, \
+                            found: ({}, {})",
+                            a.x.unwrap_or(1),
+                            a.y.unwrap_or(1),
+                        )
+                    )))),
+                }
+            });
+        }
 
         methods.document_type("A positive coordinate type composed of two positive (1 or greater) \
                               16-bit unsigned integers.");
-        //Lua interface to [`types::PCoord::new`]
+        //Lua interface to PCoord::new
         {
             mlua_create_named_parameters!(
                 PCoordNewArgs with
@@ -47,8 +86,6 @@ impl TealData for PCoord {
 
             methods.document("Try to create & return a new PCoord with 'x' and 'y' coordinates");
             methods.add_function("new", |_, a: PCoordNewArgs| {
-                // thanks to https://github.com/Blightmud/Blightmud/blob/dev/src/lua/timer.rs for
-                // this
                 let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
 
                 match types::PCoord::new(a.x, a.y) {
@@ -65,7 +102,7 @@ impl TealData for PCoord {
             });
         }
 
-        //Lua interface to [`types::PCoord::area`]
+        //Lua interface to PCoord::area
         {
             methods.document("Return the 'area' of a PCoord, i.e., product of x and y");
             methods.add_method("area", |_, this, _: ()| -> Result<u32> {
@@ -73,7 +110,7 @@ impl TealData for PCoord {
             });
         }
 
-        //Lua metamethod '+' interface to [`types::PCoord::add`]
+        //Lua metamethod '+' interface to PCoord::add
         {
             mlua_create_named_parameters!(
                 PCoordAddArgs with
@@ -101,9 +138,11 @@ impl TealData for PCoord {
 
         methods.generate_help();
     }
-    fn add_fields<'lua, F: tealr::mlu::TealDataFields<'lua, Self>>(fields: &mut F) {
-        use mlu::mlua::Error::{ ExternalError };
 
+    fn add_fields<'lua, F: tealr::mlu::TealDataFields<'lua, Self>>(fields: &mut F) {
+        use mlua::Error::{ ExternalError };
+
+        fields.document("the 'x' coordinate of the PCoord");
         fields.add_field_method_get("x", |_, this| Ok(this.0.x()));
         fields.add_field_method_set("x", |_, this, value| {
             let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
@@ -113,6 +152,8 @@ impl TealData for PCoord {
                     boxed_error("Trying to set x to 0 for PCoord")
                 )))
         });
+
+        fields.document("the 'y' coordinate of the PCoord");
         fields.add_field_method_get("y", |_, this| Ok(this.0.y()));
         fields.add_field_method_set("y", |_, this, value| {
             let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
@@ -126,7 +167,6 @@ impl TealData for PCoord {
 }
 
 impl ToTypename for PCoord {
-    //how the type should be called in lua.
     fn to_typename() -> tealr::Type {
         tealr::Type::new_single("PCoord", tealr::KindOfType::External)
     }
@@ -137,7 +177,7 @@ impl UserData for PCoord {
         let mut wrapper = UserDataWrapper::from_user_data_methods(methods);
         <Self as TealData>::add_methods(&mut wrapper)
     }
-    fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(fields: &mut F) {
+    fn add_fields<'lua, F: UserDataFields<'lua, Self>>(fields: &mut F) {
         let mut wrapper = UserDataWrapper::from_user_data_fields(fields);
         <Self as TealData>::add_fields(&mut wrapper)
     }

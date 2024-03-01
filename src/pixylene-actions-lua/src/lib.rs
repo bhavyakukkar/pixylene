@@ -16,7 +16,7 @@ pub fn add(left: usize, right: usize) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mlua::{ self, Lua, Table, prelude::{ LuaError }, Result };
+    use tealr::mlu::mlua::{ self, Lua, Table, prelude::{ LuaError }, Result };
     use std::io::Read;
     use std::sync::{ Arc, Mutex };
 
@@ -125,6 +125,7 @@ mod tests {
             lua_ctx.globals().set("UCoord", UCoord(types::UCoord::zero()))?;
             lua_ctx.globals().set("PCoord", PCoord(types::PCoord::new(1,1)
                                                    .expect(messages::PCOORD_NOTFAIL)))?;
+            lua_ctx.globals().set("Pixel", Pixel(types::Pixel::empty()))?;
         }
 
         //Project Context

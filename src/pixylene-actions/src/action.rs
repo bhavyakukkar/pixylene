@@ -1,9 +1,8 @@
-use crate::{ Change, ChangeError };
+use crate::{ Change, ChangeError, Console };
 
 use libpixylene::{
     project::{ PaletteError, SceneError, CameraError, ProjectError, Project }
 };
-use pixylene_ui::{ Console };
 
 
 /* 

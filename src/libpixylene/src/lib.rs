@@ -7,5 +7,5 @@ pub mod utils;
 pub mod types;
 pub mod project;
 pub mod file;
-pub mod pixylene;
+mod pixylene;
 pub use pixylene::Pixylene;

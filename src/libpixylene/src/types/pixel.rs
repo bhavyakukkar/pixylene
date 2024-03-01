@@ -10,9 +10,10 @@ pub struct Pixel {
 }
 
 impl Pixel {
+    /// Create Pixel from a CSS-like hex-triplet string (6-digit or 8-digit), eg: "#239920"
     pub fn from_hex(color_hex: String) -> Result<Pixel, PixelError> {
         use PixelError::{ HexError, BytesLength };
-        match hex::decode(color_hex.clone()) {
+        match hex::decode(color_hex.get(1..).ok_or(BytesLength(0))?) {
             Ok(bytes) => {
                 match bytes.len() {
                     4 => Ok(Pixel{ r: bytes[0], g: bytes[1], b: bytes[2], a: bytes[3] }),
