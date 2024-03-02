@@ -14,7 +14,7 @@ use tealr::{
 use libpixylene::types;
 
 
-/// Lua interface to libpixylene's [`Coord`][types::Coord]
+/// Lua interface to libpixylene's [`Coord`][types::Coord] type
 #[derive(Copy, Clone)]
 pub struct Coord(pub types::Coord);
 

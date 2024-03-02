@@ -23,61 +23,8 @@ mod tests {
     use tealr::{ TypeWalker };
     use libpixylene::{ types, project };
     
-    const LOCKERR: &str = "Concurrency of actions has been compromised";
-    
-    #[derive(Debug)]
-    enum ProjectError {
-        UnrecognizedFunction,
-        MissingFunction,
-        MissingArguments,
-        InvalidArguments(LuaError),
-    }
-    impl From<LuaError> for ProjectError {
-        fn from(item: LuaError) -> ProjectError {
-            ProjectError::InvalidArguments(item)
-        }
-    }
-    
-    struct Project {
-        layers: u8,
-        lock: bool,
-        pub focus: types::Coord,
-        pub cursor: types::UCoord,
-    }
-    impl Project {
-        pub fn new(layers: u8) -> Self {
-            Self {
-                layers,
-                lock: false,
-                focus: types::Coord::zero(),
-                cursor: types::UCoord::zero(),
-            }
-        }
-        pub fn add_layer(&mut self, by: u8) {
-            self.layers += by;
-            println!("layers now {}", self.layers);
-        }
-        pub fn lock(&mut self) -> Option<()> {
-            if self.lock {
-                println!("project has already been locked");
-                None
-            }
-            else {
-                self.lock = true;
-                println!("project has been locked");
-                Some(())
-            }
-        }
-        pub fn focus_at(&mut self, new_focus: types::Coord) {
-            self.focus = new_focus;
-            println!("focus now {}", self.focus);
-        }
-    }
-
     #[test]
     fn main() -> Result<()> {
-        let project = Arc::new(Mutex::new(Project::new(0)));
-
         let lua_ctx = Lua::new();
 
         let mut user_lua = String::new();
@@ -95,7 +42,7 @@ mod tests {
         println!("{}\n ", file_contents);
         */
 
-        //User Actions Context
+        //Add User Actions
         {
             //Set Actions table
             let actions_tbl = lua_ctx.create_table()?;
@@ -126,27 +73,7 @@ mod tests {
             lua_ctx.globals().set("PCoord", PCoord(types::PCoord::new(1,1)
                                                    .expect(messages::PCOORD_NOTFAIL)))?;
             lua_ctx.globals().set("Pixel", Pixel(types::Pixel::empty()))?;
-        }
-
-        //Project Context
-        {
-            //Set Project namespace
-            let project_tbl = lua_ctx.create_table()?;
-
-            {
-                //Create Lua fns for Project fns
-                let project_clone = Arc::clone(&project);
-                let focus_at = lua_ctx.create_function(move |_, args: Coord| {
-                    Ok(project_clone.lock().expect(LOCKERR).focus_at(args.0))
-                })?;
-
-
-                //Set Lua fns to Project namespace
-                project_tbl.set("focus_at", focus_at)?;
-            }
-
-            //Add Project to globals
-            lua_ctx.globals().set("project", project_tbl)?;
+            lua_ctx.globals().set("BlendMode", BlendMode(types::BlendMode::Normal))?;
         }
 
 

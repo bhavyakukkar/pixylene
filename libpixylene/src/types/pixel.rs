@@ -36,6 +36,13 @@ impl Pixel {
             None => Pixel::empty()
         }
     }
+
+    pub fn darken(&mut self, factor: f32) {
+
+    }
+
+    pub fn dissolve(&mut self, factor: f32) {
+    }
 }
 
 impl fmt::Display for Pixel {

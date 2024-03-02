@@ -9,12 +9,11 @@ use tealr::{
     },
     ToTypename, TypeBody, TypeWalker, mlua_create_named_parameters,
 };
-
 use std::sync::Arc;
 use libpixylene::types;
 
 
-/// Lua interface to libpixylene's [`Pixel`][types::Pixel]
+/// Lua interface to libpixylene's [`Pixel`][types::Pixel] type
 #[derive(Copy, Clone)]
 pub struct Pixel(pub types::Pixel);
 
@@ -106,8 +105,8 @@ impl TealData for Pixel {
 
                 match types::Pixel::from_hex(a.s) {
                     Ok(p) => Ok(Pixel(p)),
-                    Err(desc) => Err(ExternalError(Arc::from(
-                        boxed_error(&desc.to_string())
+                    Err(err) => Err(ExternalError(Arc::from(
+                        boxed_error(&err.to_string())
                     ))),
                 }
             });
@@ -121,29 +120,29 @@ impl TealData for Pixel {
         //todo: add constants RED, GREEN, BLUE, etc.
 
         fields.document("the red level of the Pixel");
-        fields.add_field_method_get("r", |_, this| Ok(this.0.r));
-        fields.add_field_method_set("r", |_, this, value| {
+        fields.add_field_method_get("red", |_, this| Ok(this.0.r));
+        fields.add_field_method_set("red", |_, this, value| {
             this.0.r = value;
             Ok(())
         });
 
         fields.document("the green level of the Pixel");
-        fields.add_field_method_get("g", |_, this| Ok(this.0.g));
-        fields.add_field_method_set("g", |_, this, value| {
+        fields.add_field_method_get("green", |_, this| Ok(this.0.g));
+        fields.add_field_method_set("green", |_, this, value| {
             this.0.g = value;
             Ok(())
         });
 
         fields.document("the blue level of the Pixel");
-        fields.add_field_method_get("b", |_, this| Ok(this.0.b));
-        fields.add_field_method_set("b", |_, this, value| {
+        fields.add_field_method_get("blue", |_, this| Ok(this.0.b));
+        fields.add_field_method_set("blue", |_, this, value| {
             this.0.b = value;
             Ok(())
         });
 
         fields.document("the alpha level of the Pixel");
-        fields.add_field_method_get("a", |_, this| Ok(this.0.a));
-        fields.add_field_method_set("a", |_, this, value| {
+        fields.add_field_method_get("alpha", |_, this| Ok(this.0.a));
+        fields.add_field_method_set("alpha", |_, this, value| {
             this.0.a = value;
             Ok(())
         });

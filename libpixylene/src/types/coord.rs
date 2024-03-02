@@ -15,7 +15,7 @@ impl Coord {
         i64::from(self.x) * i64::from(self.y)
     }
 
-    /// Returns a Coord with coordinates 0, 0
+    /// Returns a Coord with coordinates (0,0)
     pub fn zero() -> Self {
         Self{ x: 0, y: 0 }
     }

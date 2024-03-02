@@ -1,5 +1,5 @@
 use crate::{
-    types::{ UCoord, PCoord, Pixel, BlendMode },
+    types::{ self, UCoord, PCoord, Pixel, BlendMode },
     project::{ Scene, SceneError },
     utils::messages::U32TOUSIZE,
 };
@@ -24,7 +24,8 @@ impl Layer {
     }
     pub fn merge(dimensions: PCoord, layer_top: &Layer, layer_bottom: &Layer, blend_mode: BlendMode)
     -> Result<Scene, LayerError> {
-        use LayerError::{ MergeError };
+        use LayerError::{ MergeError, BlendError };
+
         let mut merged_scene_grid: Vec<Option<Pixel>> = Vec::new();
         for i in 0..dimensions.x() {
             for j in 0..dimensions.y() {
@@ -48,7 +49,10 @@ impl Layer {
                 //todo: needs replacing
                 //top.a = ((((layer_top.opacity as u16) * (top.a as u16)) as f32)/255f32) as u8;
                 //bottom.a = ((((layer_bottom.opacity as u16) * (bottom.a as u16)) as f32)/255f32) as u8;
-                merged_scene_grid.push(Some(blend_mode.merge_down(top, bottom)));
+                merged_scene_grid.push(
+                    Some(blend_mode.blend(top, bottom)
+                        .map_err(|err| BlendError(UCoord{ x: i, y: j }, err))?)
+                );
             }
         }
         Ok(Scene::new(dimensions, merged_scene_grid).unwrap())
@@ -61,6 +65,7 @@ impl Layer {
 #[derive(Debug)]
 pub enum LayerError {
     MergeError(bool, UCoord, SceneError),
+    BlendError(UCoord, types::BlendError),
 }
 impl std::fmt::Display for LayerError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -71,7 +76,13 @@ impl std::fmt::Display for LayerError {
                 "Getting pixel at coordinate {} on scene of {} failed: {}",
                 coord,
                 if *at_top_layer { "layer_top" } else { "layer_bottom" },
-                scene_error
+                scene_error,
+            ),
+            BlendError(coord, err) => write!(
+                f,
+                "Blending pixels while merging failed at coordinate {}: {}",
+                coord,
+                err,
             ),
         }
     }

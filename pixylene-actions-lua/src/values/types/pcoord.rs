@@ -16,7 +16,7 @@ use std::sync::Arc;
 use libpixylene::types;
 
 
-/// Lua interface to libpixylene's [`PCoord`][types::PCoord]
+/// Lua interface to libpixylene's [`PCoord`][types::PCoord] type
 #[derive(Copy, Clone)]
 pub struct PCoord(pub types::PCoord);
 
@@ -148,7 +148,7 @@ impl TealData for PCoord {
             let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
 
             this.0.set_x(value)
-                .map_err(|err| ExternalError(Arc::from(
+                .map_err(|_| ExternalError(Arc::from(
                     boxed_error("Trying to set x to 0 for PCoord")
                 )))
         });
@@ -159,7 +159,7 @@ impl TealData for PCoord {
             let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
 
             this.0.set_y(value)
-                .map_err(|err| ExternalError(Arc::from(
+                .map_err(|_| ExternalError(Arc::from(
                     boxed_error("Trying to set y to 0 for PCoord")
                 )))
         });
