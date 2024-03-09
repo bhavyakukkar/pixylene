@@ -1,7 +1,7 @@
-use crate::{ Change, ChangeError, Console };
+use crate::{ ChangeError, Console, helper };
 
 use libpixylene::{
-    project::{ PaletteError, SceneError, CameraError, ProjectError, Project }
+    project::{ PaletteError, SceneError, ProjectError, Project }
 };
 
 
@@ -31,8 +31,9 @@ use libpixylene::{
 
 pub trait Action {
     //perform action, transform to reverted (for undo) action, and return as a Change
-    fn perform_action(&mut self, project: &mut Project, console: &Console)
-        -> Result<Vec<Change>, ActionError>;
+    fn perform_action(&mut self,
+                      project: &mut Project,
+                      console: &Console) -> helper::Result;
 
     fn end_action(&self) -> bool { true }
 
@@ -59,7 +60,6 @@ impl std::fmt::Debug for dyn Action {
 #[derive(Debug)]
 pub enum ActionError {
     SceneError(SceneError),
-    CameraError(CameraError),
     PaletteError(PaletteError),
     ChangeError(ChangeError),
     ProjectError(ProjectError),
@@ -68,9 +68,6 @@ pub enum ActionError {
 }
 impl From<SceneError> for ActionError {
     fn from(item: SceneError) -> ActionError { ActionError::SceneError(item) }
-}
-impl From<CameraError> for ActionError {
-    fn from(item: CameraError) -> ActionError { ActionError::CameraError(item) }
 }
 impl From<PaletteError> for ActionError {
     fn from(item: PaletteError) -> ActionError { ActionError::PaletteError(item) }
@@ -86,7 +83,6 @@ impl std::fmt::Display for ActionError {
         use ActionError::*;
         match self {
             SceneError(scene_error) => write!(f, "{}", scene_error),
-            CameraError(camera_error) => write!(f, "{}", camera_error),
             PaletteError(palette_error) => write!(f, "{}", palette_error),
             ChangeError(change_error) => write!(f, "{}", change_error),
             ProjectError(project_error) => write!(f, "{}", project_error),

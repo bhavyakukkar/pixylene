@@ -1,16 +1,24 @@
 use std::fmt;
 
-/// An unsigned integer coordinate type composed of two 16-bit unsigned integers.
+/// An `U`nsigned `Coord`inate type composed of two 16-bit unsigned integers.
+///
+/// `This type can be constructed directly`.
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Savefile)]
-pub struct UCoord { pub x: u16, pub y: u16 }
+pub struct UCoord {
+    /// The 'x' coordinate of the UCoord
+    pub x: u16,
+    /// The 'y' coordinate of the UCoord
+    pub y: u16
+}
 
 impl UCoord {
-    pub fn new(x: u16, y: u16) -> UCoord {
-        UCoord{ x, y }
-    }
+
+    /// Returns a UCoord with coordinates (0,0)
     pub fn zero() -> UCoord {
         UCoord{ x: 0, y: 0 }
     }
+
+    /// Returns the product of the UCoord's coordinates
     pub fn area(&self) -> u32 {
         u32::from(self.x) * u32::from(self.y)
     }

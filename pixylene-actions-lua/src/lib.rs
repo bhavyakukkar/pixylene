@@ -1,5 +1,6 @@
-mod values;
-mod utils;
+pub mod values;
+pub mod utils;
+
 use crate::values::{ types::*, project::* };
 use utils::messages;
 
@@ -16,11 +17,11 @@ pub fn add(left: usize, right: usize) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tealr::mlu::mlua::{ self, Lua, Table, prelude::{ LuaError }, Result };
+    use tealr::mlu::mlua::{ Lua, Table, Result };
     use std::io::Read;
-    use std::sync::{ Arc, Mutex };
+    //use std::sync::{ Arc, Mutex };
 
-    use tealr::{ TypeWalker };
+    //use tealr::{ TypeWalker };
     use libpixylene::{ types, project };
     
     #[test]
@@ -74,11 +75,18 @@ mod tests {
                                                    .expect(messages::PCOORD_NOTFAIL)))?;
             lua_ctx.globals().set("Pixel", Pixel(types::Pixel::empty()))?;
             lua_ctx.globals().set("BlendMode", BlendMode(types::BlendMode::Normal))?;
+            lua_ctx.globals().set("Scene", Scene(project::Scene::new(
+                        types::PCoord::new(1,1).expect(messages::PCOORD_NOTFAIL),
+                        vec![None]
+            ).expect(messages::SCENE_NOTFAIL)))?;
+            lua_ctx.globals().set("Layer", Layer(project::Layer::new_with_solid_color(
+                        types::PCoord::new(1,1).expect(messages::PCOORD_NOTFAIL), None)))?;
+            lua_ctx.globals().set("Palette", Palette(project::Palette::new()));
         }
 
 
         //Invoke User's Action script
-        lua_ctx.load(r#"actions.echo.perform(actions.echo)"#).exec().unwrap();
+        lua_ctx.load(r#"actions.example.perform(actions.echo)"#).exec().unwrap();
 
         Ok(())
     }

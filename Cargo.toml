@@ -4,5 +4,6 @@ members = [
     "libpixylene",
     "pixylene-ui",
     "pixylene-actions",
-    "pixylene-crossterm"
-, "pixylene-actions-lua"]
+    "pixylene-crossterm",
+    "pixylene-actions-lua"
+]

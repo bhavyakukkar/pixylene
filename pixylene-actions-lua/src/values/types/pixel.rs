@@ -2,18 +2,18 @@ use tealr::{
     mlu::{
         mlua::{
             self,
-            prelude::{ LuaValue, LuaUserData },
-            FromLua, Value, Lua, Result, UserData, UserDataFields, UserDataMethods, MetaMethod,
+            prelude::{ LuaValue },
+            FromLua, Lua, Result, UserData, UserDataFields, UserDataMethods, MetaMethod,
         },
-        self, TealData, TealDataMethods, UserDataWrapper,
+        TealData, TealDataMethods, UserDataWrapper,
     },
-    ToTypename, TypeBody, TypeWalker, mlua_create_named_parameters,
+    ToTypename, TypeBody, mlua_create_named_parameters,
 };
 use std::sync::Arc;
 use libpixylene::types;
 
 
-/// Lua interface to libpixylene's [`Pixel`][types::Pixel] type
+/// Lua interface to libpixylene's [`Pixel`](types::Pixel) type
 #[derive(Copy, Clone)]
 pub struct Pixel(pub types::Pixel);
 
@@ -21,7 +21,7 @@ impl<'lua> FromLua<'lua> for Pixel {
     fn from_lua(value: LuaValue<'lua>, _: &'lua Lua) -> Result<Self> {
         match value.as_userdata() {
             Some(ud) => Ok(*ud.borrow::<Self>()?),
-            None => Err(mlu::mlua::Error::FromLuaConversionError {
+            None => Err(mlua::Error::FromLuaConversionError {
                 from: value.type_name(),
                 to: "Pixel",
                 message: None,
@@ -47,13 +47,13 @@ impl TealData for Pixel {
                     a : Option<u8>,
             );
             methods.document("Create & return a new Pixel with optional red, green, blue & alpha \
-                             levels, each between 0-255, defaulting to 0");
+                             levels, each between 0-255, defaulting to 0 (expect 255 for alpha)");
             methods.add_meta_method(MetaMethod::Call, |_, _, args: PixelArgs| {
                 Ok(Pixel(types::Pixel{
                     r: args.r.unwrap_or(0),
                     g: args.g.unwrap_or(0),
                     b: args.b.unwrap_or(0),
-                    a: args.a.unwrap_or(0),
+                    a: args.a.unwrap_or(255),
                 }))
             });
         }
@@ -103,7 +103,7 @@ impl TealData for Pixel {
             methods.add_function("hex", |_, a: PixelHexArgs| {
                 let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
 
-                match types::Pixel::from_hex(a.s) {
+                match types::Pixel::from_hex(&a.s) {
                     Ok(p) => Ok(Pixel(p)),
                     Err(err) => Err(ExternalError(Arc::from(
                         boxed_error(&err.to_string())

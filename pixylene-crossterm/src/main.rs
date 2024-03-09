@@ -310,17 +310,38 @@ fn main() {
         Behavior::EmacsLike => {
             loop {
                 match &emacs_mode {
+                    //Modes that use the equipped color
                     EmacsMode::Normal => {
+                        /*
+                        
+                        C-s => emacs_mode = EmacsMode::Shape { Some(last_shape) },
+                        C-S-s => emacs_mode = EmacsMode::Shape { None },
+
+                        */
                     }
-                    EmacsMode::Layer => {
-                    }
-                    EmacsMode::Command => {
-                    }
-                    EmacsMode::Ooze{ color } => {
+                    EmacsMode::Ooze => {
                     }
                     EmacsMode::Shape{ shape } => {
                     }
-                    EmacsMode::Eraser{ shape } => {
+
+                    //Modes that do not use the equipped color
+                    EmacsMode::Layer => {
+                        /*
+
+                        n => new layer
+                        d => delete layer
+                        r => rename layer
+                        c => clone layer
+                        - => go to lower layer
+                        + => go to upper layer
+
+                        */
+                    }
+                    EmacsMode::Preview => {
+                    }
+                    EmacsMode::Command => {
+                    }
+                    EmacsMode::Cursors => {
                     }
                 }
             }

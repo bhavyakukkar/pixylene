@@ -12,6 +12,3 @@ pub use self::pixel::{ Pixel, PixelError };
 
 mod blend_mode;
 pub use self::blend_mode::{ BlendMode, BlendError };
-
-mod cursor;
-pub use self::cursor::{ Cursor };

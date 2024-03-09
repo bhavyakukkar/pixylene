@@ -1,23 +1,12 @@
 use crate::{
-    types::{ Coord, PCoord },
-    project::{ SceneError, Camera, CameraPixel, Palette, Project },
-    file::{
-        png_file::{ PngFile, PngFileError },
-        project_file::{ ProjectFile, ProjectFileError }
-    },
+    types::{ PCoord, BlendMode },
+    project::{ SceneError, Layer, Palette, Project },
+    file::{ PngFile, PngFileError, ProjectFile, ProjectFileError },
 };
 
 
-pub struct PixyleneNewDefaults {
+pub struct PixyleneDefaults {
     pub dim: PCoord,
-    pub camera_dim: PCoord,
-    pub camera_repeat: (u8, u8),
-    pub palette: Palette,
-}
-
-pub struct PixyleneImportDefaults {
-    pub camera_dim: PCoord,
-    pub camera_repeat: (u8, u8),
     pub palette: Palette,
 }
 
@@ -26,42 +15,12 @@ pub struct Pixylene {
 }
 
 impl Pixylene {
-    pub fn new(defaults: &PixyleneNewDefaults) -> Result<Pixylene, PixyleneError> {
+    pub fn new(defaults: &PixyleneDefaults) -> Pixylene {
         let project = Project::new(
             defaults.dim,
-            /*
-            vec![Layer {
-                scene: Scene::new(
-                    defaults.dim,
-                    vec![None; defaults.dim.area()],
-                )?,
-                opacity: 255,
-                mute: false,
-            }],
-            */
-            /*
-            vec![Cursor {
-                layer: 0,
-                coord: Coord {
-                    x: defaults.dim.x.checked_div(2).unwrap(),
-                    y: defaults.dim.y.checked_div(2).unwrap(),
-                },
-            }],
-            */
-            Camera::new(
-                defaults.camera_dim,
-                1,
-                defaults.camera_repeat,
-            ).unwrap(),
-            //default focus is at the middle of the canvas dimensions
-            (Coord {
-                x: i32::from(defaults.dim.x().checked_div(2).unwrap()),
-                y: i32::from(defaults.dim.y().checked_div(2).unwrap()),
-            }, 0),
             defaults.palette.clone(),
-        ).unwrap();
-
-        Ok(Pixylene { project })
+        );
+        Pixylene { project }
     }
     pub fn open(path: &str) -> Result<Pixylene, PixyleneError> {
         match (ProjectFile{ version: 0 }).read(path.to_string()) {
@@ -75,24 +34,17 @@ impl Pixylene {
             Err(error) => Err(PixyleneError::ProjectFileError(error)),
         }
     }
-    pub fn import(path: &str, defaults: &PixyleneImportDefaults) -> Result<Pixylene, PixyleneError> {
+    pub fn import(path: &str, defaults: &PixyleneDefaults) -> Result<Pixylene, PixyleneError> {
         let png_file = PngFile::read(String::from(path)).unwrap();
         let scene = png_file.to_scene()?;
         let dim = scene.dim();
         //todo: add imported scene into project
-        let project = Project::new(
+        let mut project = Project::new(
             dim,
-            Camera::new(
-                defaults.camera_dim,
-                1,
-                defaults.camera_repeat,
-            ).unwrap(),
-            (Coord {
-                x: i32::from(dim.x().checked_div(2).unwrap()),
-                y: i32::from(dim.y().checked_div(2).unwrap()),
-            }, 0),
             defaults.palette.clone(),
-        ).unwrap();
+        );
+        project.canvas.add_layer(Layer{ scene, opacity: 255, mute: false,
+            blend_mode: BlendMode::Normal }).unwrap(); //cant fail, this is first layer, not 257th
 
         Ok(Pixylene { project })
     }
@@ -107,9 +59,11 @@ impl Pixylene {
             .write(path.to_string())?;
         Ok(())
     }
-    pub fn render(&self) -> Vec<CameraPixel> {
+    /*
+    pub fn render(&self) -> Vec<OPixel> {
         self.project.render()
     }
+    */
 }
 
 

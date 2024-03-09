@@ -35,6 +35,7 @@ impl Canvas {
                 ).unwrap(),
                 opacity: 255,
                 mute: false,
+                blend_mode: self.layers[k].blend_mode,
             };
         }
         net_layer.scene

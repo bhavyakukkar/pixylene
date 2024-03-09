@@ -121,7 +121,7 @@ impl PngFile {
                         for i in 0..scene.dim().x() {
                             for j in 0..scene.dim().y() {
                                 scene.set_pixel(
-                                    UCoord::new(i, j),
+                                    UCoord{ x: i, y: j },
                                     Some(Pixel {
                                         r: self.bytes[((4*i*scene.dim().y()) + (4*j) + 0) as usize],
                                         g: self.bytes[((4*i*scene.dim().y()) + (4*j) + 1) as usize],
@@ -178,9 +178,9 @@ impl PngFile {
                                         g: green,
                                         b: blue,
                                         a: alpha
-                                    } = Pixel::get_certain(scene.get_pixel(
-                                        UCoord::new(i, j)
-                                    ).unwrap());
+                                    } = scene.get_pixel(UCoord{ x: i, y: j })
+                                            .unwrap()
+                                            .unwrap_or(Pixel::empty());
                                     for _ in 0..scale_up {
                                         png.bytes.push(red);
                                         png.bytes.push(green);

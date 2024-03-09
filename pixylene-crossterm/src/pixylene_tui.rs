@@ -147,11 +147,6 @@ impl PixyleneTUI {
         pixylene_tui.dispatch_actions();
         return pixylene_tui;
     }
-    /*
-    pub fn create_console(console_corner: Coord) -> Console {
-        Console{ console_corner }
-    }
-    */
     pub fn cmdin(&self, message: &str) -> Option<String> {
         self.console.cmdin(message)
     }

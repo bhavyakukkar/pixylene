@@ -1,20 +1,19 @@
 use tealr::{
     mlu::{
-        self,
         mlua::{
             self,
-            prelude::{ LuaValue, LuaUserData },
-            FromLua, Value, Lua, Result, UserData, UserDataFields, UserDataMethods, MetaMethod,
+            prelude::{ LuaValue },
+            FromLua, Lua, Result, UserData, UserDataFields, UserDataMethods, MetaMethod,
         },
         TealData, TealDataMethods, UserDataWrapper,
     },
-    ToTypename, TypeBody, TypeWalker, mlua_create_named_parameters,
+    ToTypename, TypeBody, mlua_create_named_parameters,
 };
 
 use libpixylene::types;
 
 
-/// Lua interface to libpixylene's [`UCoord`][types::UCoord] type
+/// Lua interface to libpixylene's [`UCoord`](types::UCoord) type
 #[derive(Copy, Clone)]
 pub struct UCoord(pub types::UCoord);
 

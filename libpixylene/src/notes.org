@@ -6,13 +6,14 @@
 :PROPERTIES:
 :COOKIE_DATA: todo
 :END:
-*** Making It Usable [31%]
+*** Making It Usable [37%]
 :PROPERTIES:
 :COOKIE_DATA: todo recursive
 :END:
-**** TODO _CORE_ [3/6]
+**** TODO _CORE_ [4/6]
+***** TODO actually use layer opacity & mute in Layer::merge
 ***** DONE make application safer by having indexes like layer number only be something like u8 or u16 (this is very important now) this does not let the approach of move_to_last_layer work, and is probably what's crashing CircularOutline make new types PInt with From impl for primitives
-***** TODO each layer has a blendmode (like in gimp)
+***** DONE each layer has a blendmode (like in gimp)
 ***** TODO actions to move layers
 ***** DONE ActionManager needs to detect overwriting of undo-history and cascade all changes after the overwriting change
 ***** TODO make fn to deal with cursors (for one, there shouldn't be able to be 2 cursors at the same place), then make a non-result method to return pixel at given cursor
@@ -30,7 +31,8 @@
 **** TODO _UI_ [0/1]
 ***** TODO (pixylenetui) refresh on terminal resize [[https://docs.rs/crossterm/latest/crossterm/event/enum.Event.html#variant.Resize]]
 
-*** Making It Enjoyable To Use [8%]
+*** Making It Enjoyable To Use [15%]
+**** TODO switch x and y syntax since game design often uses flipped
 **** TODO Flexbox to arrange statusbar items
 **** DONE restructuring: rename common to types and put layer mod in project mod (layer, camera, scene & palette all are composed children of Project)
 **** TODO a way to let actions called by perform_action be untracked. they should be able to set with a boolean in pixylenetui/actions.rs
@@ -40,11 +42,11 @@
 ***** TODO plaintext config for default impl of Pixylene::import & Pixylene::new that includes palette (emphasis on palette and not the other struct fields)
 ***** TODO there should be a straightforward way to change the palette of an existing project. plaintext project files will make this so so easy
 **** TODO new actions 'GoTo' (to get something like vim's 'gg' and 0) and 'ClearAllCursors'
-**** TODO complex actions that perform multiple smaller actions, when one of those smaller actions fail, should take the changes of the successfull and perform them to revert them back
+**** TODO complex actions that perform multiple smaller actions, when one of those smaller actions fail, should take the changes of the successful and perform them to revert them back
 **** TODO downscaling of artwork while importing (1280x1280 "/10" = 128x128)
 **** TODO add_action may throw err if action-name already exists
 **** TODO fully replace crossterm::execute!() with crossterm::queue!()
-**** TODO get rid of warnings & dead code. p.s. PixyleneDisplay is not being used anywhere
+**** DONE get rid of warnings & dead code. p.s. PixyleneDisplay is not being used anywhere
 **** TODO use more iterators: impl iterator for scene, return of render_scene and return of render_layer
 **** TODO add more metamethods to Lua interface to Coord (==, <, <=, -, %, //, __tostring, etc.)
 
@@ -63,14 +65,15 @@
 **** TODO use Decorate::output() again & fix parameters (String vs &static 'str)
 **** TODO "Dependency Justification" for paper like done on crossterm's github
 **** TODO metadata field on project that lets you write "tags" to pixels on a layer or directly to layer and lets you search for them later
+**** TODO layers vec and layer_order are separate and "tag-based" so that moving layers is trivial
 **** TODO change-tree instead of change-stack, doesn't forget future changes after changes in undoed state
 **** TODO alternative fn ActionManager::perform_directly() directly takes dyn Action
 
-*** Needs Debate [0%]
-**** TODO only 1 mode for selections, and three kinds of selections allowed: block, row or column
+*** Needs Debate [25%]
+**** DONE only 1 mode for selections, and three kinds of selections allowed: block, row or column
 **** TODO some kind of global opacity control setting for pencils
 **** TODO consider moving camera out of project and directly in pixylene
-**** TODO project is immutable, scene-locking actions receive the mutable scene but can use the immutable project for things like Project.getFocus(), similar for camera-locking actions; criticize the difference between a "scene-locking" action & a "camera-locking" action
+**** DONE project is immutable, scene-locking actions receive the mutable scene but can use the immutable project for things like Project.getFocus(), similar for camera-locking actions; criticize the difference between a "scene-locking" action & a "camera-locking" action
 **** TODO layer mute can be modified by giving user string like 1011101 indicating layers currently showing and user can modify and submit (like dwm)
 **** TODO defined palette contains 10 colors, foreground+background+eight defined colors. switchForeground is a wrapper that performs Palette.changeTo(1, <input>). switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
 **** TODO Action::perform_action returns Changes::Single or Change::Multiple

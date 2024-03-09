@@ -1,45 +1,55 @@
 use crate::{
     types::{ Coord, PCoord, UCoord, Pixel, BlendMode },
-    project::{ Palette, CameraPixel, Camera, Layer, Canvas, CanvasError },
+    project::{ Palette, Layer, OPixel, Canvas, CanvasError },
+    utils::messages::{ PCOORD_NOTFAIL },
 };
 
 use std::collections::HashMap;
 
-
-#[derive(Clone)]
-pub struct ProjectPixel {
-    pub camera_pixel: CameraPixel,
-    pub has_cursor: bool,
-}
 
 #[derive(Savefile)]
 pub struct Project {
     pub canvas: Canvas,
     cursors: HashMap<(UCoord, u16), ()>,
     sel_cursor: Option<(UCoord, u16)>,
-    pub camera: Camera,
     pub focus: (Coord, u16),
+    pub out_dim: PCoord,
+    out_mul: u8,
+    pub out_repeat: PCoord,
 }
 
 impl Project {
     pub fn new(
         dimensions: PCoord,
-        camera: Camera,
-        focus: (Coord, u16),
         palette: Palette
-    ) -> Result<Project, ProjectError> {
+    ) -> Project {
         let canvas = Canvas::new(
             dimensions,
             palette,
         );
-        let project = Project {
+        Project {
             canvas,
             cursors: HashMap::new(),
             sel_cursor: None,
-            camera,
-            focus,
-        };
-        Ok(project)
+            focus: (Coord{x: 0, y: 0}, 0),
+            out_dim: PCoord::new(10, 10).expect(PCOORD_NOTFAIL),
+            out_mul: 1,
+            out_repeat: PCoord::new(1, 2).expect(PCOORD_NOTFAIL),
+        }
+    }
+
+    pub fn get_out_mul(&self) -> u8 {
+        self.out_mul
+    }
+
+    pub fn set_out_mul(&mut self, new_mul: u8) -> Result<(), ProjectError> {
+        use ProjectError::{ ZeroMultiplier };
+        if new_mul > 0 {
+            self.out_mul = new_mul;
+            Ok(())
+        } else {
+            Err(ZeroMultiplier)
+        }
     }
     /*
     pub fn set_cursor(&mut self, index: usize, new_cursor: (UCoord, usize))
@@ -62,34 +72,42 @@ impl Project {
         }
     }
     */
-    pub fn render_layer(&self) -> Result<Vec<ProjectPixel>, ProjectError> {
+
+    /// dont forget to set out_dim, out_mul and out_repeat before using this
+    pub fn render_layer(&self) -> Result<Vec<OPixel>, ProjectError> {
         let net_scene = Layer::merge(
             self.canvas.dim(),
             &self.canvas.get_layer(self.focus.1)?,
-            &Layer::new_with_solid_color(self.canvas.dim(), Some(Pixel::background())),
+            &Layer::new_with_solid_color(self.canvas.dim(), Some(Pixel::black())),
             BlendMode::Normal
         ).unwrap();
 
-        let mut project_pixels: Vec<ProjectPixel> = Vec::new();
-        for camera_pixel in self.camera.render_scene(&net_scene, self.focus.0) {
-            project_pixels.push(ProjectPixel {
-                camera_pixel,
-                has_cursor: match camera_pixel {
-                    CameraPixel::Filled{ scene_coord, .. } |
-                    CameraPixel::Empty{ scene_coord } => self.cursors
-                        .get(&(scene_coord, self.focus.1)).is_some(),
-                    CameraPixel::OutOfScene => { false }
-                }
-            });
-        }
-        Ok(project_pixels)
+        let out_pixels: Vec<OPixel> = net_scene.render(
+            self.out_dim, self.out_mul, self.out_repeat, self.focus.0
+        );
+
+        Ok(out_pixels.iter().map(|out_pixel| match out_pixel {
+            OPixel::Filled { scene_coord, color, is_focus, .. } =>
+                OPixel::Filled {
+                    scene_coord: *scene_coord, color: *color, is_focus: *is_focus,
+                    has_cursor: self.cursors.get(&(*scene_coord, self.focus.1)).is_some(),
+                },
+            OPixel::Empty { scene_coord, .. } =>
+                OPixel::Empty {
+                    scene_coord: *scene_coord,
+                    has_cursor: self.cursors.get(&(*scene_coord, self.focus.1)).is_some(),
+                },
+            OPixel::OutOfScene => OPixel::OutOfScene,
+        }).collect::<Vec<OPixel>>())
     }
-    pub fn render(&self) -> Vec<CameraPixel> {
-        self.camera.render_scene(
-            &self.canvas.merged_scene(Some(Pixel::background())),
-            self.focus.0
+
+    /// dont forget to set out_dim, out_mul and out_repeat before using this
+    pub fn render(&self) -> Vec<OPixel> {
+        self.canvas.merged_scene(Some(Pixel::black())).render(
+            self.out_dim, self.out_mul, self.out_repeat, self.focus.0
         )
     }
+
     pub fn toggle_cursor_at(&mut self, coord: UCoord, layer: u16) -> Result<(), ProjectError> {
         use ProjectError::{ CursorLayerOutOfBounds };
         if layer < self.canvas.num_layers() {
@@ -117,6 +135,7 @@ pub enum ProjectError {
     CursorCoordOutOfBounds(usize, UCoord, PCoord),
     CanvasError(CanvasError),
     CursorLayerOutOfBounds(u16, u16),
+    ZeroMultiplier,
 }
 impl std::fmt::Display for ProjectError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -136,7 +155,7 @@ impl std::fmt::Display for ProjectError {
                 index,
                 cursor_coord,
                 dim,
-                UCoord::new(0,0),
+                UCoord{ x: 0, y: 0 },
                 Coord::from(dim).add(Coord{ x: -1, y: -1 }),
             ),
             CanvasError(error) => write!(f, "{}", error),
@@ -145,6 +164,10 @@ impl std::fmt::Display for ProjectError {
                 "layer index {} is out of bounds for the {} layers present in the project",
                 layer,
                 layers_len,
+            ),
+            ZeroMultiplier => write!(
+                f,
+                "cannot set camera's multiplier to 0",
             ),
         }
     }

@@ -4,19 +4,18 @@ use tealr::{
     mlu::{
         mlua::{
             self,
-            prelude::{ LuaValue, LuaUserData },
-            FromLua, Value, Lua, Result, UserData, UserDataFields, UserDataMethods, MetaMethod,
+            prelude::{ LuaValue },
+            FromLua, Lua, Result, UserData, UserDataFields, UserDataMethods, MetaMethod,
         },
-        self, TealData, TealDataMethods, UserDataWrapper,
+        TealData, TealDataMethods, UserDataWrapper,
     },
-    ToTypename, TypeBody, TypeWalker, mlua_create_named_parameters,
+    ToTypename, TypeBody, mlua_create_named_parameters,
 };
-
 use std::sync::Arc;
 use libpixylene::types;
 
 
-/// Lua interface to libpixylene's [`PCoord`][types::PCoord] type
+/// Lua interface to libpixylene's [`PCoord`](types::PCoord) type
 #[derive(Copy, Clone)]
 pub struct PCoord(pub types::PCoord);
 

@@ -2,21 +2,20 @@ use super::{ Pixel };
 
 use tealr::{
     mlu::{
-        self,
         mlua::{
             self,
-            prelude::{ LuaValue, LuaUserData },
-            FromLua, Value, Lua, Result, UserData, UserDataFields, UserDataMethods, MetaMethod,
+            prelude::{ LuaValue },
+            FromLua, Lua, Result, UserData, UserDataFields, UserDataMethods,
         },
         TealData, TealDataMethods, UserDataWrapper,
     },
-    ToTypename, TypeBody, TypeWalker, mlua_create_named_parameters,
+    ToTypename, TypeBody, mlua_create_named_parameters,
 };
 use std::sync::Arc;
 use libpixylene::types;
 
 
-/// Lua interface to libpixylene's [`BlendMode`][types::BlendMode] type
+/// Lua interface to libpixylene's [`BlendMode`](types::BlendMode) type
 #[derive(Copy, Clone)]
 pub struct BlendMode(pub types::BlendMode);
 
@@ -35,8 +34,6 @@ impl<'lua> FromLua<'lua> for BlendMode {
 
 impl TealData for BlendMode {
     fn add_methods<'lua, T: TealDataMethods<'lua, Self>>(methods: &mut T) {
-        use mlua::Error::{ ExternalError };
-
         methods.document_type("An enumeration of the different types of blend-modes.");
 
         //Lua interface to construct BlendMode::Composite
@@ -61,6 +58,7 @@ impl TealData for BlendMode {
             );
             methods.document("Blend two pixels and return the resultant pixel");
             methods.add_method("blend", |_, this, a: BlendModeBlendArgs| {
+                use mlua::Error::{ ExternalError };
                 let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
 
                 match this.0.blend(a.top.0, a.bottom.0) {
@@ -71,6 +69,8 @@ impl TealData for BlendMode {
                 }
             });
         }
+
+        //todo: Eq metamethod so blendmodes can be compared
 
         methods.generate_help();
     }

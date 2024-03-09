@@ -1,26 +1,22 @@
 use super::Pixel;
+use crate::utils::messages::{ DIVZERO, CMPSTMSG, SUM255 };
 
 use std::fmt;
 
-
-const DIVZERO: &str  = "Clearly dividing by 255 not 0";
-const SUM255: &str   = "Will guaranteed sum to 0";
-const CMPSTMSG: &str = "Since (frac_a + frac_b) is in range (0,255), range of computed composite \
-                        is guaranteed to be in range (0,255)";
 
 /// Enum of the different types of [blend-modes][b]
 ///
 /// [b]: https://en.wikipedia.org/wiki/Blend_modes
 #[non_exhaustive]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Savefile)]
 pub enum BlendMode {
-    /// Composite with specified fractions of contribution by pixel [`a`] and pixel [`b`]
+    /// Composite with specified fractions of contribution by pixel `a` and pixel `b`
     /// respectively, as described by [`Porter & Duff`][pd]
     ///
     /// [pd]: https://dl.acm.org/doi/abs/10.1145/800031.808606
     Composite(u8, u8),
 
-    /// [Standard blend mode][n]
+    /// [`Standard blend mode`][n] that will treat 'a' as the top pixel and 'b' as the bottom pixel
     ///
     /// [n]: https://en.wikipedia.org/wiki/Blend_modes#Normal_blend_mode
     Normal,
@@ -31,16 +27,15 @@ pub enum BlendMode {
 
 impl BlendMode {
 
-    /// Blend two RGBA [`Pixel`][P] using self's blend-mode variant & return the resultant Pixel
-    ///
-    /// [P]: Pixel
+    /// Blend two RGBA [`Pixels`](Pixel) using self's blend-mode variant & return the resultant
+    /// [`Pixel`]
     pub fn blend(&self, a: Pixel, b: Pixel) -> Result<Pixel, BlendError> {
-        use BlendError::{ FractionsDoNotSumToOne };
+        use BlendError::{ FractionsDoNotSumToWhole };
 
         match self {
             Self::Composite(frac_a, frac_b) => {
                 if *frac_a as u16 + *frac_b as u16 != 255 {
-                    return Err(FractionsDoNotSumToOne((*frac_a, *frac_b)));
+                    return Err(FractionsDoNotSumToWhole((*frac_a, *frac_b)));
                 }
 
                 let red: u8   = (a.r as u16 * *frac_a as u16 + b.r as u16 * *frac_b as u16)
@@ -69,15 +64,18 @@ impl BlendMode {
 /// Error enum to describe various errors returns by BlendMode methods
 #[derive(Debug)]
 pub enum BlendError {
-    FractionsDoNotSumToOne((u8, u8)),
+    /// Error when trying to merge pixels using a [`Composite`](BlendMode::Composite) variant
+    /// whose fractions do not sum up to the whole, i.e., 255
+    FractionsDoNotSumToWhole((u8, u8)),
 }
+
 impl fmt::Display for BlendError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use BlendError::*;
         match self {
-            FractionsDoNotSumToOne(received) => write!(
+            FractionsDoNotSumToWhole(received) => write!(
                 f,
-                "received Composite blend-mode fractions that do not sum up to one: \
+                "received Composite blend-mode fractions that do not sum up to whole (255): \
                 ({frac_a},{frac_b})",
                 frac_a = received.0,
                 frac_b = received.1,

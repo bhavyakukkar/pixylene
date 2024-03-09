@@ -1,18 +1,34 @@
+use crate::utils::messages::{ DIVZERO, CMPSTMSG };
+
 use std::fmt;
 
 
+/// An RGBA quadrant to represent a color, composed of 8-bit red, green, blue & alpha values.
 #[derive(Copy, Clone, Savefile)]
 pub struct Pixel {
-    pub r: u8,  // r: red (0-255)
-    pub g: u8,  // g: green (0-255)
-    pub b: u8,  // b: blue (0-255)
-    pub a: u8,  // a: alpha (0-255)
+    /// red level (0-255)
+    pub r: u8,
+    /// green level (0-255)
+    pub g: u8,
+    /// blue level (0-255)
+    pub b: u8,
+    /// alpha level (0-255)
+    pub a: u8,
 }
 
 impl Pixel {
-    /// Create Pixel from a CSS-like hex-triplet string (6-digit or 8-digit), eg: "#239920"
-    pub fn from_hex(color_hex: String) -> Result<Pixel, PixelError> {
+
+    /// Tries to create a Pixel from a CSS-like hex-triplet string (6-digit or 8-digit),
+    /// eg: "#239920"
+    ///
+    /// This method may fail with the [`HexError`][he] or [`BytesLength`][bl] error variants only.
+    ///
+    /// [he]: PixelError::HexError
+    /// [bl]: PixelError::BytesLength
+    pub fn from_hex(color_hex: &str) -> Result<Pixel, PixelError> {
         use PixelError::{ HexError, BytesLength };
+        let color_hex = String::from(color_hex);
+
         match hex::decode(color_hex.get(1..).ok_or(BytesLength(0))?) {
             Ok(bytes) => {
                 match bytes.len() {
@@ -24,24 +40,41 @@ impl Pixel {
             Err(from_hex_error) => Err(HexError(color_hex, from_hex_error))
         }
     }
+
+    /// Returns an empty #00000000 i.e. (0,0,0,0) pixel
     pub fn empty() -> Pixel {
         Pixel{ r: 0, g: 0, b: 0, a: 0 }
     }
-    pub fn background() -> Pixel {
+
+    /// Returns a solid black #000000ff i.e. (0,0,0,255) pixel
+    pub fn black() -> Pixel {
         Pixel{ r: 0, g: 0, b: 0, a: 255 }
     }
-    pub fn get_certain(pixel_maybe: Option<Pixel>) -> Pixel {
-        match pixel_maybe {
-            Some(pixel) => pixel,
-            None => Pixel::empty()
-        }
+
+    /// Darken operation as descibed by [`Porter & Duff`][pd]
+    ///
+    /// [pd]: https://dl.acm.org/doi/abs/10.1145/800031.808606
+    pub fn darken(&mut self, factor: u8) {
+        self.r = (self.r as u16 * factor as u16).checked_div(255)
+            .expect(DIVZERO).try_into().expect(CMPSTMSG);
+        self.g = (self.g as u16 * factor as u16).checked_div(255)
+            .expect(DIVZERO).try_into().expect(CMPSTMSG);
+        self.b = (self.b as u16 * factor as u16).checked_div(255)
+            .expect(DIVZERO).try_into().expect(CMPSTMSG);
     }
 
-    pub fn darken(&mut self, factor: f32) {
-
-    }
-
-    pub fn dissolve(&mut self, factor: f32) {
+    /// Dissolve operation as descibed by [`Porter & Duff`][pd]
+    ///
+    /// [pd]: https://dl.acm.org/doi/abs/10.1145/800031.808606
+    pub fn dissolve(&mut self, factor: u8) {
+        self.r = (self.r as u16 * factor as u16).checked_div(255)
+            .expect(DIVZERO).try_into().expect(CMPSTMSG);
+        self.g = (self.g as u16 * factor as u16).checked_div(255)
+            .expect(DIVZERO).try_into().expect(CMPSTMSG);
+        self.b = (self.b as u16 * factor as u16).checked_div(255)
+            .expect(DIVZERO).try_into().expect(CMPSTMSG);
+        self.a = (self.a as u16 * factor as u16).checked_div(255)
+            .expect(DIVZERO).try_into().expect(CMPSTMSG);
     }
 }
 
@@ -60,9 +93,16 @@ impl fmt::Display for Pixel {
 
 // Error Types
 
+/// Error enum to describe various errors returns by Pixel methods
 #[derive(Debug)]
 pub enum PixelError {
+
+    /// Error propagated by the [`hex`] crate when trying to parse the hex-string passed to
+    /// [`from_hex`](Pixel::from_hex)
     HexError(String, hex::FromHexError),
+
+    /// Error that occurs when the parsed hex-string passed to [`from_hex`](Pixel::from_hex) is not
+    /// of appropriate length to construct an RGB or an RGBA pixel
     BytesLength(usize),
 }
 impl fmt::Display for PixelError {
