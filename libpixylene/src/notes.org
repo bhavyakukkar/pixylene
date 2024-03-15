@@ -33,6 +33,7 @@
 
 *** Making It Enjoyable To Use [15%]
 **** TODO switch x and y syntax since game design often uses flipped
+**** TODO let (x,y) parse into UCoord/Coord in lua interface
 **** TODO Flexbox to arrange statusbar items
 **** DONE restructuring: rename common to types and put layer mod in project mod (layer, camera, scene & palette all are composed children of Project)
 **** TODO a way to let actions called by perform_action be untracked. they should be able to set with a boolean in pixylenetui/actions.rs

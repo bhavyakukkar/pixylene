@@ -1,6 +1,6 @@
 use crate::{
     types::{ PCoord, BlendMode },
-    project::{ SceneError, Layer, Palette, Project },
+    project::{ SceneError, Layer, Palette, Canvas, Project },
     file::{ PngFile, PngFileError, ProjectFile, ProjectFileError },
 };
 
@@ -17,8 +17,10 @@ pub struct Pixylene {
 impl Pixylene {
     pub fn new(defaults: &PixyleneDefaults) -> Pixylene {
         let project = Project::new(
-            defaults.dim,
-            defaults.palette.clone(),
+            Canvas::new(
+                defaults.dim,
+                defaults.palette.clone(),
+            )
         );
         Pixylene { project }
     }
@@ -40,8 +42,10 @@ impl Pixylene {
         let dim = scene.dim();
         //todo: add imported scene into project
         let mut project = Project::new(
-            dim,
-            defaults.palette.clone(),
+            Canvas::new(
+                dim,
+                defaults.palette.clone(),
+            )
         );
         project.canvas.add_layer(Layer{ scene, opacity: 255, mute: false,
             blend_mode: BlendMode::Normal }).unwrap(); //cant fail, this is first layer, not 257th

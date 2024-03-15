@@ -1,10 +1,12 @@
+//todo: make prelude of all types required to impl UserInterface and Console for a target
+
 mod keybinds;
 
-mod target;
+mod ui;
 
 mod targets;
 
-mod pixylene_ui;
+mod controller;
 
 
 use std::rc::Rc;
@@ -16,13 +18,13 @@ use clap::Parser;
 #[command(arg_required_else_help = true, author, version, about, long_about = None)]
 struct Cli {
     #[command(subcommand)]
-    command: Option<pixylene_ui::StartType>,
+    command: Option<controller::StartType>,
 }
 
 
 fn main() {
     let target = targets::TargetCrossterm;
-    let mut pixylene_ui = pixylene_ui::PixyleneUI::new(Rc::new(RefCell::new(target)));
+    let mut pixylene_ui = controller::Controller::new(Rc::new(RefCell::new(target)));
     let cli = Cli::parse();
 
     pixylene_ui.new_session(&cli.command);

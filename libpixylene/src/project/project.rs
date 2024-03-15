@@ -1,32 +1,52 @@
 use crate::{
     types::{ Coord, PCoord, UCoord, Pixel, BlendMode },
-    project::{ Palette, Layer, OPixel, Canvas, CanvasError },
+    project::{ Layer, OPixel, Canvas, CanvasError },
     utils::messages::{ PCOORD_NOTFAIL },
 };
 
 use std::collections::HashMap;
 
 
-#[derive(Savefile)]
+/// The absolute state of a Pixel Art project at any given instance and a manager for the
+/// [`Canvas`].
+///
+/// The `Project` as opposed to the `Canvas` contains data that does not directly influence how
+/// a Pixel Art project looks, including `Cursors` and the data responsible for the rendering
+/// of the `Canvas` on a real screen where the Pixel Art project is being visualized.
+#[derive(Clone, Savefile)]
 pub struct Project {
+    /// The [`Canvas`] composed into the Project.
     pub canvas: Canvas,
+
+    /// The dimensions of the rendered output.
+    pub out_dim: PCoord,
+
+    /// The coordinate of a [`Scene`][s] (first field) on a [`Layer`] (second field) in the Canvas
+    /// that will be mapped to the center of the rendered output.
+    ///
+    /// `Note`: This focus differs from the `focus` parameter passed to [`Scene::render`][r] by
+    /// having an extra layer field.
+    ///
+    /// [s]: crate::project::Scene
+    /// [r]: crate::project::Scene::render
+    pub focus: (Coord, u16),
+
+    /// see [Scene::render](crate::project::Scene::render)
+    out_mul: u8,
+
+    /// see [Scene::render](crate::project::Scene::render)
+    pub out_repeat: PCoord,
+
     cursors: HashMap<(UCoord, u16), ()>,
     sel_cursor: Option<(UCoord, u16)>,
-    pub focus: (Coord, u16),
-    pub out_dim: PCoord,
-    out_mul: u8,
-    pub out_repeat: PCoord,
 }
 
 impl Project {
+
+    /// Creates a new empty Project containing the provided [`Canvas`]
     pub fn new(
-        dimensions: PCoord,
-        palette: Palette
+        canvas: Canvas,
     ) -> Project {
-        let canvas = Canvas::new(
-            dimensions,
-            palette,
-        );
         Project {
             canvas,
             cursors: HashMap::new(),
@@ -38,10 +58,16 @@ impl Project {
         }
     }
 
+    /// Gets the out_dim of the Project
+    ///
+    /// Setters and getters are required for this attribute because out_dim is not allowed to be 0
     pub fn get_out_mul(&self) -> u8 {
         self.out_mul
     }
 
+    /// Sets the out_dim of the Project, fails if give zero
+    ///
+    /// Setters and getters are required for this attribute because out_dim is not allowed to be 0
     pub fn set_out_mul(&mut self, new_mul: u8) -> Result<(), ProjectError> {
         use ProjectError::{ ZeroMultiplier };
         if new_mul > 0 {
@@ -51,33 +77,25 @@ impl Project {
             Err(ZeroMultiplier)
         }
     }
-    /*
-    pub fn set_cursor(&mut self, index: usize, new_cursor: (UCoord, usize))
-        -> Result<(), ProjectError> {
-        use ProjectError::{ CursorCoordOutOfBounds, LayerOutOfBounds, CursorIndexOutOfBounds };
-        match self.cursors.get_mut(index) {
-            Some(cursor) => {
-                let ( coord, layer ) = new_cursor;
-                if coord.x >= self.canvas.dim().x() || coord.y >= self.canvas.dim().y() {
-                    return Err(CursorCoordOutOfBounds(index, coord, self.canvas.dim()));
-                }
-                if layer >= self.canvas.num_layers() {
-                    return Err(LayerOutOfBounds(layer, self.canvas.num_layers()));
-                }
-                cursor.0 = coord;
-                cursor.1 = layer;
-                Ok(())
-            },
-            None => Err(CursorIndexOutOfBounds(index, self.cursors.len())),
-        }
-    }
-    */
 
-    /// dont forget to set out_dim, out_mul and out_repeat before using this
+    /// Renders the [`Scene`][s] at the focussed [`Layer`] of the [`Canvas`] at the Layer specified
+    /// by the Project's [`focus.1`][f] field, mapping the center of the output to the coordinate
+    /// on the Scene specified by the Project's [`focus.0`][f] field, with the output's scaling
+    /// determined by the Project's [`out_dim`][od], [`out_mul`][om] and [`out_repeat`][or] fields,
+    /// returning a flattened vector of the output [`OPixels`](OPixel)
+    ///
+    /// `Note`: This method may fail with the [`CanvasError`][ce] error variant only.
+    ///
+    /// [s]: crate::project::Scene
+    /// [f]: #structfield.focus
+    /// [od]: #structfield.out_dim
+    /// [om]: Project::get_out_mul
+    /// [or]: #structfield.out_repeat
+    /// [ce]: ProjectError::CanvasError
     pub fn render_layer(&self) -> Result<Vec<OPixel>, ProjectError> {
         let net_scene = Layer::merge(
             self.canvas.dim(),
-            &self.canvas.get_layer(self.focus.1)?,
+            self.canvas.get_layer(self.focus.1)?,
             &Layer::new_with_solid_color(self.canvas.dim(), Some(Pixel::black())),
             BlendMode::Normal
         ).unwrap();
@@ -101,26 +119,72 @@ impl Project {
         }).collect::<Vec<OPixel>>())
     }
 
-    /// dont forget to set out_dim, out_mul and out_repeat before using this
+    /// Renders the [`Scene`][s] obtained by merging all the [`Layers`](Layer) of the [`Canvas`],
+    /// mapping the center of the output to the coordinate on the Scene specified by the Project's
+    /// [`focus.0`][f] field, with the output's scaling determined by the Project's
+    /// [`out_dim`][od], [`out_mul`][om] and [`out_repeat`][or] fields, returning a flattened
+    /// vector of the output [`OPixels`](OPixel)
+    ///
+    /// [s]: crate::project::Scene
+    /// [f]: #structfield.focus
+    /// [od]: #structfield.out_dim
+    /// [om]: Project::get_out_mul
+    /// [or]: #structfield.out_repeat
     pub fn render(&self) -> Vec<OPixel> {
         self.canvas.merged_scene(Some(Pixel::black())).render(
             self.out_dim, self.out_mul, self.out_repeat, self.focus.0
         )
     }
 
-    pub fn toggle_cursor_at(&mut self, coord: UCoord, layer: u16) -> Result<(), ProjectError> {
-        use ProjectError::{ CursorLayerOutOfBounds };
+    /// Returns whether there is a cursor present pointing at the specified coordinate on the
+    /// specified [`Layer`] in the [`Canvas`]
+    ///
+    /// `Note`: This method may fail with the [`CursorLayerOutOfBounds`][cloob] &
+    /// [`CursorCoordOutOfBounds`][cioob] error variants only.
+    ///
+    /// [cloob]: ProjectError::CursorLayerOutOfBounds
+    /// [cioob]: ProjectError::CursorCoordOutOfBounds
+    pub fn is_cursor_at(&self, coord: UCoord, layer: u16) -> Result<bool, ProjectError> {
+        use ProjectError::{ CursorCoordOutOfBounds, CursorLayerOutOfBounds };
+
         if layer < self.canvas.num_layers() {
-            if self.cursors.get(&(coord, layer)).is_some() {
-                self.cursors.remove(&(coord, layer)).unwrap();
+            if coord.x < self.canvas.dim().x() && coord.y < self.canvas.dim().y() {
+                Ok(self.cursors.get(&(coord, layer)).is_some())
             } else {
-                _ = self.cursors.insert((coord, layer), ());
+                Err(CursorCoordOutOfBounds(coord, self.canvas.dim()))
             }
-            Ok(())
         } else {
             Err(CursorLayerOutOfBounds(layer, self.canvas.num_layers()))
         }
     }
+
+    /// Toggles a cursor to point at the specified coordinate on the specified [`Layer`] in the
+    /// [`Canvas`], unsetting it if there was one already pointing
+    ///
+    /// `Note`: This method may fail with the [`CursorLayerOutOfBounds`][cloob] &
+    /// [`CursorCoordOutOfBounds`][cioob] error variants only.
+    ///
+    /// [cloob]: ProjectError::CursorLayerOutOfBounds
+    /// [cioob]: ProjectError::CursorCoordOutOfBounds
+    pub fn toggle_cursor_at(&mut self, coord: UCoord, layer: u16) -> Result<(), ProjectError> {
+        use ProjectError::{ CursorCoordOutOfBounds, CursorLayerOutOfBounds };
+
+        if layer < self.canvas.num_layers() {
+            if coord.x < self.canvas.dim().x() && coord.y < self.canvas.dim().y() {
+                if self.cursors.get(&(coord, layer)).is_some() {
+                    self.cursors.remove(&(coord, layer)).unwrap();
+                } else {
+                    _ = self.cursors.insert((coord, layer), ());
+                }
+                Ok(())
+            } else {
+                Err(CursorCoordOutOfBounds(coord, self.canvas.dim()))
+            }
+        } else {
+            Err(CursorLayerOutOfBounds(layer, self.canvas.num_layers()))
+        }
+    }
+
     pub fn resize(&mut self) {
         todo!()
     }
@@ -129,49 +193,54 @@ impl Project {
 
 // Error Types
 
+/// Error enum to describe various errors returns by Canvas methods
 #[derive(Debug)]
 pub enum ProjectError {
-    CursorIndexOutOfBounds(usize, usize),
-    CursorCoordOutOfBounds(usize, UCoord, PCoord),
-    CanvasError(CanvasError),
+
+    /// Error that occurs when trying to access a Cursor using a Layer index that is out of bounds
+    /// for the Canvas
     CursorLayerOutOfBounds(u16, u16),
+
+    /// Error that occurs when trying to access a Cursor using a coordinate that is out of bounds
+    /// for the Canvas
+    CursorCoordOutOfBounds(UCoord, PCoord),
+
+    /// Error that is propagated in [`render_layer`](Project::render_layer) when trying to access a
+    /// Layer set by the [`focus`](Project#structfield.focus) that is out of bounds for the Canvas
+    CanvasError(CanvasError),
+
+    /// Error that occurs when trying to set the output multipler out_mul to 0
     ZeroMultiplier,
 }
+
 impl std::fmt::Display for ProjectError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use ProjectError::*;
         match self {
-            CursorIndexOutOfBounds(index, cursors_len) => write!(
-                f,
-                "index {} is out of bounds for cursors of length {} in the project",
-                index,
-                cursors_len,
-            ),
-            CursorCoordOutOfBounds(index, cursor_coord, dim) => write!(
-                f,
-                "cannot set cursor at index {} of cursors to coordinate {} since project \
-                dimensions are {}, valid coordinates for this project lie between {} and \
-                {} (inclusive)",
-                index,
-                cursor_coord,
-                dim,
-                UCoord{ x: 0, y: 0 },
-                Coord::from(dim).add(Coord{ x: -1, y: -1 }),
-            ),
-            CanvasError(error) => write!(f, "{}", error),
             CursorLayerOutOfBounds(layer, layers_len) => write!(
                 f,
-                "layer index {} is out of bounds for the {} layers present in the project",
+                "layer index {} is out of bounds for the {} layers present in the canvas",
                 layer,
                 layers_len,
             ),
+            CursorCoordOutOfBounds(coord, canvas_dim) => write!(
+                f,
+                "cannot set cursor to coordinate {} since canvas dimensions are {}, valid \
+                coordinates for this project lie between {} and {} (inclusive)",
+                coord,
+                canvas_dim,
+                UCoord{ x: 0, y: 0 },
+                Coord::from(canvas_dim).add(Coord{ x: -1, y: -1 }),
+            ),
+            CanvasError(error) => write!(f, "{}", error),
             ZeroMultiplier => write!(
                 f,
-                "cannot set camera's multiplier to 0",
+                "cannot set output multiplier to 0",
             ),
         }
     }
 }
+
 impl From<CanvasError> for ProjectError {
     fn from(item: CanvasError) -> ProjectError { ProjectError::CanvasError(item) }
 }

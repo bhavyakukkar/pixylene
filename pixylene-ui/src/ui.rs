@@ -1,9 +1,9 @@
 use libpixylene::{ types::{ UCoord, PCoord }, project::{ Project, OPixel } };
-use pixylene_actions::{ action_manager::ActionManager, LogType };
+use pixylene_actions::{ memento::ActionManager, LogType };
 
 use std::fmt;
 
-pub trait Target {
+pub trait UserInterface {
     fn initialize(&mut self);
     fn finalize(&mut self);
 
@@ -22,7 +22,7 @@ pub trait Target {
 
     fn console_clear(&self, boundary: &Rectangle);
     fn console_in(&self, message: &str, discard_key: &Key, boundary: &Rectangle) -> Option<String>;
-    fn console_out(&self, message: &str, log_type: LogType, boundary: &Rectangle);
+    fn console_out(&self, message: &str, log_type: &LogType, boundary: &Rectangle);
 
 }
 

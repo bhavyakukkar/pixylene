@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 libpixylene = { path = "../libpixylene" }
+undo = "0.51.0"

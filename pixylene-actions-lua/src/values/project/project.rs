@@ -1,28 +1,31 @@
-// havent started this
+use crate::values::{ types::{ Coord, PCoord }, project::{ Canvas } };
+
 use tealr::{
     mlu::{
-        self,
         mlua::{
             self,
-            prelude::{ LuaValue, LuaUserData },
-            FromLua, Value, Lua, Result, UserData, UserDataFields, UserDataMethods, MetaMethod,
+            UserData, UserDataFields, UserDataMethods,
         },
         TealData, TealDataMethods, UserDataWrapper,
     },
-    ToTypename, TypeBody, TypeWalker, mlua_create_named_parameters,
+    ToTypename, TypeBody, mlua_create_named_parameters,
 };
-
-use libpixylene::project;
+use std::sync::Arc;
+use std::rc::Rc;
+use std::cell::RefCell;
+use libpixylene::{ Pixylene };
 
 
 /// Lua interface to libpixylene's [`Project`][project::Project] type
-#[derive(Copy, Clone)]
-pub struct Project(pub project::Project);
+//#[derive(Clone)]
+pub struct Project(pub Rc<RefCell<Pixylene>>);
 
+// No FromLua impl because Project never needs to be constructed from lua
+/*
 impl<'lua> FromLua<'lua> for Project {
-    fn from_lua(value: LuaValue<'lua>, _: &'lua Lua) -> Result<Self> {
+    fn from_lua(value: LuaValue<'lua>, _: &'lua Lua) -> Result<Project> {
         match value.as_userdata() {
-            Some(ud) => Ok(*ud.borrow::<Self>()?),
+            Some(ud) => Ok((*ud.borrow::<Project>()?).clone()),
             None => Err(mlua::Error::FromLuaConversionError {
                 from: value.type_name(),
                 to: "Project",
@@ -31,95 +34,121 @@ impl<'lua> FromLua<'lua> for Project {
         }
     }
 }
+*/
 
 impl TealData for Project {
     fn add_methods<'lua, T: TealDataMethods<'lua, Self>>(methods: &mut T) {
-        methods.document_type("An unsigned integer coordinate type composed of two 16-bit unsigned \
-                             integers.");
+        methods.document_type("The absolute state of a Pixel Art project at any given instance.");
 
-        //Flexible Lua metamethod Call interface to construct a new Project
-        //
-        // u = Project(1, 2)   -- ->(1,2). or,
-        // u = Project(1)      -- ->(1,0). or,
-        // u = Project(nil, 1) -- ->(0,1). or,
-        // u = Project()       -- ->(0,0)
+        //Lua interface to new()
+        /*
         {
             mlua_create_named_parameters!(
                 ProjectArgs with
-                    x : Option<u16>,
-                    y : Option<u16>,
+                    canvas: Canvas,
             );
-            methods.document("Create & return a new Project with optional 'x' and 'y' coordinates \
-                             that default to 0");
+            methods.document("Creates a new empty Project containing the given Canvas");
             methods.add_meta_method(MetaMethod::Call, |_, _, a: ProjectArgs| {
-                Ok(Project(project::Project{
-                    x: a.x.unwrap_or(0),
-                    y: a.y.unwrap_or(0),
-                }))
+                Ok(Project(project::Project::new(a.canvas.0)))
             });
         }
+        */
 
-        //Lua interface to construct a new Project
+        //Lua interface to render_layer()
+        //this isn't usual for an action to use
+        /*
+        {
+            methods.document("todo");
+            methods.add_method("render_layer", |_, this, _| {
+                use mlua::Error::{ ExternalError };
+                let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
+
+                match this.0.render_layer() {
+                    Ok(buffer) => Ok(
+                }
+                Ok(Scene(this.0.merged_scene(match a.background {
+                    Some(color) => Some(color.0),
+                    None => None
+                })))
+            });
+        }
+        */
+
+        //Lua inteface to set_out_mul()
         {
             mlua_create_named_parameters!(
-                ProjectNewArgs with
-                    x : u16,
-                    y : u16,
+                ProjectSetMulArgs with
+                    new_mul: u8,
             );
-            methods.document("Create & return a new Project with 'x' and 'y' coordinates");
-            methods.add_function("new", |_, a: ProjectNewArgs| {
-                Ok(Project(project::Project{x: a.x, y: a.y}))
+            methods.document("Sets the output multiplier for this given Project, failing if 0 is \
+                             passed");
+            methods.add_method_mut("set_mul", |_, this, a: ProjectSetMulArgs| {
+                use mlua::Error::{ ExternalError };
+                let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
+
+                match this.0.borrow_mut().project.set_out_mul(a.new_mul) {
+                    Ok(()) => Ok(()),
+                    Err(err) => Err(ExternalError(Arc::from(
+                        boxed_error(&err.to_string())
+                    ))),
+                }
             });
         }
 
-        //Lua interface to Project::zero
-        {
-            methods.document("Create & return a new (0,0) Project");
-            methods.add_function("zero", |_, _: ()| {
-                Ok(Project(project::Project::zero()))
-            });
-        }
 
-        //Lua interface to Project::area
-        {
-            methods.document("Return the 'area' of a Project, i.e., product of x and y");
-            methods.add_method("area", |_, this, _: ()| -> Result<u32> {
-                Ok(this.0.area())
-            });
-        }
-
-        //Lua metamethod '+' interface to Project::add
+        //Flexible Lua interface to get or set Project's focus field
         {
             mlua_create_named_parameters!(
-                ProjectAddArgs with
-                    first : Project,
-                    second : Project,
+                ProjectFocusArgs with
+                    coord: Option<Coord>,
+                    layer: Option<u16>,
             );
-            methods.document("Return a Project composed of the overflowing sums of two Project's \
-                             coordinates");
-            methods.add_meta_function(MetaMethod::Add, |_, a: ProjectAddArgs| {
-                Ok(Project(project::Project{
-                    x: a.first.0.x.overflowing_add(a.second.0.x).0,
-                    y: a.first.0.y.overflowing_add(a.second.0.y).0,
-                }))
+            methods.document("Gets the output focus as a table of fields 'coord' and 'layer' for \
+                             this given Project if nothing is passed, sets it if the coordinate \
+                             and layer are passed");
+            methods.add_method_mut("focus", |lua, this, a: ProjectFocusArgs| {
+                if a.coord.is_some() && a.layer.is_some() {
+                    this.0.borrow_mut().project.focus = (a.coord.unwrap().0, a.layer.unwrap());
+                    Ok(None)
+                } else {
+                    let focus = lua.create_table()?;
+                    focus.set("coord", Coord(this.0.borrow().project.focus.0))?;
+                    focus.set("layer", this.0.borrow().project.focus.1)?;
+                    Ok(Some(focus))
+                }
             });
         }
+
+        //todo: add more methods
 
         methods.generate_help();
     }
-    fn add_fields<'lua, F: tealr::mlu::TealDataFields<'lua, Self>>(fields: &mut F) {
 
-        fields.document("the 'x' coordinate of the Project");
-        fields.add_field_method_get("x", |_, this| Ok(this.0.x));
-        fields.add_field_method_set("x", |_, this, value| {
-            this.0.x = value;
+    fn add_fields<'lua, F: tealr::mlu::TealDataFields<'lua, Self>>(fields: &mut F) {
+        fields.document("the Output-Multiplier of the Project");
+        fields.add_field_method_get("mul", |_, this| Ok(this.0.borrow().project.get_out_mul()));
+
+        fields.document("the Output-Dimensions of the Project (not to be confused with the \
+                        Canvas's dimensions)");
+        fields.add_field_method_get("dim", |_, this| Ok(PCoord(this.0.borrow().project.out_dim)));
+        fields.add_field_method_set("dim", |_, this, value: PCoord| {
+            this.0.borrow_mut().project.out_dim = value.0;
             Ok(())
         });
 
-        fields.document("the 'y' coordinate of the Project");
-        fields.add_field_method_get("y", |_, this| Ok(this.0.y));
-        fields.add_field_method_set("y", |_, this, value| {
-            this.0.y = value;
+        fields.document("the Output-Repeat of the Project");
+        fields.add_field_method_get("repeat", |_, this| Ok(PCoord(this.0.borrow().project
+                                                                  .out_repeat)));
+        fields.add_field_method_set("repeat", |_, this, value: PCoord| {
+            this.0.borrow_mut().project.out_repeat = value.0;
+            Ok(())
+        });
+
+        fields.document("the Canvas contained by the Project");
+        fields.add_field_method_get("canvas", |_, this| Ok(Canvas(this.0.borrow().project.canvas
+                                                                  .clone())));
+        fields.add_field_method_set("canvas", |_, this, value: Canvas| {
+            this.0.borrow_mut().project.canvas = value.0;
             Ok(())
         });
     }

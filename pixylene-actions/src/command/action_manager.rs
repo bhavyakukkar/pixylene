@@ -1,4 +1,5 @@
-use crate::{ Action, ActionError, Change, ChangeError, Console };
+use crate::{ Console, ActionError };
+use super::{ Action, Change, ChangeError };
 
 use libpixylene::project::Project;
 use std::collections::HashMap;
@@ -11,6 +12,7 @@ pub struct ActionManager {
     change_stack: Vec<Change>,
     change_index: usize,
 }
+
 impl ActionManager {
     pub fn new(actions: HashMap<String, Box<dyn Action>>) -> Self {
         ActionManager {
@@ -24,11 +26,12 @@ impl ActionManager {
     pub fn perform(
         &mut self,
         project: &mut Project,
-        console: &Console,
+        console: &dyn Console,
         action_name: String
     )
     -> Result<(), ActionManagerError> {
-        use ActionManagerError::{ ActionNotFound, LockedScene, LockedCamera, ActionFailedToPerform };
+        use ActionManagerError::{ ActionNotFound, LockedScene, LockedCamera,
+                                  ActionFailedToPerform };
         use ActionNameOrChangeIndex::*;
 
         let action = match self.actions.get_mut(&action_name) {
@@ -53,7 +56,7 @@ impl ActionManager {
         if action.locks_scene() { self.scene_lock = Some(action_name.clone()); }
         if action.locks_camera() { self.camera_lock = Some(action_name.clone()); }
 
-        match action.perform_action(project, console) {
+        match action.perform(project, console) {
             Ok(changes) => {
                 let num_changes = changes.len();
                 if num_changes > 0 {
@@ -97,7 +100,7 @@ impl ActionManager {
         Ok(())
     }
 
-    pub fn undo(&mut self, project: &mut Project, console: &Console)
+    pub fn undo(&mut self, project: &mut Project, console: &dyn Console)
         -> Result<(), ActionManagerError> {
         use ActionManagerError::{ NothingToUndo, ActionFailedToPerform };
         use ActionNameOrChangeIndex::*;
@@ -120,7 +123,7 @@ impl ActionManager {
                     },
                     Change::StartEnd(action_rc) => {
                         let mut action = action_rc.borrow_mut();
-                        match (*action).perform_action(project, console) {
+                        match (*action).perform(project, console) {
                             Ok(changes) => for _change in changes {
                                 // assumes that action that returned
                                 // StartEnd once will return StartEnd again
@@ -139,7 +142,7 @@ impl ActionManager {
                     },
                     Change::Untracked(action_rc) => {
                         let mut action = action_rc.borrow_mut();
-                        match (*action).perform_action(project, console) {
+                        match (*action).perform(project, console) {
                             Ok(changes) => for change in changes {
                                 // assumes that action that returned
                                 // Untracked once will return Untracked again
@@ -161,7 +164,8 @@ impl ActionManager {
         }
         Ok(())
     }
-    pub fn redo(&mut self, project: &mut Project, console: &Console)
+
+    pub fn redo(&mut self, project: &mut Project, console: &dyn Console)
         -> Result<(), ActionManagerError> {
         use ActionManagerError::{ NothingToRedo, ActionFailedToPerform };
         use ActionNameOrChangeIndex::*;
@@ -184,7 +188,7 @@ impl ActionManager {
                     },
                     Change::StartEnd(action_rc) => {
                         let mut action = action_rc.borrow_mut();
-                        match (*action).perform_action(project, console) {
+                        match (*action).perform(project, console) {
                             Ok(changes) => for _change in changes {
                                 // assumes that action that returned
                                 // StartEnd once will return StartEnd again
@@ -203,7 +207,7 @@ impl ActionManager {
                     },
                     Change::Untracked(action_rc) => {
                         let mut action = action_rc.borrow_mut();
-                        match (*action).perform_action(project, console) {
+                        match (*action).perform(project, console) {
                             Ok(changes) => for change in changes {
                                 // assumes that action that returned
                                 // Untracked once will return Untracked again
@@ -225,9 +229,11 @@ impl ActionManager {
         }
         Ok(())
     }
+
     pub fn add_action(&mut self, action_name: String, action: Box<dyn Action>) {
         self.actions.insert(action_name, action);
     }
+
     pub fn list_actions(&self) -> Vec<String> {
         (&self.actions).into_iter().map(|(action_name, _)| action_name.clone()).collect()
     }
@@ -252,6 +258,7 @@ pub enum ActionManagerError {
     NothingToUndo,
     NothingToRedo,
 }
+
 impl std::fmt::Display for ActionManagerError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use ActionManagerError::*;

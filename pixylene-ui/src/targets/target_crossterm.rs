@@ -1,7 +1,7 @@
-use crate::target::{ Target, Key, Rectangle, Mode };
+use crate::ui::{ UserInterface, Key, Rectangle, Mode };
 
 use libpixylene::{ types::{ UCoord, PCoord }, project::{ Project, OPixel } };
-use pixylene_actions::{ action_manager::ActionManager, LogType };
+use pixylene_actions::{ memento::ActionManager, LogType };
 use crossterm::{ event, cursor, terminal, style, queue, execute };
 use std::io::{ Write };
 
@@ -9,8 +9,24 @@ use std::io::{ Write };
 /// Pixylene UI's Target for the [`crossterm`](crossterm) terminal manipulation library
 /// [Crossterm repository](https://github.com/crossterm-rs/crossterm)
 pub struct TargetCrossterm;
+//pub struct TargetCrossterm {
+//    b_camera: Rectangle,
+//    b_statusline: Rectangle,
+//    b_console: Rectangle,
+//}
 
-impl Target for TargetCrossterm {
+/*
+impl Console for TargetCrossterm {
+
+    fn cmdin(&self, message: &str) -> Option<String> {
+    }
+
+    fn cmdout(&self, message: &str, log_type: &LogType) {
+    }
+}
+*/
+
+impl UserInterface for TargetCrossterm {
 
     fn initialize(&mut self) {
         use terminal::{
@@ -26,7 +42,7 @@ impl Target for TargetCrossterm {
             EnterAlternateScreen,
             Hide,
         ).unwrap();
-        stdout.flush();
+        _ = stdout.flush();
     }
 
     fn finalize(&mut self) {
@@ -40,8 +56,18 @@ impl Target for TargetCrossterm {
             Show,
             LeaveAlternateScreen,
         ).unwrap();
-        stdout.flush();
+        _ = stdout.flush();
     }
+
+    //fn set_camera_boundary(&mut self, boundary: Rectangle) {
+    //    self.b_camera = boundary;
+    //}
+    //fn set_statusline_boundary(&mut self, boundary: Rectangle) {
+    //    self.b_statusline = boundary;
+    //}
+    //fn set_console_boundary(&mut self, boundary: Rectangle) {
+    //    self.b_console = boundary;
+    //}
 
     fn draw_camera(&self, dim: PCoord, buffer: Vec<OPixel>, show_cursors: bool,
                    boundary: &Rectangle)
@@ -103,7 +129,7 @@ impl Target for TargetCrossterm {
             ).unwrap();
         }
         queue!(stdout, ResetColor).unwrap();
-        stdout.flush();
+        _ = stdout.flush();
     }
 
     fn get_key(&self) -> Key {
@@ -125,7 +151,7 @@ impl Target for TargetCrossterm {
         Rectangle { start: UCoord::zero(), size: PCoord::new(height, width).unwrap() }
     }
 
-    fn draw_statusline(&self, project: &Project, action_manager: &ActionManager, mode: &Mode,
+    fn draw_statusline(&self, project: &Project, _action_manager: &ActionManager, mode: &Mode,
                        session: &u8, boundary: &Rectangle) {
         use terminal::{ size, Clear, ClearType };
         use cursor::{ MoveTo };
@@ -193,10 +219,11 @@ impl Target for TargetCrossterm {
             SetBackgroundColor(Color::Rgb{r:50,g:50,b:50}),
             SetForegroundColor(Color::Rgb{r:255,g:255,b:255}),
             Print(format!(
-                "|{}(S:'{}' C:'{}'){}|",
+                //"|{}(S:'{}' C:'{}'){}|",
+                "|{}{}|",
                 padding,
-                &action_manager.scene_lock.clone().unwrap_or(String::from("-")),
-                &action_manager.camera_lock.clone().unwrap_or(String::from("-")),
+                //&action_manager.scene_lock.clone().unwrap_or(String::from("-")),
+                //&action_manager.camera_lock.clone().unwrap_or(String::from("-")),
                 padding,
                 //match pixylene.project.cursors.len() {
                 //    0 => String::from("No cursors"),
@@ -205,7 +232,7 @@ impl Target for TargetCrossterm {
                 //},
             )),
         ).unwrap();
-        stdout.flush();
+        _ = stdout.flush();
     }
 
     fn console_in(&self, message: &str, discard_key: &Key, boundary: &Rectangle) -> Option<String> {
@@ -264,7 +291,7 @@ impl Target for TargetCrossterm {
         out
     }
 
-    fn console_out(&self, message: &str, log_type: LogType, boundary: &Rectangle) {
+    fn console_out(&self, message: &str, log_type: &LogType, boundary: &Rectangle) {
         use terminal::{ Clear, ClearType };
         use cursor::{ MoveTo };
         use style::{ SetForegroundColor, Color, Print, ResetColor };
@@ -302,6 +329,6 @@ impl Target for TargetCrossterm {
             Clear(ClearType::UntilNewLine),
         ).unwrap();
 
-        stdout.flush();
+        _ = stdout.flush();
     }
 }

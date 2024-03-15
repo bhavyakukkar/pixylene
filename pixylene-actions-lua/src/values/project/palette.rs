@@ -1,4 +1,4 @@
-use crate::values::{ types::{ Pixel }, project::{ Scene } };
+use crate::values::{ types::{ Pixel } };
 
 use tealr::{
     mlu::{
@@ -62,19 +62,48 @@ impl TealData for Palette {
             });
         }
 
-        //Lua interface to Palette::get_color()
+        //Flexible Lua interface to get_equipped() and get_color()
         {
+            methods.document("Gets the equipped color of the Palette, or the color at the optional
+                             index");
             mlua_create_named_parameters!(
-                PaletteGetColorArgs with
-                    index: u8,
+                PaletteGetArgs with
+                    index: Option<u8>,
             );
-            methods.document("Gets the color at an index of the Palette");
-            methods.add_method("get_color", |_, this, a: PaletteGetColorArgs| {
+            methods.add_method("get", |_, this, a: PaletteGetArgs| {
                 use mlua::Error::{ ExternalError };
                 let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
 
-                match this.0.get_color(a.index) {
-                    Ok(pixel) => Ok(Pixel(pixel.clone())),
+                match a.index {
+                    Some(index) => match this.0.get_color(index) {
+                        Ok(pixel) => Ok(Pixel(pixel.clone())),
+                        Err(err) => Err(ExternalError(Arc::from(
+                            boxed_error(&err.to_string())
+                        ))),
+                    },
+                    None => match this.0.get_equipped() {
+                        Ok(pixel) => Ok(Pixel(pixel.clone())),
+                        Err(err) => Err(ExternalError(Arc::from(
+                            boxed_error(&err.to_string())
+                        ))),
+                    }
+                }
+            });
+        }
+
+        //Lua interface to Palette::equip()
+        {
+            mlua_create_named_parameters!(
+                PaletteEquipArgs with
+                    index: u8,
+            );
+            methods.document("Equip the color at a particular index of the Palette");
+            methods.add_method_mut("equip", |_, this, a: PaletteEquipArgs| {
+                use mlua::Error::{ ExternalError };
+                let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
+
+                match this.0.equip(a.index) {
+                    Ok(()) => Ok(()),
                     Err(err) => Err(ExternalError(Arc::from(
                         boxed_error(&err.to_string())
                     ))),
@@ -82,18 +111,40 @@ impl TealData for Palette {
             });
         }
 
-        //Lua interface to Palette::equipped()
+        //Lua interface to Palette::set_color()
         {
+            mlua_create_named_parameters!(
+                PaletteSetColorArgs with
+                    index: u8,
+                    color: String,
+            );
+            methods.document("Set the color at a particular index of the Palette");
+            methods.add_method_mut("set_color", |_, this, a: PaletteSetColorArgs| {
+                use mlua::Error::{ ExternalError };
+                let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
+
+                match this.0.set_color(a.index, &a.color) {
+                    Ok(()) => Ok(()),
+                    Err(err) => Err(ExternalError(Arc::from(
+                        boxed_error(&err.to_string())
+                    ))),
+                }
+            });
         }
 
-        // todo: + metamethod alias for merge that checks for consistent sizes and uses top layer's
-        //       blend_mode
+        //Lua interface to Palette::unset_color()
+        {
+            mlua_create_named_parameters!(
+                PaletteUnsetColorArgs with
+                    index: u8,
+            );
+            methods.document("Unset the color at a particular index of the Palette");
+            methods.add_method_mut("unset_color", |_, this, a: PaletteUnsetColorArgs| {
+                Ok(this.0.unset_color(a.index))
+            });
+        }
 
         methods.generate_help();
-    }
-
-    fn add_fields<'lua, F: tealr::mlu::TealDataFields<'lua, Self>>(fields: &mut F) {
-        //over here
     }
 }
 

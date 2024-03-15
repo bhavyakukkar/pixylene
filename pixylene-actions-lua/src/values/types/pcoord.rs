@@ -36,8 +36,8 @@ impl TealData for PCoord {
     fn add_methods<'lua, T: TealDataMethods<'lua, Self>>(methods: &mut T) {
         use mlua::Error::{ ExternalError };
 
-        methods.document_type("An unsigned integer coordinate type composed of two 16-bit unsigned \
-                             integers greater than or equal to 1.");
+        methods.document_type("A positive coordinate type composed of two positive (1 or greater) \
+                              16-bit unsigned integers.");
 
 
         //Flexible Lua metamethod Call interface to construct a new PCoord
@@ -73,8 +73,6 @@ impl TealData for PCoord {
             });
         }
 
-        methods.document_type("A positive coordinate type composed of two positive (1 or greater) \
-                              16-bit unsigned integers.");
         //Lua interface to PCoord::new
         {
             mlua_create_named_parameters!(

@@ -144,12 +144,12 @@ impl std::fmt::Display for PaletteError {
         match self {
             InvalidIndex(index) => write!(
                 f,
-                "cannot get color {} from palette as it hasn't been set yet",
+                "cannot get color {} from palette as it hasn't been set",
                 index,
             ),
             NothingEquipped => write!(
                 f,
-                "cannot get equipped color as nothing has been equipped yet",
+                "cannot get equipped color as nothing has been equipped",
             ),
             PixelError(pixel_error) => write!(f, "{}", pixel_error),
         }

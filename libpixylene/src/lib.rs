@@ -2,8 +2,6 @@ extern crate savefile;
 #[macro_use]
 extern crate savefile_derive;
 
-pub mod grammar;
-
 pub mod utils;
 
 pub mod types;

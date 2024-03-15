@@ -1,14 +1,11 @@
 mod console;
-pub use self::console::{ Console, LogType };
+pub use console::{ Console, LogType };
 
-mod action;
-pub use self::action::{ Action, ActionError };
+pub mod command;
 
-mod change;
-pub use self::change::{ Change, UntrackError, ChangeError };
+pub mod memento;
 
-pub mod action_manager;
+mod action_error;
+pub use action_error::ActionError;
 
-pub mod helper;
-
-pub mod actions;
+pub mod std_actions;

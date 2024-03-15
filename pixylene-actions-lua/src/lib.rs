@@ -1,37 +1,61 @@
+use tealr::mlu::mlua::{ Lua, Table, Result };
+//use std::io::Read;
+use libpixylene::{ project, types };
+use std::path::Path;
+use std::fs;
+use std::rc::Rc;
+use std::cell::RefCell;
+
 pub mod values;
 pub mod utils;
 
-use crate::values::{ types::*, project::* };
-use utils::messages;
+pub struct LuaActionManager(Lua);
 
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+impl LuaActionManager {
+    pub fn invoke(&mut self, action_name: &str, pixylene: Rc<RefCell<libpixylene::Pixylene>>,
+                  console: Rc<dyn pixylene_actions::Console>)
+        -> Result<()>
+    {
+        use crate::values::{ Console, project::Project };
+        use tealr::mlu::mlua::Value;
 
+        let project_lua = Project(pixylene);
+        self.0.globals().set("Project", project_lua)?;
+        self.0.globals().set("Console", Console(console))?;
+        self.0.load(format!("actions.{0}.perform(actions.{0}, Project, Console)", action_name))
+            .exec()?;
+        self.0.globals().set("Project", Value::Nil)?;
 
+        Ok(())
+    }
 
-//
+    pub fn list_actions(&self) -> Vec<String> {
+        self.0.globals().get::<_, Table>("actions").unwrap().pairs::<String, Table>()
+            .map(|pair| pair.unwrap().0).collect::<Vec<String>>()
+    }
 
-
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use tealr::mlu::mlua::{ Lua, Table, Result };
-    use std::io::Read;
-    //use std::sync::{ Arc, Mutex };
-
-    //use tealr::{ TypeWalker };
-    use libpixylene::{ types, project };
-    
-    #[test]
-    fn main() -> Result<()> {
+    pub fn setup(lua_file_path: &Path) -> Result<LuaActionManager> {
         let lua_ctx = Lua::new();
+    
+        //let mut user_lua = String::new();
+        //let mut user_lua_file = std::fs::File::open("./src/example.lua").unwrap();
+        //user_lua_file.read_to_string(&mut user_lua).unwrap();
+        let user_lua = fs::read_to_string(lua_file_path).unwrap_or(String::from(""));
+    
+        let coord;
+        let ucoord;
+        let pcoord;
+        let pixel;
+        let blend_mode;
+        let scene;
+        let layer;
+        let palette;
+        let canvas;
+        //let project;
 
-        let mut user_lua = String::new();
-        let mut user_lua_file = std::fs::File::open("./src/example.lua").unwrap();
-        user_lua_file.read_to_string(&mut user_lua).unwrap();
-
+        //let console;
+        let log_type;
+    
         /*
         let file_contents = TypeWalker::new()
             //tells it that you want to include the Example type
@@ -42,52 +66,108 @@ mod tests {
             .expect("serde_json failed to serialize our data");
         println!("{}\n ", file_contents);
         */
-
+    
         //Add User Actions
         {
             //Set Actions table
-            let actions_tbl = lua_ctx.create_table()?;
+            lua_ctx.globals().set("actions", lua_ctx.create_table()?)?;
 
-            for _ in 0..1 {
-                //Load All User Action scripts
-                {
-                    //Dummy action table that will be moved and nil'ed after action
-                    //logic is moved out of this context into main context
-                    lua_ctx.globals().set("action", lua_ctx.create_table()?)?;
-                    lua_ctx.load(&user_lua).exec()?;
-                    actions_tbl.set(
-                        lua_ctx.globals().get::<_, Table>("action")?.get::<_, String>("name")?,
-                        lua_ctx.globals().get::<_, Table>("action")?
-                    )?;
-                    //lua_user_actions.push(lua_ctx.globals().get::<&str, Table>("action")?);
-                    lua_ctx.globals().set("action", lua_ctx.create_table()?)?;
-                }
-            }
+            //Load script containing 1 or more actions
+            lua_ctx.load(&user_lua).exec()?;
 
-            lua_ctx.globals().set("actions", actions_tbl)?;
+            /*
+            actions_tbl.set(
+                lua_ctx.globals().get::<_, Table>("action")?.get::<_, String>("name")?,
+                lua_ctx.globals().get::<_, Table>("action")?
+            )?;
+            */
+            //lua_user_actions.push(lua_ctx.globals().get::<&str, Table>("action")?);
+            //lua_ctx.globals().set("action", lua_ctx.create_table()?)?;
+    
+            //lua_ctx.globals().set("actions", actions_tbl)?;
         }
         
-        //Add Pixylene Types
+        //Construct Initial Pixylene Types
         {
-            lua_ctx.globals().set("Coord", Coord(types::Coord::zero()))?;
-            lua_ctx.globals().set("UCoord", UCoord(types::UCoord::zero()))?;
-            lua_ctx.globals().set("PCoord", PCoord(types::PCoord::new(1,1)
-                                                   .expect(messages::PCOORD_NOTFAIL)))?;
-            lua_ctx.globals().set("Pixel", Pixel(types::Pixel::empty()))?;
-            lua_ctx.globals().set("BlendMode", BlendMode(types::BlendMode::Normal))?;
-            lua_ctx.globals().set("Scene", Scene(project::Scene::new(
-                        types::PCoord::new(1,1).expect(messages::PCOORD_NOTFAIL),
-                        vec![None]
-            ).expect(messages::SCENE_NOTFAIL)))?;
-            lua_ctx.globals().set("Layer", Layer(project::Layer::new_with_solid_color(
-                        types::PCoord::new(1,1).expect(messages::PCOORD_NOTFAIL), None)))?;
-            lua_ctx.globals().set("Palette", Palette(project::Palette::new()));
+            use types::*;
+            use project::*;
+            use pixylene_actions::LogType;
+    
+            coord = Coord::zero();
+            ucoord = UCoord::zero();
+            pcoord = PCoord::new(1,1).unwrap();
+            pixel = Pixel::empty();
+            blend_mode = BlendMode::Normal;
+            scene = Scene::new(pcoord, vec![None]).unwrap();
+            layer = Layer::new_with_solid_color(pcoord, None);
+            palette = Palette::new();
+            canvas = Canvas::new(pcoord, palette.clone());
+            //project = Project::new(canvas.clone());
+    
+            //struct ExampleConsole;
+            //impl Console for ExampleConsole {
+            //    fn cmdin(&self, _message: &str) -> Option<String> { None }
+            //    fn cmdout(&self, _message: &str, _log_type: &LogType) { () }
+            //}
+            //console = ExampleConsole;
+            log_type = LogType::Info;
+        }
+    
+        //Add Pixylene Types to Lua Global State
+        {
+            use crate::values::{ LogType, types::*, project::* };
+    
+            lua_ctx.globals().set("C", Coord(coord))?;
+            lua_ctx.globals().set("U", UCoord(ucoord))?;
+            lua_ctx.globals().set("P", PCoord(pcoord))?;
+            lua_ctx.globals().set("Pixel", Pixel(pixel))?;
+            lua_ctx.globals().set("BlendMode", BlendMode(blend_mode))?;
+            lua_ctx.globals().set("Scene", Scene(scene))?;
+            lua_ctx.globals().set("Layer", Layer(layer))?;
+            lua_ctx.globals().set("Palette", Palette(palette))?;
+            lua_ctx.globals().set("Canvas", Canvas(canvas))?;
+            //lua_ctx.globals().set("Project", Project(project))?;
+    
+            //lua_ctx.globals().set("Console", Console(Box::new(console)))?;
+            lua_ctx.globals().set("LogType", LogType(log_type))?;
+        }
+    
+        //Invoke User's Action script
+        //lua_ctx.load(r#"actions.example.perform(actions.example)"#).exec().unwrap();
+    
+        Ok(LuaActionManager(lua_ctx))
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use tealr::mlu::mlua::{ Result };
+
+    #[test]
+    fn main() -> Result<()> {
+        use libpixylene::{ PixyleneDefaults, types::PCoord, project::Palette };
+        use pixylene_actions::{ Console, LogType };
+        use crate::LuaActionManager;
+        use std::path::Path;
+        use std::rc::Rc;
+        use std::cell::RefCell;
+
+        let pixylene = Rc::new(RefCell::new(libpixylene::Pixylene::new(&PixyleneDefaults {
+            dim: PCoord::new(10, 10).unwrap(),
+            palette: Palette::new(),
+        })));
+
+        struct ExampleConsole;
+        impl Console for ExampleConsole {
+            fn cmdin(&self, _message: &str) -> Option<String> { Some(String::from("hi")) }
+            fn cmdout(&self, message: &str, _log_type: &LogType) { println!("{}", message); }
         }
 
+        let mut lam = LuaActionManager::setup(Path::new("/home/bhavya/.config/pixylene.lua"))?;
+        lam.invoke("example", pixylene.clone(), Rc::new(ExampleConsole))?;
 
-        //Invoke User's Action script
-        lua_ctx.load(r#"actions.example.perform(actions.echo)"#).exec().unwrap();
-
+        println!("{}", pixylene.borrow().project.canvas.dim());
         Ok(())
     }
 }

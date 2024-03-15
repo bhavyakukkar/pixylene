@@ -27,8 +27,12 @@ pub enum BlendMode {
 
 impl BlendMode {
 
-    /// Blend two RGBA [`Pixels`](Pixel) using self's blend-mode variant & return the resultant
+    /// Blends two RGBA [`Pixels`](Pixel) using self's blend-mode variant & return the resultant
     /// [`Pixel`]
+    ///
+    /// `Note`: This method may fail with the [`FractionsDoNotSumToWhole`][fd] error variant only.
+    ///
+    /// [fd]: BlendError::FractionsDoNotSumToWhole
     pub fn blend(&self, a: Pixel, b: Pixel) -> Result<Pixel, BlendError> {
         use BlendError::{ FractionsDoNotSumToWhole };
 

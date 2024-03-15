@@ -17,7 +17,7 @@ impl Scene {
 
     /// Tries to create a new scene with given dimensions and buffer of optional [`Pixels`][Pixel]
     ///
-    /// This method may fail with the [`DimensionMismatch`][dm] error variant only.
+    /// `Note`: This method may fail with the [`DimensionMismatch`][dm] error variant only.
     ///
     /// [dm]: SceneError::DimensionMismatch
     pub fn new(dimensions: PCoord, buffer: Vec<Option<Pixel>>) -> Result<Self, SceneError> {
@@ -33,7 +33,7 @@ impl Scene {
     /// Tries to get the item at the given coordinatel & fails with context if coordinate is out of
     /// bounds for this scene
     ///
-    /// This method may fail with the [`OutOfBoundCoordinates`][oobc] error variant only.
+    /// `Note`: This method may fail with the [`OutOfBoundCoordinates`][oobc] error variant only.
     ///
     /// [oobc]: SceneError::OutOfBoundCoordinates
     pub fn get_pixel(&self, coord: UCoord) -> Result<Option<Pixel>, SceneError> {
@@ -67,7 +67,7 @@ impl Scene {
     /// Tries to set an item at the given coordinate & fails with context if coordinate is out of
     /// bounds for this scene
     ///
-    /// This method may fail with the [`OutOfBoundCoordinates`][oobc] error variant only.
+    /// `Note`: This method may fail with the [`OutOfBoundCoordinates`][oobc] error variant only.
     ///
     /// [oobc]: SceneError::OutOfBoundCoordinates
     pub fn set_pixel(&mut self, coord: UCoord, new_pixel: Option<Pixel>) -> Result<(), SceneError> {
@@ -90,14 +90,19 @@ impl Scene {
     /// Renders a given Scene with the coordinate to be rendered at the center
     ///
     /// Rendering is the process of previewing any [`Scene`] by taking the following inputs:
-    /// - dimensions, i.e, `the size of the output`
-    /// - mult, i.e., `the number of [OPixels][op] on the output (in the x and y directions)
-    /// corresponding to a single [Pixel] on the [Scene]`
-    /// - focus, i.e. `the coordinate of the Scene that will be mapped to the center of the output`
+    /// - `dim` (dimensions), i.e, `the size of the output`
+    /// - `mul` (multiplier), i.e., `the number of [OPixels][op] on the output (in the x and y
+    /// directions) corresponding to a single [Pixel] on the [Scene]`
+    /// - `focus`, i.e. `the coordinate of the Scene that will be mapped to the center of the
+    /// output`
+    /// - `repeat`, i.e., `the number of pixels repeated per every [OPixel] in the two respective
+    /// directions` (included so terminal users can set to (1,2) to place two 2:1 font characters
+    /// to look like a square)
+    ///
     ///
     /// `Note`: the focus can be out of the scene; this function merely looks for the scene around
     /// the passed focus coordinate for the duration of its dimensions, placing [`OutOfScene`][oos]
-    /// where the scene doesn't exist.
+    /// everywhere outside of the scene boundaries.
     ///
     /// [op]: OPixel
     /// [oos]: OPixel::OutOfScene
@@ -155,9 +160,10 @@ impl Scene {
         let focus_y = i32::from(focus.y);
         let mul_x = i64::from(u16::from(mul) * u16::from(repeat.x()));
         let mul_y = i64::from(u16::from(mul) * u16::from(repeat.y()));
+
+        //todo: these two lines still aren't safe for smaller out_dim and larger mul, repeat
         let mid_x = i64::from((dim.x() - u16::from(mul) * u16::from(repeat.x()))
                               .checked_div(2).unwrap());
-        //apparently this line still isn't safe and fails with "attempt to subtract with overflow"
         let mid_y = i64::from((dim.y() - u16::from(mul) * u16::from(repeat.y()))
                               .checked_div(2).unwrap());
 

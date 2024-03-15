@@ -6,7 +6,7 @@
 //pub mod zoom_camera;
 //pub mod resize_camera;
 //pub mod change_camera_repeat;
-//pub mod draw_at_one_cursor;
+pub mod draw;
 //pub mod draw_at_all_cursors;
 //pub mod pencil;
 //pub mod rectangular_fill;

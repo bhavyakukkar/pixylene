@@ -1,4 +1,4 @@
-use crate::target::Key;
+use crate::ui::Key;
 
 use std::collections::HashMap;
 
@@ -25,6 +25,7 @@ pub enum UiFn {
 
     RunCommand,
     RunAction,
+    RunLastAction,
 
     PreviewFocusLayer,
     PreviewProject,

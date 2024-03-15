@@ -1,5 +1,5 @@
 use crate::{
-    target::{ Target, Mode, Rectangle },
+    ui::{ UserInterface, Mode, Rectangle },
     keybinds::{ KeyMap, ReverseKeyMap, KeyFn, UiFn, get_keybinds },
 };
 
@@ -8,16 +8,22 @@ use libpixylene::{
     project::{ OPixel, Palette }, 
     types::{ UCoord, PCoord },
 };
-use pixylene_actions::{ action_manager::ActionManager, Console, LogType };
+use pixylene_actions::{ memento::{ Action, ActionManager }, Console, LogType };
+use pixylene_actions_lua::LuaActionManager;
 use std::collections::HashMap;
 use std::process::exit;
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::path::Path;
 use clap::{ Subcommand };
 
 
 type CommandMap = HashMap<String, UiFn>;
 
+enum ActionLocation {
+    Native(Rc<RefCell<dyn Action>>),
+    Lua,
+}
 
 #[derive(Subcommand)]
 pub enum StartType {
@@ -30,12 +36,15 @@ pub enum StartType {
 }
 
 pub struct PixyleneSession {
-    pixylene: Pixylene,
-    action_manager: ActionManager,
+    pixylene: Rc<RefCell<Pixylene>>,
     last_action_name: Option<String>,
     project_file_path: Option<String>,
     modified: bool,
     mode: Mode,
+
+    action_map: HashMap<String, ActionLocation>,
+    native_action_manager: ActionManager,
+    lua_action_manager: LuaActionManager,
 }
 
 /*
@@ -55,7 +64,7 @@ impl ConsoleCell {
                                                .unwrap().clone(),
                                                &self.b_console.unwrap())
             }),
-            cmdout: Box::new(|message: String, log_type: LogType| {
+            cmdout: Box::new(|message: String, log_type: &LogType| {
                     target.borrow().console_out(&message, log_type, &self.b_console.unwrap());
             }),
         }
@@ -63,14 +72,17 @@ impl ConsoleCell {
 }
 */
 
-pub struct PixyleneUI {
-    target: Rc<RefCell<dyn Target>>,
+//pub struct Controller<T: UserInterface + Console> {
+//    target: Rc<RefCell<T>>,
+pub struct Controller {
+    target: Rc<RefCell<dyn UserInterface>>,
 
     sessions: Vec<PixyleneSession>,
     sel_session: u8,
 
     defaults: PixyleneDefaults,
 
+    //console: Console,
     actions_loader: fn(&mut ActionManager) -> (),
 
     keymap: KeyMap,
@@ -87,14 +99,32 @@ pub struct PixyleneUI {
     pub started: bool,
 }
 
-impl PixyleneUI {
+impl Console for Controller {
+    fn cmdin(&self, message: &str) -> Option<String> {
+        self.console_in(message)
+    }
+    fn cmdout(&self, message: &str, log_type: &LogType) {
+        self.console_out(message, log_type)
+    }
+}
+
+//impl<T: UserInterface + Console> Controller<T> {
+impl Controller {
+
+    fn set_boundaries(&mut self, b_camera: Rectangle, b_statusline: Rectangle,
+                      b_console: Rectangle) {
+        self.b_camera = Some(b_camera);
+        self.b_statusline = Some(b_statusline);
+        self.b_console = Some(b_console);
+    }
+
     fn console_in(&self, message: &str) -> Option<String> {
         self.target.borrow().console_in(message,
                                         self.rev_keymap.get(&KeyFn::DiscardCommand).unwrap(),
                                         &self.b_console.unwrap())
     }
 
-    fn console_out(&self, message: &str, log_type: LogType) {
+    fn console_out(&self, message: &str, log_type: &LogType) {
         self.target.borrow().console_out(message,
                                          log_type,
                                          &self.b_console.unwrap());
@@ -104,7 +134,8 @@ impl PixyleneUI {
         self.target.borrow().console_clear(&self.b_console.unwrap());
     }
 
-    pub fn new(target: Rc<RefCell<dyn Target>>) -> PixyleneUI {
+    //pub fn new(target: Rc<RefCell<T>>) -> Self {
+    pub fn new(target: Rc<RefCell<dyn UserInterface>>) -> Self {
         use UiFn::*;
 
         //Go parse TOML config and get pixylene defaults
@@ -118,7 +149,7 @@ impl PixyleneUI {
         };
         //let target_clone: Rc<RefCell<dyn Target>> = Rc::clone(&target);
 
-        PixyleneUI {
+        Self {
             target,
 
             sessions: Vec::new(),
@@ -159,7 +190,7 @@ impl PixyleneUI {
     pub fn new_session(&mut self, start_type: &Option<StartType>) {
         if self.sessions.len() > 255 {
             if self.started {
-                self.console_out("cannot have more than 256 sessions open", LogType::Error);
+                self.console_out("cannot have more than 256 sessions open", &LogType::Error);
             } else {
                 eprintln!("cannot have more than 256 sessions open");
                 exit(1);
@@ -167,8 +198,17 @@ impl PixyleneUI {
         }
 
         //Load the UI-wide actions into the action_manager for this new session
-        let mut action_manager = ActionManager::new(HashMap::new());
-        (self.actions_loader)(&mut action_manager);
+        //let mut action_manager = ActionManager::new(HashMap::new());
+        let mut native_action_manager;
+        //(self.actions_loader)(&mut action_manager);
+
+        let lua_action_manager = LuaActionManager::setup(
+            Path::new("/home/bhavya/.config/pixylene.lua")
+        ).unwrap();
+        let mut action_map: HashMap<String, ActionLocation> = HashMap::new();
+        lua_action_manager.list_actions().iter().map(|action_name| {
+            action_map.insert(action_name.clone(), ActionLocation::Lua);
+        }).collect::<Vec<()>>();
 
         match start_type {
             Some(StartType::New) => {
@@ -176,13 +216,16 @@ impl PixyleneUI {
                 if let Some(b_camera) = self.b_camera {
                     pixylene.project.out_dim = b_camera.size;
                 }
+                native_action_manager = ActionManager::new(&pixylene.project.canvas);
                 self.sessions.push(PixyleneSession {
-                    pixylene,
-                    action_manager,
+                    pixylene: Rc::new(RefCell::new(pixylene)),
                     last_action_name: None,
                     project_file_path: None,
                     modified: false,
                     mode: Mode::Normal,
+                    action_map,
+                    native_action_manager,
+                    lua_action_manager,
                 });
                 self.sel_session += 1;
             },
@@ -192,13 +235,16 @@ impl PixyleneUI {
                         if let Some(b_camera) = self.b_camera {
                             pixylene.project.out_dim = b_camera.size;
                         }
+                        native_action_manager = ActionManager::new(&pixylene.project.canvas);
                         self.sessions.push(PixyleneSession {
-                            pixylene,
-                            action_manager,
+                            pixylene: Rc::new(RefCell::new(pixylene)),
                             last_action_name: None,
                             project_file_path: Some(path.clone()),
                             modified: false,
                             mode: Mode::Normal,
+                            action_map,
+                            native_action_manager,
+                            lua_action_manager,
                         });
                         self.sel_session += 1;
                     }
@@ -207,7 +253,7 @@ impl PixyleneUI {
                             self.console_out(&format!(
                                 "failed to open: {}",
                                 err.to_string()
-                            ), LogType::Error);
+                            ), &LogType::Error);
                         } else {
                             eprintln!("failed to open: {}", err.to_string());
                             exit(1);
@@ -221,13 +267,16 @@ impl PixyleneUI {
                         if let Some(b_camera) = self.b_camera {
                             pixylene.project.out_dim = b_camera.size;
                         }
+                        native_action_manager = ActionManager::new(&pixylene.project.canvas);
                         self.sessions.push(PixyleneSession {
-                            pixylene,
-                            action_manager,
+                            pixylene: Rc::new(RefCell::new(pixylene)),
                             last_action_name: None,
                             project_file_path: Some(path.clone()),
                             modified: false,
                             mode: Mode::Normal,
+                            action_map,
+                            native_action_manager,
+                            lua_action_manager,
                         });
                         self.sel_session += 1;
                     },
@@ -236,7 +285,7 @@ impl PixyleneUI {
                             self.console_out(&format!(
                                 "failed to import: {}",
                                 err.to_string()
-                            ), LogType::Error);
+                            ), &LogType::Error);
                         } else {
                             eprintln!("failed to import: {}", err.to_string());
                             exit(1);
@@ -272,22 +321,24 @@ impl PixyleneUI {
 
         let window_size = self.target.borrow().get_size();
 
-        self.b_console = Some(Rectangle{
-            start: UCoord{ x: window_size.size.x() - 1, y: 0 },
-            size: PCoord::new(1, window_size.size.y()).unwrap()
-        });
-        self.b_camera = Some(Rectangle{
-            start: UCoord{ x: 0, y: 0 },
-            size: PCoord::new(window_size.size.x() - 2, window_size.size.y()).unwrap()
-        });
-        self.b_statusline = Some(Rectangle{
-            start: UCoord{ x: window_size.size.x() - 2, y: 0 },
-            size: PCoord::new(1, window_size.size.y()).unwrap()
-        });
+        self.set_boundaries(
+            Rectangle {
+                start: UCoord{ x: 0, y: 0 },
+                size: PCoord::new(window_size.size.x() - 2, window_size.size.y()).unwrap()
+            },
+            Rectangle {
+                start: UCoord{ x: window_size.size.x() - 2, y: 0 },
+                size: PCoord::new(1, window_size.size.y()).unwrap()
+            },
+            Rectangle {
+                start: UCoord{ x: window_size.size.x() - 1, y: 0 },
+                size: PCoord::new(1, window_size.size.y()).unwrap()
+            }
+        );
 
         // case when started from new_session instead of start directly
         if self.sessions.len() == 1 {
-            self.sessions[0].pixylene.project.out_dim = self.b_camera.unwrap().size;
+            self.sessions[0].pixylene.borrow_mut().project.out_dim = self.b_camera.unwrap().size;
         }
 
         loop {
@@ -301,7 +352,7 @@ impl PixyleneUI {
                 }
             } else {
                 self.console_out(&format!("unmapped key: {:?}", key),
-                                                 LogType::Warning);
+                                                 &LogType::Warning);
             }
             /*
             match &mode {
@@ -379,7 +430,7 @@ impl PixyleneUI {
                                                                     //reverse mapping like
                                                                     //discard-key
                         ),
-                        LogType::Error,
+                        &LogType::Error,
                     );
                 } else {
                     self.quit_session();
@@ -396,14 +447,14 @@ impl PixyleneUI {
                         } else {
                             self.console_out(
                                 "this is the last session",
-                                LogType::Warning
+                                &LogType::Warning
                             );
                         }
                     },
                     None => {
                         self.console_out(
                             "this is the last session",
-                            LogType::Warning
+                            &LogType::Warning
                         );
                     },
                 }
@@ -416,14 +467,14 @@ impl PixyleneUI {
                         } else {
                             self.console_out(
                                 "this is the first session",
-                                LogType::Warning
+                                &LogType::Warning
                             );
                         }
                     },
                     None => {
                         self.console_out(
                             "there are no sessions open",
-                            LogType::Warning
+                            &LogType::Warning
                         );
                     },
                 }
@@ -432,29 +483,48 @@ impl PixyleneUI {
             //File
             Save => {
                 match &self.sessions[self.sel_session as usize - 1].project_file_path {
-                    Some(path) => { self.sessions[self.sel_session as usize - 1].pixylene.save(&path); },
+                    Some(path) => {
+                        match self.sessions[self.sel_session as usize - 1].pixylene.borrow()
+                            .save(&path)
+                        {
+                            Ok(()) => {
+                                self.console_out(
+                                    &format!("saved to {}", path),
+                                    &LogType::Info
+                                );
+                            },
+                            Err(err) => {
+                                self.console_out(
+                                    &format!("failed to save: {}",
+                                             err),
+                                    &LogType::Error
+                                );
+                            }
+                        }
+                    },
                     None => {
                         match self.console_in("save path: ") {
                             Some(input) => {
-                                self.console_out("saving...", LogType::Info);
-                                match self.sessions[self.sel_session as usize - 1].pixylene.save(&input) {
+                                self.console_out("saving...", &LogType::Info);
+                                match self.sessions[self.sel_session as usize - 1].pixylene
+                                    .borrow().save(&input) {
                                     Ok(()) => {
                                         self.console_out(
                                             &format!("saved to {}", input),
-                                            LogType::Info
+                                            &LogType::Info
                                         );
                                     },
                                     Err(err) => {
                                         self.console_out(
                                             &format!("failed to save: {}",
                                                      err),
-                                            LogType::Error
+                                            &LogType::Error
                                         );
                                     }
                                 }
                                 self.console_out(
                                     &format!("saved to {}", input),
-                                    LogType::Info,
+                                    &LogType::Info,
                                 );
 
                             },
@@ -469,20 +539,21 @@ impl PixyleneUI {
                         Some(input) => match str::parse::<u16>(&input) {
                             Ok(scale_up) => {
                                 self.console_out("exporting...",
-                                                   LogType::Info);
-                                match self.sessions[self.sel_session as usize - 1].pixylene.export(&path,
+                                                   &LogType::Info);
+                                match self.sessions[self.sel_session as usize - 1].pixylene
+                                    .borrow().export(&path,
                                                               scale_up) {
                                     Ok(()) => {
                                         self.console_out(
                                             &format!("exported to {}", input),
-                                            LogType::Info
+                                            &LogType::Info
                                         );
                                     },
                                     Err(err) => {
                                         self.console_out(
                                             &format!("failed to export: {}",
                                                     err),
-                                            LogType::Error
+                                            &LogType::Error
                                         );
                                     }
                                 }
@@ -491,7 +562,7 @@ impl PixyleneUI {
                                 self.console_out(
                                     &format!("invalid scaling factor: '{}'",
                                              input),
-                                    LogType::Error
+                                    &LogType::Error
                                 );
                             }
                         },
@@ -503,93 +574,27 @@ impl PixyleneUI {
 
             //Undo/Redo
             Undo => {
-                let Self {
-                    sessions,
-                    target,
-                    sel_session,
-                    rev_keymap,
-                    b_console,
-                    ..
-                } = self;
-
                 let PixyleneSession {
-                    ref mut action_manager,
+                    ref mut native_action_manager,
                     ref mut pixylene,
                     ..
-                } = &mut sessions[*sel_session as usize - 1];
+                } = &mut self.sessions[self.sel_session as usize - 1];
 
-                let console = Console {
-                    cmdin: Box::new(|message: String| -> Option<String> {
-                        target.borrow().console_in(&message,
-                                                   &rev_keymap.get(&KeyFn::DiscardCommand)
-                                                   .unwrap().clone(),
-                                                   &b_console.unwrap())
-                    }),
-                    cmdout: Box::new(|message: String, log_type: LogType| {
-                        target.borrow().console_out(&message,
-                                                    log_type,
-                                                    &b_console.unwrap());
-                    }),
-                };
-
-                match action_manager.undo(
-                    &mut pixylene.project,
-                    &console
-                ) {
-                    Ok(()) => (),
-                    Err(err) => {
-                        target.borrow().console_out(&format!("{}", err),
-                                                    LogType::Error,
-                                                    &b_console.unwrap());
-                    }
-                }
+                native_action_manager.undo(&mut pixylene.borrow_mut().project.canvas);
             },
             Redo => {
-                let Self {
-                    sessions,
-                    target,
-                    sel_session,
-                    rev_keymap,
-                    b_console,
-                    ..
-                } = self;
-
                 let PixyleneSession {
-                    ref mut action_manager,
+                    ref mut native_action_manager,
                     ref mut pixylene,
                     ..
-                } = &mut sessions[*sel_session as usize - 1];
+                } = &mut self.sessions[self.sel_session as usize - 1];
 
-                let console = Console {
-                    cmdin: Box::new(|message: String| -> Option<String> {
-                        target.borrow().console_in(&message,
-                                                   &rev_keymap.get(&KeyFn::DiscardCommand)
-                                                   .unwrap().clone(),
-                                                   &b_console.unwrap())
-                    }),
-                    cmdout: Box::new(|message: String, log_type: LogType| {
-                        target.borrow().console_out(&message,
-                                                    log_type,
-                                                    &b_console.unwrap());
-                    }),
-                };
-
-                match action_manager.redo(
-                    &mut pixylene.project,
-                    &console,
-                ) {
-                    Ok(()) => (),
-                    Err(err) => {
-                        target.borrow().console_out(&format!("{}", err),
-                                                    LogType::Error,
-                                                    &b_console.unwrap());
-                    }
-                }
+                native_action_manager.redo(&mut pixylene.borrow_mut().project.canvas);
             },
 
             //Command -> Recursive, translates string and calls this fn
             RunCommand => {
-                if let Some(cmd) = self.console_in(": ") {
+                if let Some(cmd) = self.console_in(":") {
                     let mut func: Option<UiFn> = None;
                     if let Some(mapped_func) = self.cmd_map.get(&cmd) {
                         func = Some(mapped_func.clone());
@@ -597,7 +602,7 @@ impl PixyleneUI {
                     if let Some(func) = func {
                         self.perform_ui(&func);
                     } else {
-                        self.console_out(&format!("command not found: '{}'", cmd), LogType::Error);
+                        self.console_out(&format!("command not found: '{}'", cmd), &LogType::Error);
                     }
                 } else {
                     self.console_clear();
@@ -606,59 +611,89 @@ impl PixyleneUI {
 
             RunAction => {
                 if let Some(action_name) = self.console_in("a: ") {
+                    let mut self_clone = Controller::new(self.target.clone());
+                    self_clone.set_boundaries(self.b_camera.unwrap(),
+                                              self.b_statusline.unwrap(),
+                                              self.b_console.unwrap());
+
                     let Self {
                         sessions,
                         target,
                         sel_session,
-                        rev_keymap,
                         b_console,
                         ..
                     } = self;
 
                     let PixyleneSession {
-                        ref mut action_manager,
                         ref mut pixylene,
+                        ref mut action_map,
+                        ref mut native_action_manager,
+                        ref mut lua_action_manager,
                         ..
                     } = &mut sessions[*sel_session as usize - 1];
 
-                    let console = Console {
-                        cmdin: Box::new(|message: String| -> Option<String> {
-                            target.borrow().console_in(&message,
-                                                       &rev_keymap.get(&KeyFn::DiscardCommand)
-                                                       .unwrap().clone(),
-                                                       &b_console.unwrap())
-                        }),
-                        cmdout: Box::new(|message: String, log_type: LogType| {
-                            target.borrow().console_out(&message,
-                                                        log_type,
-                                                        &b_console.unwrap());
-                        }),
-                    };
+                    match action_map.get(&action_name/*.clone()*/) {
+                        Some(action_location) => match action_location {
+                            ActionLocation::Lua => {
+                                lua_action_manager.invoke(&action_name, pixylene.clone(),
+                                                          Rc::new(self_clone));
+                            },
+                            ActionLocation::Native(action) => {
+                                match native_action_manager.perform(
+                                    &mut pixylene.borrow_mut().project,
+                                    &self_clone,
+                                    action.clone()
+                                ) {
+                                    Ok(()) => (),
+                                    Err(err) => {
+                                        target.borrow().console_out(
+                                            &format!("failed to perform: {}", err.to_string()),
+                                            &LogType::Error,
+                                            &b_console.unwrap()
+                                        );
+                                    }
+                                }
+                            },
+                        },
+                        None => {
+                            target.borrow().console_out(
+                                &format!("action '{}' was not found in actions inserted into the \
+                                         action-manager", action_name),
+                                &LogType::Error,
+                                &b_console.unwrap()
+                            );
+                        }
+                    }
 
+                    /*
                     match action_manager.perform(
-                        &mut pixylene.project,
-                        &console,
-                        action_name,
+                        &mut pixylene.borrow_mut().project,
+                        &mut self_clone,
+                        &mut Echo,
                     ) {
                         Ok(()) => (),
                         Err(err) => {
                             target.borrow().console_out(
                                 &format!("failed to perform: {}", err.to_string()),
-                                LogType::Error,
+                                &LogType::Error,
                                 &b_console.unwrap()
                             );
                         }
                     }
+                    */
                 } else {
                     self.console_clear();
                 }
+            },
+            RunLastAction => {
+                todo!()
             },
 
             PreviewFocusLayer => {
                 let session = &mut self.sessions[self.sel_session as usize - 1];
                 self.target.borrow().draw_camera(
-                    session.pixylene.project.out_dim,
-                    match session.pixylene.project.render_layer() {
+                    session.pixylene.borrow().project.out_dim,
+                    match session.pixylene.borrow().project.render_layer() {
 
                         //Focus is in the bounds of selected session's project's canvas
                         //Send the project-rendered pixels
@@ -667,7 +702,7 @@ impl PixyleneUI {
                         //Focus is not in the bounds of selected session's project's canvas
                         //Send a dummy project pixel to indicate empty
                         Err(_) => vec![OPixel::OutOfScene;
-                            session.pixylene.project.out_dim.area() as usize],
+                            session.pixylene.borrow().project.out_dim.area() as usize],
                     },
                     true,
                     &self.b_camera.unwrap(),
@@ -677,8 +712,8 @@ impl PixyleneUI {
             PreviewProject => {
                 let session = &mut self.sessions[self.sel_session as usize - 1];
                 self.target.borrow().draw_camera(
-                    session.pixylene.project.out_dim,
-                    session.pixylene.project.render(),
+                    session.pixylene.borrow().project.out_dim,
+                    session.pixylene.borrow().project.render(),
                     false,
                     &self.b_camera.unwrap(),
                 );
@@ -686,8 +721,8 @@ impl PixyleneUI {
 
             UpdateStatusline => {
                 let session = &self.sessions[self.sel_session as usize - 1];
-                self.target.borrow().draw_statusline(&session.pixylene.project,
-                                                     &session.action_manager,
+                self.target.borrow().draw_statusline(&session.pixylene.borrow().project,
+                                                     &session.native_action_manager,
                                                      &session.mode,
                                                      &self.sel_session,
                                                      &self.b_statusline.unwrap());
@@ -700,5 +735,17 @@ fn get_pixylene_defaults(/*fallback: PixyleneFallback*/) -> PixyleneDefaults {
     PixyleneDefaults {
         dim: PCoord::new(64, 64).unwrap(),
         palette: Palette::from(&[(1, "#ffffff"), (2, "#000000"), (3, "#00000000")]).unwrap(),
+    }
+}
+
+struct Echo;
+impl pixylene_actions::memento::Action for Echo {
+    fn perform(&mut self, project: &mut libpixylene::project::Project, console: &dyn Console)
+    -> pixylene_actions::memento::ActionResult {
+        console.cmdout("heyyy :3 :3 :3", &LogType::Error);
+        Ok(())
+    }
+    fn has_ended(&self) -> bool {
+        true
     }
 }
