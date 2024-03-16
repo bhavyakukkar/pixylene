@@ -59,6 +59,9 @@ impl UserInterface for TargetCrossterm {
         _ = stdout.flush();
     }
 
+    // Crossterm blocks until read and requires no extra word between frames
+    fn refresh(&mut self) -> bool { true }
+
     //fn set_camera_boundary(&mut self, boundary: Rectangle) {
     //    self.b_camera = boundary;
     //}
@@ -69,7 +72,7 @@ impl UserInterface for TargetCrossterm {
     //    self.b_console = boundary;
     //}
 
-    fn draw_camera(&self, dim: PCoord, buffer: Vec<OPixel>, show_cursors: bool,
+    fn draw_camera(&mut self, dim: PCoord, buffer: Vec<OPixel>, show_cursors: bool,
                    boundary: &Rectangle)
     {
         use cursor::{ MoveTo, MoveLeft, MoveDown };
@@ -132,14 +135,14 @@ impl UserInterface for TargetCrossterm {
         _ = stdout.flush();
     }
 
-    fn get_key(&self) -> Key {
+    fn get_key(&self) -> Option<Key> {
         use event::{ Event, read };
 
         loop {
             //blocking read
             match read().unwrap() {
                 Event::Key(key_event) => {
-                    return key_event;
+                    return Some(key_event);
                 },
                 _ => (),
             }

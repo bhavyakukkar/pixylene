@@ -23,7 +23,8 @@ struct Cli {
 
 
 fn main() {
-    let target = targets::TargetCrossterm;
+    //let target = targets::TargetCrossterm;
+    let target = targets::TargetMinifb::new();
     let mut pixylene_ui = controller::Controller::new(Rc::new(RefCell::new(target)));
     let cli = Cli::parse();
 

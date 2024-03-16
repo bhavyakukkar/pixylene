@@ -3,18 +3,34 @@ use pixylene_actions::{ memento::ActionManager, LogType };
 
 use std::fmt;
 
+/// Trait needed for any User Interface Target to implement so that it can be controlled by
+/// [`Controller`][c]
+///
+/// `Note for contributors:` Only the methods that require mutable self for the implemented targets
+/// have been kept so, for discretion; if you wish to create a new target and it requires mutable
+/// self for any of the methods with immutable self, please do so. You will also have to update
+/// [`Controller`][c] to borrow_mut target instead of borrow when calling that method.
+///
+/// [c]: crate::Controller
 pub trait UserInterface {
     fn initialize(&mut self);
     fn finalize(&mut self);
+
+    /// Makes the target refresh between frames, returning whether target is still alive
+    fn refresh(&mut self) -> bool;
 
     //fn set_camera_boundary(&mut self, boundary: Rectangle);
     //fn set_statusline_boundary(&mut self, boundary: Rectangle);
     //fn set_console_boundary(&mut self, boundary: Rectangle);
 
-    fn get_key(&self) -> Key;
+    /// Get the inputted key from the target
+    ///
+    /// Targets that block until key is received may always return Some(key), however targets that
+    /// poll user-input may return None's until some key is received
+    fn get_key(&self) -> Option<Key>;
     fn get_size(&self) -> Rectangle;
 
-    fn draw_camera(&self, dim: PCoord, buffer: Vec<OPixel>, show_cursors: bool,
+    fn draw_camera(&mut self, dim: PCoord, buffer: Vec<OPixel>, show_cursors: bool,
                    boundary: &Rectangle);
     fn draw_statusline(&self, project: &Project, action_manager: &ActionManager, mode: &Mode,
                        session: &u8, boundary: &Rectangle);

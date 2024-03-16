@@ -25,6 +25,7 @@ pub enum UiFn {
 
     RunCommand,
     RunAction,
+    RunActionSpecify(String),
     RunLastAction,
 
     PreviewFocusLayer,
@@ -123,6 +124,11 @@ pub fn get_keybinds() -> (KeyMap, ReverseKeyMap) {
     //Vim Like
     let keymap: KeyMap = HashMap::from([
         ( Key::new(KeyCode::Char(':'), KeyModifiers::empty()), vec![UiFn::RunCommand] ),
+        ( Key::new(KeyCode::Esc, KeyModifiers::empty()), vec![UiFn::Quit] ),
+        ( Key::new(KeyCode::Char('i'), KeyModifiers::empty()),
+            vec![UiFn::RunActionSpecify(String::from("zoomin"))] ),
+        ( Key::new(KeyCode::Char('o'), KeyModifiers::empty()),
+            vec![UiFn::RunActionSpecify(String::from("zoomout"))] ),
     ]);
 
     let rev_keymap: ReverseKeyMap = HashMap::from([

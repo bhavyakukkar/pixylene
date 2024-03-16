@@ -40,7 +40,6 @@ impl Pixylene {
         let png_file = PngFile::read(String::from(path)).unwrap();
         let scene = png_file.to_scene()?;
         let dim = scene.dim();
-        //todo: add imported scene into project
         let mut project = Project::new(
             Canvas::new(
                 dim,

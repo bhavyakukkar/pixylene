@@ -7,5 +7,6 @@ edition = "2021"
 clap = { version = "4.4.18", features = ["derive"] }
 crossterm = "0.27.0"
 libpixylene = { path = "../libpixylene" }
+minifb = "0.25.0"
 pixylene-actions = { path = "../pixylene-actions" }
 pixylene-actions-lua = { path = "../pixylene-actions-lua" }
