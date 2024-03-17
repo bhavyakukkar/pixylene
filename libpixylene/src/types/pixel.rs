@@ -4,7 +4,7 @@ use std::fmt;
 
 
 /// An RGBA quadrant to represent a color, composed of 8-bit red, green, blue & alpha values.
-#[derive(Copy, Clone, Savefile)]
+#[derive(Debug, Copy, Clone, Savefile)]
 pub struct Pixel {
     /// red level (0-255)
     pub r: u8,

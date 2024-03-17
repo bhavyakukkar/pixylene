@@ -1,32 +1,33 @@
 use crate::{
-    types::{ Coord, PCoord, UCoord, Pixel },
+    types::{Coord, PCoord, Pixel, UCoord},
     utils::messages::U32TOUSIZE,
 };
-
 
 /// A two-dimensional grid of pixels.
 ///
 /// `Note`: Each item of the grid is an [`Option<Pixel>`] rather than simply a [`Pixel`].
-#[derive(Savefile, Clone)]
+#[derive(Debug, Savefile, Clone)]
 pub struct Scene {
     dim: PCoord,
-    grid: Vec<Option<Pixel>>
+    grid: Vec<Option<Pixel>>,
 }
 
 impl Scene {
-
     /// Tries to create a new scene with given dimensions and buffer of optional [`Pixels`][Pixel]
     ///
     /// `Note`: This method may fail with the [`DimensionMismatch`][dm] error variant only.
     ///
     /// [dm]: SceneError::DimensionMismatch
     pub fn new(dimensions: PCoord, buffer: Vec<Option<Pixel>>) -> Result<Self, SceneError> {
-        use SceneError::{ DimensionMismatch };
+        use SceneError::DimensionMismatch;
 
         if buffer.len() != usize::try_from(dimensions.area()).expect(U32TOUSIZE) {
             Err(DimensionMismatch(buffer.len(), dimensions))
         } else {
-            Ok(Self{ dim: dimensions, grid: buffer })
+            Ok(Self {
+                dim: dimensions,
+                grid: buffer,
+            })
         }
     }
 
@@ -37,12 +38,11 @@ impl Scene {
     ///
     /// [oobc]: SceneError::OutOfBoundCoordinates
     pub fn get_pixel(&self, coord: UCoord) -> Result<Option<Pixel>, SceneError> {
-        use SceneError::{ OutOfBoundCoordinates };
+        use SceneError::OutOfBoundCoordinates;
 
         if coord.x >= self.dim.x() || coord.y >= self.dim.y() {
             Err(OutOfBoundCoordinates(coord, self.dim))
-        }
-        else {
+        } else {
             let index = usize::from(coord.x) * usize::from(self.dim.y()) + usize::from(coord.y);
             Ok(self.grid[index])
         }
@@ -55,11 +55,13 @@ impl Scene {
     /// This method is left here for compatiblity with the [render](#method.render)
     /// method.
     pub fn get_pixel_raw(&self, coord: Coord) -> Option<Option<Pixel>> {
-        if coord.x < 0 || coord.y < 0 { None }
-        else if coord.x >= i32::from(self.dim.x()) || coord.y >= i32::from(self.dim.y()) { None }
-        else {
-            let index = usize::try_from(coord.x).unwrap() * usize::from(self.dim.y()) +
-                usize::try_from(coord.y).unwrap();
+        if coord.x < 0 || coord.y < 0 {
+            None
+        } else if coord.x >= i32::from(self.dim.x()) || coord.y >= i32::from(self.dim.y()) {
+            None
+        } else {
+            let index = usize::try_from(coord.x).unwrap() * usize::from(self.dim.y())
+                + usize::try_from(coord.y).unwrap();
             Some(self.grid[index])
         }
     }
@@ -71,7 +73,7 @@ impl Scene {
     ///
     /// [oobc]: SceneError::OutOfBoundCoordinates
     pub fn set_pixel(&mut self, coord: UCoord, new_pixel: Option<Pixel>) -> Result<(), SceneError> {
-        use SceneError::{ OutOfBoundCoordinates };
+        use SceneError::OutOfBoundCoordinates;
 
         if coord.x >= self.dim.x() || coord.y >= self.dim.y() {
             Err(OutOfBoundCoordinates(coord, self.dim))
@@ -108,48 +110,46 @@ impl Scene {
     /// [oos]: OPixel::OutOfScene
     pub fn render(&self, dim: PCoord, mul: u8, repeat: PCoord, focus: Coord) -> Vec<OPixel> {
         use OPixel::*;
-        let mut grid: Vec<OPixel> = vec![
-            OutOfScene;
-            usize::try_from(dim.area()).expect(U32TOUSIZE)
-        ];
+        let mut grid: Vec<OPixel> =
+            vec![OutOfScene; usize::try_from(dim.area()).expect(U32TOUSIZE)];
 
         let mut render_pixel = |i: i64, j: i64, x: i32, y: i32, is_focus: bool| {
-            for mi in 0..i64::from(u16::from(mul)*u16::from(repeat.x())) {
-                for mj in 0..i64::from(u16::from(mul)*u16::from(repeat.y())) {
-                    if (i+mi) < 0 || (i+mi) >= i64::from(dim.x()) ||
-                       (j+mj) < 0 || (j+mj) >= i64::from(dim.y()) {
+            for mi in 0..i64::from(u16::from(mul) * u16::from(repeat.x())) {
+                for mj in 0..i64::from(u16::from(mul) * u16::from(repeat.y())) {
+                    if (i + mi) < 0
+                        || (i + mi) >= i64::from(dim.x())
+                        || (j + mj) < 0
+                        || (j + mj) >= i64::from(dim.y())
+                    {
                         continue;
                     }
-                    if let Some(pixel_maybe) = self.get_pixel_raw(Coord{x, y}) {
+                    if let Some(pixel_maybe) = self.get_pixel_raw(Coord { x, y }) {
                         if let Some(pixel) = pixel_maybe {
-                            let index = usize::try_from(i+mi).unwrap() *
-                                        usize::from(dim.y()) +
-                                        usize::try_from(j+mj).unwrap();
+                            let index = usize::try_from(i + mi).unwrap() * usize::from(dim.y())
+                                + usize::try_from(j + mj).unwrap();
                             grid[index] = Filled {
-                                scene_coord: UCoord{
+                                scene_coord: UCoord {
                                     x: u16::try_from(x).unwrap(),
-                                    y: u16::try_from(y).unwrap()
+                                    y: u16::try_from(y).unwrap(),
                                 },
                                 color: pixel,
                                 is_focus: is_focus,
                                 has_cursor: false,
                             };
                         } else {
-                            let index = usize::try_from(i+mi).unwrap() *
-                                        usize::from(dim.y()) +
-                                        usize::try_from(j+mj).unwrap();
+                            let index = usize::try_from(i + mi).unwrap() * usize::from(dim.y())
+                                + usize::try_from(j + mj).unwrap();
                             grid[index] = Empty {
-                                scene_coord: UCoord{
+                                scene_coord: UCoord {
                                     x: u16::try_from(x).unwrap(),
-                                    y: u16::try_from(y).unwrap()
+                                    y: u16::try_from(y).unwrap(),
                                 },
                                 has_cursor: false,
                             };
                         }
                     } else {
-                        let index = usize::try_from(i+mi).unwrap() *
-                                    usize::from(dim.y()) +
-                                    usize::try_from(j+mj).unwrap();
+                        let index = usize::try_from(i + mi).unwrap() * usize::from(dim.y())
+                            + usize::try_from(j + mj).unwrap();
                         grid[index] = OutOfScene;
                     }
                 }
@@ -162,17 +162,23 @@ impl Scene {
         let mul_y = i64::from(u16::from(mul) * u16::from(repeat.y()));
 
         //todo: these two lines still aren't safe for smaller out_dim and larger mul, repeat
-        let mid_x = i64::from((dim.x() - u16::from(mul) * u16::from(repeat.x()))
-                              .checked_div(2).unwrap());
-        let mid_y = i64::from((dim.y() - u16::from(mul) * u16::from(repeat.y()))
-                              .checked_div(2).unwrap());
+        let mid_x = i64::from(
+            (dim.x() - u16::from(mul) * u16::from(repeat.x()))
+                .checked_div(2)
+                .unwrap(),
+        );
+        let mid_y = i64::from(
+            (dim.y() - u16::from(mul) * u16::from(repeat.y()))
+                .checked_div(2)
+                .unwrap(),
+        );
 
         let mut i = mid_x;
         let mut x = focus_x;
-        while i > -1*mul_x {
+        while i > -1 * mul_x {
             let mut j = mid_y;
             let mut y = focus_y;
-            while j > -1*mul_y {
+            while j > -1 * mul_y {
                 render_pixel(i, j, x, y, i == mid_x && j == mid_y);
                 j -= mul_y;
                 y -= 1;
@@ -192,7 +198,7 @@ impl Scene {
         while i < dim.x().into() {
             let mut j = mid_y;
             let mut y = focus_y;
-            while j > -1*mul_y {
+            while j > -1 * mul_y {
                 render_pixel(i, j, x, y, false);
                 j -= mul_y;
                 y -= 1;
@@ -216,9 +222,8 @@ impl Scene {
 ///
 /// [`Pixel`] represents a virtual pixel contained in a piece of pixel art, whereas `OPixel`
 /// represents an actual pixel on the application being used to edit the piece of pixel art.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum OPixel {
-
     /// An OPixel pointing to a Pixel on the Scene that is filled with some color
     ///
     /// Associated with a `Some(Some(Pixel))` variant received by [`get_pixel_raw`][gpr]
@@ -249,13 +254,11 @@ pub enum OPixel {
     OutOfScene,
 }
 
-
 // Error Types
 
 /// Error enum to describe various errors returns by Scene methods
 #[derive(Debug)]
 pub enum SceneError {
-
     /// Error that occurs when the buffer length and dimensions passed to [`Scene::new`] do not
     /// match
     DimensionMismatch(usize, PCoord),
@@ -283,8 +286,8 @@ impl std::fmt::Display for SceneError {
                 valid coordinates for this scene lie between {} and {} (inclusive)",
                 coord,
                 dim,
-                UCoord{ x: 0, y: 0 },
-                Coord::from(dim).add(Coord{ x: -1, y: -1 }),
+                UCoord { x: 0, y: 0 },
+                Coord::from(dim).add(Coord { x: -1, y: -1 }),
             ),
         }
     }

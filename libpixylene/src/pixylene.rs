@@ -1,9 +1,8 @@
 use crate::{
-    types::{ PCoord, BlendMode },
-    project::{ SceneError, Layer, Palette, Canvas, Project },
-    file::{ PngFile, PngFileError, ProjectFile, ProjectFileError },
+    file::{PngFile, PngFileError, ProjectFile, ProjectFileError},
+    project::{Canvas, Layer, Palette, Project, SceneError},
+    types::{BlendMode, PCoord},
 };
-
 
 pub struct PixyleneDefaults {
     pub dim: PCoord,
@@ -16,22 +15,17 @@ pub struct Pixylene {
 
 impl Pixylene {
     pub fn new(defaults: &PixyleneDefaults) -> Pixylene {
-        let project = Project::new(
-            Canvas::new(
-                defaults.dim,
-                defaults.palette.clone(),
-            )
-        );
+        let project = Project::new(Canvas::new(defaults.dim, defaults.palette.clone()));
         Pixylene { project }
     }
     pub fn open(path: &str) -> Result<Pixylene, PixyleneError> {
-        match (ProjectFile{ version: 0 }).read(path.to_string()) {
+        match (ProjectFile { version: 0 }).read(path.to_string()) {
             Ok(project) => Ok(Pixylene { project }),
             Err(error) => Err(PixyleneError::ProjectFileError(error)),
         }
     }
     pub fn save(&self, path: &str) -> Result<(), PixyleneError> {
-        match (ProjectFile{ version: 0 }).write(path.to_string(), &self.project) {
+        match (ProjectFile { version: 0 }).write(path.to_string(), &self.project) {
             Ok(()) => Ok(()),
             Err(error) => Err(PixyleneError::ProjectFileError(error)),
         }
@@ -40,14 +34,16 @@ impl Pixylene {
         let png_file = PngFile::read(String::from(path)).unwrap();
         let scene = png_file.to_scene()?;
         let dim = scene.dim();
-        let mut project = Project::new(
-            Canvas::new(
-                dim,
-                defaults.palette.clone(),
-            )
-        );
-        project.canvas.add_layer(Layer{ scene, opacity: 255, mute: false,
-            blend_mode: BlendMode::Normal }).unwrap(); //cant fail, this is first layer, not 257th
+        let mut project = Project::new(Canvas::new(dim, defaults.palette.clone()));
+        project
+            .canvas
+            .add_layer(Layer {
+                scene,
+                opacity: 255,
+                mute: false,
+                blend_mode: BlendMode::Normal,
+            })
+            .unwrap(); //cant fail, this is first layer, not 257th
 
         Ok(Pixylene { project })
     }
@@ -59,7 +55,7 @@ impl Pixylene {
             png::BitDepth::Eight,
             scale_up,
         )?
-            .write(path.to_string())?;
+        .write(path.to_string())?;
         Ok(())
     }
     /*
@@ -68,7 +64,6 @@ impl Pixylene {
     }
     */
 }
-
 
 // Error Types
 
@@ -97,5 +92,7 @@ impl From<SceneError> for PixyleneError {
 }
 
 impl From<PngFileError> for PixyleneError {
-    fn from(item: PngFileError) -> PixyleneError { PixyleneError::PngFileError(item) }
+    fn from(item: PngFileError) -> PixyleneError {
+        PixyleneError::PngFileError(item)
+    }
 }
