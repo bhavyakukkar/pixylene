@@ -149,12 +149,12 @@ impl UserInterface for TargetCrossterm {
         }
     }
 
-    fn get_size(&self) -> Rectangle {
+    fn get_size(&self) -> PCoord {
         let (width, height) = terminal::size().unwrap();
-        Rectangle { start: UCoord::zero(), size: PCoord::new(height, width).unwrap() }
+        PCoord::new(height, width).unwrap()
     }
 
-    fn draw_statusline(&self, project: &Project, _action_manager: &ActionManager, mode: &Mode,
+    fn draw_statusline(&mut self, project: &Project, _action_manager: &ActionManager, mode: &Mode,
                        session: &u8, boundary: &Rectangle) {
         use terminal::{ size, Clear, ClearType };
         use cursor::{ MoveTo };
@@ -238,7 +238,7 @@ impl UserInterface for TargetCrossterm {
         _ = stdout.flush();
     }
 
-    fn console_in(&self, message: &str, discard_key: &Key, boundary: &Rectangle) -> Option<String> {
+    fn console_in(&mut self, message: &str, discard_key: &Key, boundary: &Rectangle) -> Option<String> {
         use terminal::{ Clear, ClearType };
         use cursor::{ MoveTo, MoveLeft, Show, Hide };
         use style::{ SetForegroundColor, Color, Print, ResetColor };
@@ -294,7 +294,7 @@ impl UserInterface for TargetCrossterm {
         out
     }
 
-    fn console_out(&self, message: &str, log_type: &LogType, boundary: &Rectangle) {
+    fn console_out(&mut self, message: &str, log_type: &LogType, boundary: &Rectangle) {
         use terminal::{ Clear, ClearType };
         use cursor::{ MoveTo };
         use style::{ SetForegroundColor, Color, Print, ResetColor };
@@ -316,10 +316,10 @@ impl UserInterface for TargetCrossterm {
         ).unwrap();
     }
 
-    fn draw_paragraph(&self, _paragraph: Vec<String>) {
+    fn draw_paragraph(&mut self, _paragraph: Vec<String>) {
     }
 
-    fn console_clear(&self, boundary: &Rectangle) {
+    fn console_clear(&mut self, boundary: &Rectangle) {
         use terminal::{ Clear, ClearType };
         use cursor::{ MoveTo };
         let mut stdout = std::io::stdout();
