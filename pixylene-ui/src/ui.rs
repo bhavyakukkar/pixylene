@@ -6,11 +6,6 @@ use std::fmt;
 /// Trait needed for any User Interface Target to implement so that it can be controlled by
 /// [`Controller`][c]
 ///
-/// `Note for contributors:` Only the methods that require mutable self for the implemented targets
-/// have been kept so, for discretion; if you wish to create a new target and it requires mutable
-/// self for any of the methods with immutable self, please do so. You will also have to update
-/// [`Controller`][c] to borrow_mut target instead of borrow when calling that method.
-///
 /// [c]: crate::Controller
 pub trait UserInterface {
     fn initialize(&mut self);
@@ -28,18 +23,17 @@ pub trait UserInterface {
     /// Targets that block until key is received may always return Some(key), however targets that
     /// poll user-input may return None's until some key is received
     fn get_key(&self) -> Option<Key>;
-    fn get_size(&self) -> Rectangle;
+    fn get_size(&self) -> PCoord;
 
     fn draw_camera(&mut self, dim: PCoord, buffer: Vec<OPixel>, show_cursors: bool,
                    boundary: &Rectangle);
-    fn draw_statusline(&self, project: &Project, action_manager: &ActionManager, mode: &Mode,
+    fn draw_statusline(&mut self, project: &Project, action_manager: &ActionManager, mode: &Mode,
                        session: &u8, boundary: &Rectangle);
-    fn draw_paragraph(&self, paragraph: Vec<String>);
+    fn draw_paragraph(&mut self, paragraph: Vec<String>);
 
-    fn console_clear(&self, boundary: &Rectangle);
-    fn console_in(&self, message: &str, discard_key: &Key, boundary: &Rectangle) -> Option<String>;
-    fn console_out(&self, message: &str, log_type: &LogType, boundary: &Rectangle);
-
+    fn console_clear(&mut self, boundary: &Rectangle);
+    fn console_in(&mut self, message: &str, discard_key: &Key, boundary: &Rectangle) -> Option<String>;
+    fn console_out(&mut self, message: &str, log_type: &LogType, boundary: &Rectangle);
 }
 
 //leaving this here
@@ -50,7 +44,9 @@ pub trait UserInterface {
 /// A Real Key on a keyboard that can be mapped to execute a [`KeyFn`](KeyFn).
 ///
 /// `Note:` This was made primarily with compatibility to [`crossterm`](crossterm) in mind and
-/// hence is simply a type alias to crossterm's [`KeyEvent`](crossterm::event::KeyEvent).
+/// hence is simply a type alias to crossterm's [`KeyEvent`](crossterm::event::KeyEvent). After
+/// also implementing a target to [`minibf`](minifb) and having to use its key system, I went ahead
+/// and decided to continue using crossterm's keys.
 ///
 /// Other target implementations require manual association.
 pub type Key = crossterm::event::KeyEvent;
