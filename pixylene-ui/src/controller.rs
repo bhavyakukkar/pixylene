@@ -121,19 +121,19 @@ impl Controller {
     }
 
     fn console_in(&self, message: &str) -> Option<String> {
-        self.target.borrow().console_in(message,
+        self.target.borrow_mut().console_in(message,
                                         self.rev_keymap.get(&KeyFn::DiscardCommand).unwrap(),
                                         &self.b_console.unwrap())
     }
 
     fn console_out(&self, message: &str, log_type: &LogType) {
-        self.target.borrow().console_out(message,
+        self.target.borrow_mut().console_out(message,
                                          log_type,
                                          &self.b_console.unwrap());
     }
 
     fn console_clear(&self) {
-        self.target.borrow().console_clear(&self.b_console.unwrap());
+        self.target.borrow_mut().console_clear(&self.b_console.unwrap());
     }
 
     //pub fn new(target: Rc<RefCell<T>>) -> Self {
@@ -331,18 +331,20 @@ impl Controller {
 
         let window_size = self.target.borrow().get_size();
 
+        let padding = 1;
         self.set_boundaries(
-            Rectangle {
-                start: UCoord{ x: 0, y: 0 },
-                size: PCoord::new(window_size.size.x() - 2, window_size.size.y()).unwrap()
+            /* camera: */Rectangle {
+                start: UCoord{ x: 0 + padding, y: 0 + padding },
+                size: PCoord::new(window_size.x() - 2 - 2*padding, window_size.y() - 2*padding)
+                    .unwrap()
             },
-            Rectangle {
-                start: UCoord{ x: window_size.size.x() - 2, y: 0 },
-                size: PCoord::new(1, window_size.size.y()).unwrap()
+            /* statusline: */Rectangle {
+                start: UCoord{ x: window_size.x() - 2 - padding, y: 0 + padding },
+                size: PCoord::new(1, window_size.y() - 2*padding).unwrap()
             },
-            Rectangle {
-                start: UCoord{ x: window_size.size.x() - 1, y: 0 },
-                size: PCoord::new(1, window_size.size.y()).unwrap()
+            /* console: */Rectangle {
+                start: UCoord{ x: window_size.x() - 1 - padding, y: 0 + padding },
+                size: PCoord::new(1, window_size.y() - 2*padding).unwrap()
             }
         );
 
@@ -351,10 +353,10 @@ impl Controller {
             self.sessions[0].pixylene.borrow_mut().project.out_dim = self.b_camera.unwrap().size;
         }
 
+        self.perform_ui(&PreviewFocusLayer);
+        //self.perform_ui(&UpdateStatusline);
         loop {
-            //sleep(Duration::from_secs(1));
-            self.perform_ui(&PreviewFocusLayer);
-            //self.perform_ui(&UpdateStatusline);
+            //sleep(Duration::from_millis(1));
 
             if !self.target.borrow_mut().refresh() { break; }
             let key = self.target.borrow().get_key();
@@ -366,6 +368,9 @@ impl Controller {
                 } else {
                     self.console_out(&format!("unmapped key: {:?}", key), &LogType::Warning);
                 }
+
+                self.perform_ui(&PreviewFocusLayer);
+                //self.perform_ui(&UpdateStatusline);
             }
             /*
             match &mode {
@@ -659,7 +664,7 @@ impl Controller {
                                 ) {
                                     Ok(()) => (),
                                     Err(err) => {
-                                        target.borrow().console_out(
+                                        target.borrow_mut().console_out(
                                             &format!("failed to perform: {}", err.to_string()),
                                             &LogType::Error,
                                             &b_console.unwrap()
@@ -669,7 +674,7 @@ impl Controller {
                             },
                         },
                         None => {
-                            target.borrow().console_out(
+                            target.borrow_mut().console_out(
                                 &format!("action '{}' was not found in actions inserted into the \
                                          action-manager", action_name),
                                 &LogType::Error,
@@ -686,7 +691,7 @@ impl Controller {
                     ) {
                         Ok(()) => (),
                         Err(err) => {
-                            target.borrow().console_out(
+                            target.borrow_mut().console_out(
                                 &format!("failed to perform: {}", err.to_string()),
                                 &LogType::Error,
                                 &b_console.unwrap()
@@ -723,8 +728,17 @@ impl Controller {
                 match action_map.get(&action_name.clone()) {
                     Some(action_location) => match action_location {
                         ActionLocation::Lua => {
-                            lua_action_manager.invoke(&action_name, pixylene.clone(),
-                                                      Rc::new(self_clone)).unwrap();
+                            match lua_action_manager.invoke(&action_name, pixylene.clone(),
+                                                            Rc::new(self_clone)) {
+                                Ok(()) => (()),
+                                Err(err) => {
+                                    target.borrow_mut().console_out(
+                                        &format!("failed to perform: {}", err.to_string()),
+                                        &LogType::Error,
+                                        &b_console.unwrap()
+                                    );
+                                }
+                            }
                         },
                         ActionLocation::Native(action) => {
                             match native_action_manager.perform(
@@ -734,7 +748,7 @@ impl Controller {
                             ) {
                                 Ok(()) => (),
                                 Err(err) => {
-                                    target.borrow().console_out(
+                                    target.borrow_mut().console_out(
                                         &format!("failed to perform: {}", err.to_string()),
                                         &LogType::Error,
                                         &b_console.unwrap()
@@ -744,7 +758,7 @@ impl Controller {
                         },
                     },
                     None => {
-                        target.borrow().console_out(
+                        target.borrow_mut().console_out(
                             &format!("action '{}' was not found in actions inserted into the \
                                      action-manager", action_name),
                             &LogType::Error,
@@ -761,7 +775,7 @@ impl Controller {
                 ) {
                     Ok(()) => (),
                     Err(err) => {
-                        target.borrow().console_out(
+                        target.borrow_mut().console_out(
                             &format!("failed to perform: {}", err.to_string()),
                             &LogType::Error,
                             &b_console.unwrap()
@@ -806,11 +820,11 @@ impl Controller {
 
             UpdateStatusline => {
                 let session = &self.sessions[self.sel_session as usize - 1];
-                self.target.borrow().draw_statusline(&session.pixylene.borrow().project,
-                                                     &session.native_action_manager,
-                                                     &session.mode,
-                                                     &self.sel_session,
-                                                     &self.b_statusline.unwrap());
+                self.target.borrow_mut().draw_statusline(&session.pixylene.borrow().project,
+                                                         &session.native_action_manager,
+                                                         &session.mode,
+                                                         &self.sel_session,
+                                                         &self.b_statusline.unwrap());
             }
         }
     }
