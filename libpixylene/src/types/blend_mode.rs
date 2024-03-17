@@ -45,13 +45,13 @@ impl BlendMode {
                 let red: u8   = (a.r as u16 * *frac_a as u16 + b.r as u16 * *frac_b as u16)
                                 .checked_div(255).expect(DIVZERO).try_into().expect(CMPSTMSG);
 
-                let green: u8 = (a.r as u16 * *frac_a as u16 + b.r as u16 * *frac_b as u16)
+                let green: u8 = (a.g as u16 * *frac_a as u16 + b.g as u16 * *frac_b as u16)
                                 .checked_div(255).expect(DIVZERO).try_into().expect(CMPSTMSG);
 
-                let blue: u8  = (a.r as u16 * *frac_a as u16 + b.r as u16 * *frac_b as u16)
+                let blue: u8  = (a.b as u16 * *frac_a as u16 + b.b as u16 * *frac_b as u16)
                                 .checked_div(255).expect(DIVZERO).try_into().expect(CMPSTMSG);
 
-                let alpha: u8 = (a.r as u16 * *frac_a as u16 + b.r as u16 * *frac_b as u16)
+                let alpha: u8 = (a.a as u16 * *frac_a as u16 + b.a as u16 * *frac_b as u16)
                                 .checked_div(255).expect(DIVZERO).try_into().expect(CMPSTMSG);
 
                 Ok(Pixel { r: red, g: green, b: blue, a: alpha })
