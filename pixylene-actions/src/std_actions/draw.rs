@@ -10,10 +10,17 @@ use std::cell::RefCell;
  
 /// An action that draws once at the specified `cursor with the specified `color and specified
 /// `blend_mode
+#[derive(Debug)]
 pub struct Draw {
-    pub cursor: (UCoord, u16),
-    pub color: Option<Pixel>,
-    pub blend_mode: BlendMode,
+    cursor: (UCoord, u16),
+    color: Option<Pixel>,
+    blend_mode: BlendMode,
+}
+
+impl Draw {
+    pub fn new(cursor: (UCoord, u16), color: Option<Pixel>, blend_mode: BlendMode) -> Self {
+        Draw{ cursor, color, blend_mode }
+    }
 }
 
 impl command::Action for Draw {

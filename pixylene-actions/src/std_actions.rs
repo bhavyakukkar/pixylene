@@ -1,14 +1,22 @@
-//pub mod move_cursors_up;
 //pub mod move_one_cursor;
-//pub mod move_all_cursors;
+
+mod move_all_cursors;
+pub use move_all_cursors::MoveAllCursors;
+
 //pub mod move_focus;
 ////pub mod move_camera_across_layers;
 //pub mod zoom_camera;
 //pub mod resize_camera;
 //pub mod change_camera_repeat;
-pub mod draw;
+
+mod draw;
+pub use draw::Draw;
+
 //pub mod draw_at_all_cursors;
-//pub mod pencil;
+
+mod pencil;
+pub use pencil::Pencil;
+
 //pub mod rectangular_fill;
 //pub mod copy_paste_all_cursors;
 //pub mod toggle_cursor_at_focus;
