@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::types::{ PCoord };
+use super::{ UCoord, PCoord };
 
 
 /// An integer coordinate type composed of two 32-bit integers.
@@ -70,6 +70,12 @@ impl From<(isize, isize)> for Coord {
 impl From<&PCoord> for Coord {
     fn from(item: &PCoord) -> Coord {
         Coord{ x: i32::from(item.x()), y: i32::from(item.y()) }
+    }
+}
+
+impl From<&UCoord> for Coord {
+    fn from(item: &UCoord) -> Coord {
+        Coord{ x: i32::from(item.x), y: i32::from(item.y) }
     }
 }
 
