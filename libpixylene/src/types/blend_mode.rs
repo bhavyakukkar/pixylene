@@ -8,7 +8,7 @@ use std::fmt;
 ///
 /// [b]: https://en.wikipedia.org/wiki/Blend_modes
 #[non_exhaustive]
-#[derive(Copy, Clone, Savefile)]
+#[derive(Debug, Copy, Clone, Savefile)]
 pub enum BlendMode {
     /// Composite with specified fractions of contribution by pixel `a` and pixel `b`
     /// respectively, as described by [`Porter & Duff`][pd]

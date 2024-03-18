@@ -24,7 +24,7 @@ impl LuaActionManager {
         self.0.globals().set("Console", Console(console))?;
         self.0.load(format!("actions.{0}.perform(actions.{0}, Project, Console)", action_name))
             .exec()?;
-        self.0.globals().set("Project", Value::Nil)?;
+        //self.0.globals().set("Project", Value::Nil)?;
 
         Ok(())
     }
@@ -118,9 +118,9 @@ impl LuaActionManager {
             use crate::values::{ LogType, types::*, project::* };
     
             lua_ctx.globals().set("C", Coord(coord))?;
-            lua_ctx.globals().set("U", UCoord(ucoord))?;
-            lua_ctx.globals().set("P", PCoord(pcoord))?;
-            lua_ctx.globals().set("Pixel", Pixel(pixel))?;
+            lua_ctx.globals().set("UC", UCoord(ucoord))?;
+            lua_ctx.globals().set("PC", PCoord(pcoord))?;
+            lua_ctx.globals().set("P", Pixel(pixel))?;
             lua_ctx.globals().set("BlendMode", BlendMode(blend_mode))?;
             lua_ctx.globals().set("Scene", Scene(scene))?;
             lua_ctx.globals().set("Layer", Layer(layer))?;

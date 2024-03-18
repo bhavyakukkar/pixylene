@@ -18,6 +18,9 @@ pub struct Pixel {
 
 impl Pixel {
 
+    /// The Black color with full opacity
+    pub const BLACK: Pixel = Pixel{ r: 0, g: 0, b: 0, a: 255 };
+
     /// Tries to create a Pixel from a CSS-like hex-triplet string (6-digit or 8-digit),
     /// eg: "#239920"
     ///
