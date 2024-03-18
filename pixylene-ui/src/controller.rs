@@ -1,11 +1,12 @@
 use crate::{
     ui::{ UserInterface, Mode, Rectangle },
     keybinds::{ KeyMap, ReverseKeyMap, KeyFn, UiFn, get_keybinds },
+    actions::{ ActionLocation, add_my_native_actions },
 };
 
 use libpixylene::{
     Pixylene, PixyleneDefaults,
-    project::{ OPixel, Palette }, 
+    project::{ OPixel, Layer, Palette },
     types::{ UCoord, PCoord, Coord },
 };
 use pixylene_actions::{ memento::{ Action, ActionManager }, Console, LogType };
@@ -21,11 +22,6 @@ use clap::{ Subcommand };
 
 
 type CommandMap = HashMap<String, UiFn>;
-
-enum ActionLocation {
-    Native(Rc<RefCell<dyn Action>>),
-    Lua,
-}
 
 #[derive(Subcommand)]
 pub enum StartType {
@@ -173,7 +169,7 @@ impl Controller {
                 (String::from("export"), Export),
                 (String::from("undo"), Undo),
                 (String::from("redo"), Redo),
-                (String::from("a"), RunAction),
+                (String::from("a"), RunActionSpecify),
                 (String::from("showlayer"), PreviewFocusLayer),
                 (String::from("showproject"), PreviewProject),
                 (String::from("showstatus"), UpdateStatusline),
@@ -212,12 +208,36 @@ impl Controller {
             action_map.insert(action_name.clone(), ActionLocation::Lua);
         }).collect::<Vec<()>>();
 
+        add_my_native_actions(&mut action_map);
+
         match start_type {
             Some(StartType::New) => {
                 let mut pixylene = Pixylene::new(&self.defaults);
                 if let Some(b_camera) = self.b_camera {
                     pixylene.project.out_dim = b_camera.size;
                 }
+
+                let dim = pixylene.project.canvas.dim();
+
+                //cant fail because this is 1st layer not 257th, and because dimensions of layer
+                //directly copied from canvas
+                pixylene.project.canvas.add_layer(Layer::new_with_solid_color(dim, None)).unwrap();
+
+                //move focus to center
+                pixylene.project.focus.0 = Coord {
+                    x: i32::from(dim.x()).checked_div(2).unwrap(),
+                    y: i32::from(dim.y()).checked_div(2).unwrap(),
+                };
+
+                //toggle 1 cursor at center
+                pixylene.project.toggle_cursor_at((UCoord {
+                    x: u16::from(dim.x()).checked_div(2).unwrap(),
+                    y: u16::from(dim.y()).checked_div(2).unwrap(),
+                }, 0)).unwrap(); //cant fail because x,y less than dim and we know there is at
+                                 //least 1 layer because we created it
+
+                pixylene.project.out_repeat = PCoord::new(1,1).unwrap();
+
                 native_action_manager = ActionManager::new(&pixylene.project.canvas);
                 self.sessions.push(PixyleneSession {
                     pixylene: Rc::new(RefCell::new(pixylene)),
@@ -271,10 +291,20 @@ impl Controller {
                         }
 
                         let dim = pixylene.project.canvas.dim();
+
+                        //move focus to center
                         pixylene.project.focus.0 = Coord {
                             x: i32::from(dim.x()).checked_div(2).unwrap(),
                             y: i32::from(dim.y()).checked_div(2).unwrap(),
                         };
+
+                        //toggle 1 cursor at center
+                        pixylene.project.toggle_cursor_at((UCoord {
+                            x: u16::from(dim.x()).checked_div(2).unwrap(),
+                            y: u16::from(dim.y()).checked_div(2).unwrap(),
+                        }, 0)).unwrap(); //cant fail because x,y less than dim and we know there is at
+                                         //least 1 layer because we created it
+
                         pixylene.project.out_repeat = PCoord::new(1,1).unwrap();
 
                         native_action_manager = ActionManager::new(&pixylene.project.canvas);
@@ -611,99 +641,33 @@ impl Controller {
             },
 
             //Command -> Recursive, translates string and calls this fn
-            RunCommand => {
+            RunCommandSpecify => {
                 if let Some(cmd) = self.console_in(":") {
-                    let mut func: Option<UiFn> = None;
-                    if let Some(mapped_func) = self.cmd_map.get(&cmd) {
-                        func = Some(mapped_func.clone());
-                    }
-                    if let Some(func) = func {
-                        self.perform_ui(&func);
-                    } else {
-                        self.console_out(&format!("command not found: '{}'", cmd), &LogType::Error);
-                    }
+                    self.perform_ui(&RunCommand(cmd));
                 } else {
                     self.console_clear();
                 }
+            }
+            RunCommand(command) => {
+                let mut func: Option<UiFn> = None;
+                if let Some(mapped_func) = self.cmd_map.get(command) {
+                    func = Some(mapped_func.clone());
+                }
+                if let Some(func) = func {
+                    self.perform_ui(&func);
+                } else {
+                    self.console_out(&format!("command not found: '{}'", command), &LogType::Error);
+                }
             },
 
-            RunAction => {
+            RunActionSpecify => {
                 if let Some(action_name) = self.console_in("a: ") {
-                    let mut self_clone = Controller::new(self.target.clone());
-                    self_clone.set_boundaries(self.b_camera.unwrap(),
-                                              self.b_statusline.unwrap(),
-                                              self.b_console.unwrap());
-
-                    let Self {
-                        sessions,
-                        target,
-                        sel_session,
-                        b_console,
-                        ..
-                    } = self;
-
-                    let PixyleneSession {
-                        ref mut pixylene,
-                        ref mut action_map,
-                        ref mut native_action_manager,
-                        ref mut lua_action_manager,
-                        ..
-                    } = &mut sessions[*sel_session as usize - 1];
-
-                    match action_map.get(&action_name/*.clone()*/) {
-                        Some(action_location) => match action_location {
-                            ActionLocation::Lua => {
-                                lua_action_manager.invoke(&action_name, pixylene.clone(),
-                                                          Rc::new(self_clone)).unwrap();
-                            },
-                            ActionLocation::Native(action) => {
-                                match native_action_manager.perform(
-                                    &mut pixylene.borrow_mut().project,
-                                    &self_clone,
-                                    action.clone()
-                                ) {
-                                    Ok(()) => (),
-                                    Err(err) => {
-                                        target.borrow_mut().console_out(
-                                            &format!("failed to perform: {}", err.to_string()),
-                                            &LogType::Error,
-                                            &b_console.unwrap()
-                                        );
-                                    }
-                                }
-                            },
-                        },
-                        None => {
-                            target.borrow_mut().console_out(
-                                &format!("action '{}' was not found in actions inserted into the \
-                                         action-manager", action_name),
-                                &LogType::Error,
-                                &b_console.unwrap()
-                            );
-                        }
-                    }
-
-                    /*
-                    match action_manager.perform(
-                        &mut pixylene.borrow_mut().project,
-                        &mut self_clone,
-                        &mut Echo,
-                    ) {
-                        Ok(()) => (),
-                        Err(err) => {
-                            target.borrow_mut().console_out(
-                                &format!("failed to perform: {}", err.to_string()),
-                                &LogType::Error,
-                                &b_console.unwrap()
-                            );
-                        }
-                    }
-                    */
+                    self.perform_ui(&RunAction(action_name));
                 } else {
                     self.console_clear();
                 }
             },
-            RunActionSpecify(action_name) => {
+            RunAction(action_name) => {
                 let mut self_clone = Controller::new(self.target.clone());
                 self_clone.set_boundaries(self.b_camera.unwrap(),
                                           self.b_statusline.unwrap(),
@@ -730,10 +694,14 @@ impl Controller {
                         ActionLocation::Lua => {
                             match lua_action_manager.invoke(&action_name, pixylene.clone(),
                                                             Rc::new(self_clone)) {
-                                Ok(()) => (()),
+                                Ok(()) => {
+                                    native_action_manager.commit(&pixylene.borrow().project.canvas);
+                                },
                                 Err(err) => {
                                     target.borrow_mut().console_out(
-                                        &format!("failed to perform: {}", err.to_string()),
+                                        //&format!("failed to perform: {}",
+                                        &format!("{}",
+                                                 err.to_string().lines().collect::<String>()),
                                         &LogType::Error,
                                         &b_console.unwrap()
                                     );
@@ -749,7 +717,8 @@ impl Controller {
                                 Ok(()) => (),
                                 Err(err) => {
                                     target.borrow_mut().console_out(
-                                        &format!("failed to perform: {}", err.to_string()),
+                                        //&format!("failed to perform: {}", err.to_string()),
+                                        &format!("{}", err.to_string()),
                                         &LogType::Error,
                                         &b_console.unwrap()
                                     );
@@ -833,7 +802,7 @@ impl Controller {
 fn get_pixylene_defaults(/*fallback: PixyleneFallback*/) -> PixyleneDefaults {
     PixyleneDefaults {
         dim: PCoord::new(64, 64).unwrap(),
-        palette: Palette::from(&[(1, "#ffffff"), (2, "#000000"), (3, "#00000000")]).unwrap(),
+        palette: Palette::from(&[(1, "#ffffff"), (2, "#000000"), (3, "#00073d")]).unwrap(),
     }
 }
 

@@ -23,9 +23,11 @@ pub enum UiFn {
     Undo,
     Redo,
 
-    RunCommand,
-    RunAction,
-    RunActionSpecify(String),
+    RunCommand(String),
+    RunCommandSpecify,
+
+    RunAction(String),
+    RunActionSpecify,
     RunLastAction,
 
     PreviewFocusLayer,
@@ -123,12 +125,25 @@ pub fn get_keybinds() -> (KeyMap, ReverseKeyMap) {
 
     //Vim Like
     let keymap: KeyMap = HashMap::from([
-        ( Key::new(KeyCode::Char(':'), KeyModifiers::empty()), vec![UiFn::RunCommand] ),
+        ( Key::new(KeyCode::Char(':'), KeyModifiers::empty()), vec![UiFn::RunCommandSpecify] ),
         ( Key::new(KeyCode::Esc, KeyModifiers::empty()), vec![UiFn::Quit] ),
+
+        ( Key::new(KeyCode::Char('h'), KeyModifiers::empty()),
+            vec![UiFn::RunAction(String::from("cursors_left"))] ),
+        ( Key::new(KeyCode::Char('j'), KeyModifiers::empty()),
+            vec![UiFn::RunAction(String::from("cursors_down"))] ),
+        ( Key::new(KeyCode::Char('k'), KeyModifiers::empty()),
+            vec![UiFn::RunAction(String::from("cursors_up"))] ),
+        ( Key::new(KeyCode::Char('l'), KeyModifiers::empty()),
+            vec![UiFn::RunAction(String::from("cursors_right"))] ),
+
+        ( Key::new(KeyCode::Enter, KeyModifiers::empty()),
+            vec![UiFn::RunAction(String::from("pencil"))] ),
+
         ( Key::new(KeyCode::Char('i'), KeyModifiers::empty()),
-            vec![UiFn::RunActionSpecify(String::from("zoomin"))] ),
+            vec![UiFn::RunAction(String::from("zoomin"))] ),
         ( Key::new(KeyCode::Char('o'), KeyModifiers::empty()),
-            vec![UiFn::RunActionSpecify(String::from("zoomout"))] ),
+            vec![UiFn::RunAction(String::from("zoomout"))] ),
     ]);
 
     let rev_keymap: ReverseKeyMap = HashMap::from([
