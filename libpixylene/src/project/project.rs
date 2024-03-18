@@ -5,6 +5,7 @@ use crate::{
 };
 
 use std::collections::HashMap;
+use std::iter::Iterator;
 
 
 /// The absolute state of a Pixel Art project at any given instance and a manager for the
@@ -166,23 +167,32 @@ impl Project {
     ///
     /// [cloob]: ProjectError::CursorLayerOutOfBounds
     /// [cioob]: ProjectError::CursorCoordOutOfBounds
-    pub fn toggle_cursor_at(&mut self, coord: UCoord, layer: u16) -> Result<(), ProjectError> {
+    pub fn toggle_cursor_at(&mut self, cursor: (UCoord, u16)) -> Result<(), ProjectError> {
         use ProjectError::{ CursorCoordOutOfBounds, CursorLayerOutOfBounds };
 
-        if layer < self.canvas.num_layers() {
-            if coord.x < self.canvas.dim().x() && coord.y < self.canvas.dim().y() {
-                if self.cursors.get(&(coord, layer)).is_some() {
-                    self.cursors.remove(&(coord, layer)).unwrap();
+        if cursor.1 < self.canvas.num_layers() {
+            if cursor.0.x < self.canvas.dim().x() && cursor.0.y < self.canvas.dim().y() {
+                if self.cursors.get(&cursor).is_some() {
+                    self.cursors.remove(&cursor).unwrap();
                 } else {
-                    _ = self.cursors.insert((coord, layer), ());
+                    _ = self.cursors.insert(cursor, ());
                 }
                 Ok(())
             } else {
-                Err(CursorCoordOutOfBounds(coord, self.canvas.dim()))
+                Err(CursorCoordOutOfBounds(cursor.0, self.canvas.dim()))
             }
         } else {
-            Err(CursorLayerOutOfBounds(layer, self.canvas.num_layers()))
+            Err(CursorLayerOutOfBounds(cursor.1, self.canvas.num_layers()))
         }
+    }
+
+
+    pub fn cursors(&self) -> impl Iterator<Item = &(UCoord, u16)> {
+        self.cursors.iter().into_iter().map(|(cursor, _)| cursor)
+    }
+
+    pub fn clear_cursors(&mut self) -> impl Iterator<Item = (UCoord, u16)> + '_ {
+        self.cursors.drain().into_iter().map(|(cursor, _)| cursor)
     }
 
     pub fn resize(&mut self) {
