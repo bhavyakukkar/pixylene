@@ -39,6 +39,7 @@ pub struct Project {
     pub out_repeat: PCoord,
 
     cursors: HashMap<(UCoord, u16), ()>,
+    num_cursors: u64,
     sel_cursor: Option<(UCoord, u16)>,
 }
 
@@ -50,12 +51,13 @@ impl Project {
     ) -> Project {
         Project {
             canvas,
-            cursors: HashMap::new(),
-            sel_cursor: None,
             focus: (Coord{x: 0, y: 0}, 0),
             out_dim: PCoord::new(10, 10).expect(PCOORD_NOTFAIL),
             out_mul: 1,
             out_repeat: PCoord::new(1, 2).expect(PCOORD_NOTFAIL),
+            cursors: HashMap::new(),
+            num_cursors: 0,
+            sel_cursor: None,
         }
     }
 
@@ -174,8 +176,10 @@ impl Project {
             if cursor.0.x < self.canvas.dim().x() && cursor.0.y < self.canvas.dim().y() {
                 if self.cursors.get(&cursor).is_some() {
                     self.cursors.remove(&cursor).unwrap();
+                    self.num_cursors -= 1;
                 } else {
                     _ = self.cursors.insert(cursor, ());
+                    self.num_cursors += 1;
                 }
                 Ok(())
             } else {
@@ -191,7 +195,12 @@ impl Project {
         self.cursors.iter().into_iter().map(|(cursor, _)| cursor)
     }
 
+    pub fn num_cursors(&self) -> u64 {
+        self.num_cursors
+    }
+
     pub fn clear_cursors(&mut self) -> impl Iterator<Item = (UCoord, u16)> + '_ {
+        self.num_cursors = 0;
         self.cursors.drain().into_iter().map(|(cursor, _)| cursor)
     }
 

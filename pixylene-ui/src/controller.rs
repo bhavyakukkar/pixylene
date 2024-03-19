@@ -1,5 +1,5 @@
 use crate::{
-    ui::{ UserInterface, Mode, Rectangle },
+    ui::{ UserInterface, Mode, Rectangle, Statusline },
     keybinds::{ KeyMap, ReverseKeyMap, KeyFn, UiFn, get_keybinds },
     actions::{ ActionLocation, add_my_native_actions },
 };
@@ -7,7 +7,7 @@ use crate::{
 use libpixylene::{
     Pixylene, PixyleneDefaults,
     project::{ OPixel, Layer, Palette },
-    types::{ UCoord, PCoord, Coord },
+    types::{ UCoord, PCoord, Coord, Pixel },
 };
 use pixylene_actions::{ memento::{ Action, ActionManager }, Console, LogType };
 use pixylene_actions_lua::LuaActionManager;
@@ -34,11 +34,12 @@ pub enum StartType {
 }
 
 pub struct PixyleneSession {
+    name: String,
     pixylene: Rc<RefCell<Pixylene>>,
     last_action_name: Option<String>,
     project_file_path: Option<String>,
     modified: bool,
-    mode: Mode,
+    //mode: Mode,
 
     action_map: HashMap<String, ActionLocation>,
     native_action_manager: ActionManager,
@@ -129,7 +130,7 @@ impl Controller {
     }
 
     fn console_clear(&self) {
-        self.target.borrow_mut().console_clear(&self.b_console.unwrap());
+        self.target.borrow_mut().clear(&self.b_console.unwrap());
     }
 
     //pub fn new(target: Rc<RefCell<T>>) -> Self {
@@ -236,15 +237,14 @@ impl Controller {
                 }, 0)).unwrap(); //cant fail because x,y less than dim and we know there is at
                                  //least 1 layer because we created it
 
-                pixylene.project.out_repeat = PCoord::new(1,1).unwrap();
-
                 native_action_manager = ActionManager::new(&pixylene.project.canvas);
                 self.sessions.push(PixyleneSession {
+                    name: String::from("new"),
                     pixylene: Rc::new(RefCell::new(pixylene)),
                     last_action_name: None,
                     project_file_path: None,
                     modified: false,
-                    mode: Mode::Normal,
+                    //mode: Mode::Normal,
                     action_map,
                     native_action_manager,
                     lua_action_manager,
@@ -259,11 +259,12 @@ impl Controller {
                         }
                         native_action_manager = ActionManager::new(&pixylene.project.canvas);
                         self.sessions.push(PixyleneSession {
+                            name: path.clone(),
                             pixylene: Rc::new(RefCell::new(pixylene)),
                             last_action_name: None,
                             project_file_path: Some(path.clone()),
                             modified: false,
-                            mode: Mode::Normal,
+                            //mode: Mode::Normal,
                             action_map,
                             native_action_manager,
                             lua_action_manager,
@@ -305,15 +306,14 @@ impl Controller {
                         }, 0)).unwrap(); //cant fail because x,y less than dim and we know there is at
                                          //least 1 layer because we created it
 
-                        pixylene.project.out_repeat = PCoord::new(1,1).unwrap();
-
                         native_action_manager = ActionManager::new(&pixylene.project.canvas);
                         self.sessions.push(PixyleneSession {
+                            name: path.clone(),
                             pixylene: Rc::new(RefCell::new(pixylene)),
                             last_action_name: None,
                             project_file_path: Some(path.clone()),
                             modified: false,
-                            mode: Mode::Normal,
+                            //mode: Mode::Normal,
                             action_map,
                             native_action_manager,
                             lua_action_manager,
@@ -361,11 +361,11 @@ impl Controller {
 
         let window_size = self.target.borrow().get_size();
 
-        let padding = 1;
+        let padding = 0;
         self.set_boundaries(
             /* camera: */Rectangle {
                 start: UCoord{ x: 0 + padding, y: 0 + padding },
-                size: PCoord::new(window_size.x() - 2 - 2*padding, window_size.y() - 2*padding)
+                size: PCoord::new(window_size.x() - 3 - 2*padding, window_size.y() - 2*padding)
                     .unwrap()
             },
             /* statusline: */Rectangle {
@@ -384,7 +384,7 @@ impl Controller {
         }
 
         self.perform_ui(&PreviewFocusLayer);
-        //self.perform_ui(&UpdateStatusline);
+        self.perform_ui(&UpdateStatusline);
         loop {
             //sleep(Duration::from_millis(1));
 
@@ -400,7 +400,7 @@ impl Controller {
                 }
 
                 self.perform_ui(&PreviewFocusLayer);
-                //self.perform_ui(&UpdateStatusline);
+                self.perform_ui(&UpdateStatusline);
             }
             /*
             match &mode {
@@ -551,6 +551,7 @@ impl Controller {
                         }
                     },
                     None => {
+                        let mut new_project_file_path: Option<String> = None;
                         match self.console_in("save path: ") {
                             Some(input) => {
                                 self.console_out("saving...", &LogType::Info);
@@ -561,6 +562,7 @@ impl Controller {
                                             &format!("saved to {}", input),
                                             &LogType::Info
                                         );
+                                        new_project_file_path = Some(input);
                                     },
                                     Err(err) => {
                                         self.console_out(
@@ -570,13 +572,17 @@ impl Controller {
                                         );
                                     }
                                 }
-                                self.console_out(
-                                    &format!("saved to {}", input),
-                                    &LogType::Info,
-                                );
+                                //self.console_out(
+                                //    &format!("saved to {}", input),
+                                //    &LogType::Info,
+                                //);
 
                             },
                             None => (),
+                        }
+                        if let Some(path) = new_project_file_path {
+                            self.sessions[self.sel_session as usize - 1].project_file_path =
+                                Some(path);
                         }
                     },
                 }
@@ -698,6 +704,7 @@ impl Controller {
                                     native_action_manager.commit(&pixylene.borrow().project.canvas);
                                 },
                                 Err(err) => {
+                                    /*
                                     target.borrow_mut().console_out(
                                         //&format!("failed to perform: {}",
                                         &format!("{}",
@@ -705,6 +712,7 @@ impl Controller {
                                         &LogType::Error,
                                         &b_console.unwrap()
                                     );
+                                    */
                                 }
                             }
                         },
@@ -788,11 +796,58 @@ impl Controller {
             },
 
             UpdateStatusline => {
+                use colored::Colorize;
+
+                self.target.borrow_mut().clear(&self.b_statusline.unwrap());
+
                 let session = &self.sessions[self.sel_session as usize - 1];
-                self.target.borrow_mut().draw_statusline(&session.pixylene.borrow().project,
-                                                         &session.native_action_manager,
-                                                         &session.mode,
-                                                         &self.sel_session,
+                let mut statusline: Statusline = Vec::new();
+                let padding = "          ".on_truecolor(60,60,60);
+
+                statusline.push(session.name.on_truecolor(60,60,60).bright_white());
+                statusline.push(padding.clone());
+
+                statusline.push(
+                    format!("Layer {} of {}",
+                            session.pixylene.borrow().project.focus.1 + 1,
+                            session.pixylene.borrow().project.canvas.num_layers())
+                    .on_truecolor(60,60,60).bright_white()
+                );
+                statusline.push(padding.clone());
+
+                statusline.push(
+                    format!("Session {} of {}", self.sel_session, self.sessions.len())
+                    .on_truecolor(60,60,60).bright_white()
+                );
+                statusline.push(padding.clone());
+
+                let num_cursors = session.pixylene.borrow().project.num_cursors();
+                statusline.push(
+                    format!("{}", match num_cursors {
+                        0 => String::from("0 cursors"),
+                        1 => {
+                            let cursor = session.pixylene.borrow().project.cursors()
+                                .collect::<Vec<&(UCoord, u16)>>()[0].clone();
+                            format!("Cursor: {}, {}", cursor.1, cursor.0)
+                        },
+                        _ => format!("{} cursors", num_cursors),
+                    })
+                    .on_truecolor(60,60,60).bright_white()
+                );
+                statusline.push(padding.clone());
+
+                statusline.push("Palette: ".on_truecolor(60,60,60).bright_white());
+                let mut colors_summary = session.pixylene.borrow().project.canvas.palette.colors()
+                    .map(|(a,b)| (a.clone(), b.clone())).take(16).collect::<Vec<(u8, Pixel)>>();
+                colors_summary.sort_by_key(|(index, _)| *index);
+                for (index, color) in colors_summary {
+                    statusline.push(
+                        format!(" {: <4}", index)
+                        .on_truecolor(color.r, color.g, color.b).white()
+                    );
+                }
+
+                self.target.borrow_mut().draw_statusline(&statusline,
                                                          &self.b_statusline.unwrap());
             }
         }
@@ -803,6 +858,7 @@ fn get_pixylene_defaults(/*fallback: PixyleneFallback*/) -> PixyleneDefaults {
     PixyleneDefaults {
         dim: PCoord::new(64, 64).unwrap(),
         palette: Palette::from(&[(1, "#ffffff"), (2, "#000000"), (3, "#00073d")]).unwrap(),
+        repeat: PCoord::new(1, 2).unwrap(),
     }
 }
 

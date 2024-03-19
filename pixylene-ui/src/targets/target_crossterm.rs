@@ -1,4 +1,4 @@
-use crate::ui::{ UserInterface, Key, Rectangle, Mode };
+use crate::ui::{ UserInterface, Key, Rectangle, Mode, Statusline };
 
 use libpixylene::{ types::{ UCoord, PCoord }, project::{ Project, OPixel } };
 use pixylene_actions::{ memento::ActionManager, LogType };
@@ -59,7 +59,7 @@ impl UserInterface for TargetCrossterm {
         _ = stdout.flush();
     }
 
-    // Crossterm blocks until read and requires no extra word between frames
+    // Crossterm blocks until read and requires no extra work between frames
     fn refresh(&mut self) -> bool { true }
 
     //fn set_camera_boundary(&mut self, boundary: Rectangle) {
@@ -154,6 +154,33 @@ impl UserInterface for TargetCrossterm {
         PCoord::new(height, width).unwrap()
     }
 
+    fn draw_statusline(&mut self, statusline: &Statusline, boundary: &Rectangle) {
+        use terminal::{ size, Clear, ClearType };
+        use cursor::{ MoveTo };
+        use style::{ Print, SetForegroundColor, SetBackgroundColor, Color, Color::*, ResetColor,
+                     SetAttribute, Attribute };
+
+        let mut stdout = std::io::stdout();
+
+        queue!(
+            stdout,
+            MoveTo(boundary.start.y.try_into().unwrap(), boundary.start.x.try_into().unwrap()),
+        ).unwrap();
+        for colored_string in statusline.iter() {
+            queue!(
+                stdout,
+                SetAttribute(Attribute::Bold),
+                SetBackgroundColor(MyColor(colored_string.bgcolor()).into()),
+                SetForegroundColor(MyColor(colored_string.fgcolor()).into()),
+                Print(colored_string),
+                SetAttribute(Attribute::Reset),
+                ResetColor,
+            );
+        }
+        _ = stdout.flush();
+    }
+
+    /*
     fn draw_statusline(&mut self, project: &Project, _action_manager: &ActionManager, mode: &Mode,
                        session: &u8, boundary: &Rectangle) {
         use terminal::{ size, Clear, ClearType };
@@ -237,6 +264,7 @@ impl UserInterface for TargetCrossterm {
         ).unwrap();
         _ = stdout.flush();
     }
+*/
 
     fn console_in(&mut self, message: &str, discard_key: &Key, boundary: &Rectangle) -> Option<String> {
         use terminal::{ Clear, ClearType };
@@ -319,7 +347,7 @@ impl UserInterface for TargetCrossterm {
     fn draw_paragraph(&mut self, _paragraph: Vec<String>) {
     }
 
-    fn console_clear(&mut self, boundary: &Rectangle) {
+    fn clear(&mut self, boundary: &Rectangle) {
         use terminal::{ Clear, ClearType };
         use cursor::{ MoveTo };
         let mut stdout = std::io::stdout();
@@ -333,5 +361,35 @@ impl UserInterface for TargetCrossterm {
         ).unwrap();
 
         _ = stdout.flush();
+    }
+}
+
+struct MyColor(Option<colored::Color>);
+impl From<MyColor> for style::Color {
+    fn from(item: MyColor) -> style::Color {
+        use style::Color::*;
+
+        match item.0 {
+            Some(color) => match color {
+                colored::Color::Black => Black,
+                colored::Color::Red => Red,
+                colored::Color::Green => Green,
+                colored::Color::Yellow => Yellow,
+                colored::Color::Blue => Blue,
+                colored::Color::Magenta => Magenta,
+                colored::Color::Cyan => Cyan,
+                colored::Color::White => White,
+                colored::Color::BrightBlack => DarkGrey,
+                colored::Color::BrightRed => DarkRed,
+                colored::Color::BrightGreen => DarkGreen,
+                colored::Color::BrightYellow => DarkYellow,
+                colored::Color::BrightBlue => DarkBlue,
+                colored::Color::BrightMagenta => DarkMagenta,
+                colored::Color::BrightCyan => DarkCyan,
+                colored::Color::BrightWhite => Grey,
+                colored::Color::TrueColor { r, g, b } => Rgb { r, g, b },
+            },
+            None => Reset,
+        }
     }
 }

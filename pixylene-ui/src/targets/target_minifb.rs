@@ -1,4 +1,4 @@
-use crate::ui::{ UserInterface, self, Rectangle, Mode };
+use crate::ui::{ UserInterface, self, Rectangle, Mode, Statusline };
 
 use libpixylene::{ types::{ UCoord, PCoord }, project::{ Project, OPixel } };
 use pixylene_actions::{ memento::ActionManager, LogType };
@@ -19,32 +19,33 @@ impl TargetMinifb {
         TargetMinifb(None, Vec::new())
     }
 
-    fn convert_key_instance(ks: Vec<Key>) -> ui::Key {
+    fn convert_key_instance(mut ks: Vec<Key>) -> ui::Key {
         use Key::*;
-        let m = KeyModifiers::empty();
+        let mut m = KeyModifiers::empty();
 
         //Shift
-        if let Some(i) = ks.position(|&k| k == Key::LeftShift) {
+        if let Some(i) = ks.iter().position(|&k| k == Key::LeftShift) {
             m.insert(KeyModifiers::SHIFT);
             ks.remove(i);
         }
-        if let Some(i) = ks.contains(|&k| k == Key::RightShift) {
+        if let Some(i) = ks.iter().position(|&k| k == Key::RightShift) {
             m.insert(KeyModifiers::SHIFT);
             ks.remove(i);
         }
 
         //Ctrl
-        if let Some(i) = ks.position(|&k| k == Key::LeftCtrl) {
+        if let Some(i) = ks.iter().position(|&k| k == Key::LeftCtrl) {
             m.insert(KeyModifiers::CONTROL);
             ks.remove(i);
         }
-        if let Some(i) = ks.contains(|&k| k == Key::RightCtrl) {
+        if let Some(i) = ks.iter().position(|&k| k == Key::RightCtrl) {
             m.insert(KeyModifiers::CONTROL);
             ks.remove(i);
         }
 
         //over here
-        if k >= Key0 && k <= Key9 { ui::Key::new(KeyCode::Char( key + 48 ), KeyModifiers::empty() }
+        //if k >= Key0 && k <= Key9 { ui::Key::new(KeyCode::Char( key + 48 ), KeyModifiers::empty()) }
+        ui::Key::new(KeyCode::Char(' '), KeyModifiers::empty())
     }
 }
 
@@ -55,7 +56,7 @@ impl UserInterface for TargetMinifb {
             usize::from(WIDTH),
             usize::from(HEIGHT),
             WindowOptions {
-                scale: Scale::FitScreen,
+                scale: Scale::X2,
                 ..WindowOptions::default()
             },
         ).unwrap();
@@ -94,6 +95,9 @@ impl UserInterface for TargetMinifb {
                 Key::O => {
                     return Some(ui::Key::new(KeyCode::Char('o'), KeyModifiers::empty()));
                 },
+                Key::Q => {
+                    return Some(ui::Key::new(KeyCode::Char('q'), KeyModifiers::empty()));
+                }
                 _ => (),
             }
         }
@@ -146,16 +150,16 @@ impl UserInterface for TargetMinifb {
         }
     }
 
-    fn draw_statusline(&mut self, project: &Project, action_manager: &ActionManager, mode: &Mode,
-                       session: &u8, boundary: &Rectangle) {
-    }
+    fn draw_statusline(&mut self, statusline: &Statusline, boundary: &Rectangle) { }
 
     fn draw_paragraph(&mut self, paragraph: Vec<String>) { todo!() }
 
-    fn console_clear(&mut self, boundary: &Rectangle) {  }
+    fn clear(&mut self, boundary: &Rectangle) { 
+    }
 
     fn console_in(&mut self, message: &str, discard_key: &ui::Key,
                   boundary: &Rectangle) -> Option<String> {
+            /*
         let size = self.get_size();
         let ref mut framebuffer = self.1;
         let mut text = font5x8::new_renderer(
@@ -178,6 +182,8 @@ impl UserInterface for TargetMinifb {
                 }
             }
         }
+        */
+        None
     }
 
     fn console_out(&mut self, message: &str, log_type: &LogType, boundary: &Rectangle) {

@@ -119,6 +119,10 @@ impl Palette {
             }
         }
     }
+
+    pub fn colors(&self) -> impl Iterator<Item = (&u8, &Pixel)> {
+        self.colors.iter().into_iter()
+    }
 }
 
 

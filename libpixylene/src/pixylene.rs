@@ -7,6 +7,7 @@ use crate::{
 pub struct PixyleneDefaults {
     pub dim: PCoord,
     pub palette: Palette,
+    pub repeat: PCoord,
 }
 
 pub struct Pixylene {
@@ -15,7 +16,8 @@ pub struct Pixylene {
 
 impl Pixylene {
     pub fn new(defaults: &PixyleneDefaults) -> Pixylene {
-        let project = Project::new(Canvas::new(defaults.dim, defaults.palette.clone()));
+        let mut project = Project::new(Canvas::new(defaults.dim, defaults.palette.clone()));
+        project.out_repeat = defaults.repeat;
         Pixylene { project }
     }
     pub fn open(path: &str) -> Result<Pixylene, PixyleneError> {
@@ -35,6 +37,7 @@ impl Pixylene {
         let scene = png_file.to_scene()?;
         let dim = scene.dim();
         let mut project = Project::new(Canvas::new(dim, defaults.palette.clone()));
+        project.out_repeat = defaults.repeat;
         project
             .canvas
             .add_layer(Layer {

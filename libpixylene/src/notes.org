@@ -6,30 +6,14 @@
 :PROPERTIES:
 :COOKIE_DATA: todo
 :END:
-*** Making It Usable [37%]
-:PROPERTIES:
-:COOKIE_DATA: todo recursive
-:END:
-**** TODO _CORE_ [4/6]
-***** TODO actually use layer opacity & mute in Layer::merge
-***** DONE make application safer by having indexes like layer number only be something like u8 or u16 (this is very important now) this does not let the approach of move_to_last_layer work, and is probably what's crashing CircularOutline make new types PInt with From impl for primitives
-***** DONE each layer has a blendmode (like in gimp)
-***** TODO actions to move layers
-***** DONE ActionManager needs to detect overwriting of undo-history and cascade all changes after the overwriting change
-***** TODO make fn to deal with cursors (for one, there shouldn't be able to be 2 cursors at the same place), then make a non-result method to return pixel at given cursor
-***** DONE all project fields that have constraints should be private, for eg., project.cursors must be private, however, project.focus can be public (according to the system now at least). at the moment ToggleCursorAtFocus is able to create a cursor outside of the scene which bugs out every single action
-
-**** TODO _ACTIONS_ [0/2]
-***** TODO wrappers/builders for each action, since, for eg., rectangularfill needs its struct to initialize with start_corner = None, and start_corner is not a parameter that user decide like the palette_index parameter
-***** TODO RectangularOutline, CircularFill Action
-
-**** TODO _EXPORTS_ [2/3]
-***** DONE scaling of artwork while exporting (64x64 "x20" = 1280x1280)
-***** TODO Png to/fro Scene: fill more color-type/bit-depth combos
-***** DONE pixylene::export adds black background that preview uses, let exports have transparent bgs
-
-**** TODO _UI_ [0/1]
-***** TODO (pixylenetui) refresh on terminal resize [[https://docs.rs/crossterm/latest/crossterm/event/enum.Event.html#variant.Resize]]
+*** Next [0%]
+**** TODO actually use layer opacity & mute in Layer::merge
+**** TODO target_minibuf: convert keys [[https://docs.rs/minifb/latest/src/minifb/key.rs.html#2][minifb]] [[https://docs.rs/crossterm/latest/crossterm/event/struct.KeyEvent.html][crossterm]]
+**** TODO Clap parses PathBuf instead of path string [[https://www.rustadventure.dev/introducing-clap/clap-v4/accepting-file-paths-as-arguments-in-clap][Tutorial]]
+**** TODO RectangularOutline, CircularFill Action
+**** TODO Png to/fro Scene: fill more color-type/bit-depth combos
+**** TODO (pixylenetui) refresh on terminal resize for both targets [[https://docs.rs/crossterm/latest/crossterm/event/enum.Event.html#variant.Resize][Resize]]
+**** TODO helper screen to show keybind <-> actions map
 
 *** Making It Enjoyable To Use [15%]
 **** TODO switch x and y syntax since game design often uses flipped
@@ -50,9 +34,6 @@
 **** DONE get rid of warnings & dead code. p.s. PixyleneDisplay is not being used anywhere
 **** TODO use more iterators: impl iterator for scene, return of render_scene and return of render_layer
 **** TODO add more metamethods to Lua interface to Coord (==, <, <=, -, %, //, __tostring, etc.)
-
-*** Finishing Touches [0%]
-**** TODO helper screen to show keybind <-> actions map
 
 *** Dont Feel Proud About Doing This Tiny Tasks [0%]
 **** TODO deprecate MoveOneCursor in favorof SetOneCursor

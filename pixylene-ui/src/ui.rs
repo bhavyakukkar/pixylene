@@ -27,13 +27,16 @@ pub trait UserInterface {
 
     fn draw_camera(&mut self, dim: PCoord, buffer: Vec<OPixel>, show_cursors: bool,
                    boundary: &Rectangle);
-    fn draw_statusline(&mut self, project: &Project, action_manager: &ActionManager, mode: &Mode,
-                       session: &u8, boundary: &Rectangle);
     fn draw_paragraph(&mut self, paragraph: Vec<String>);
 
-    fn console_clear(&mut self, boundary: &Rectangle);
+    fn draw_statusline(&mut self, statusline: &Statusline, boundary: &Rectangle);
+    //fn draw_statusline(&mut self, project: &Project, action_manager: &ActionManager, mode: &Mode,
+    //                   session: &u8, boundary: &Rectangle);
+
     fn console_in(&mut self, message: &str, discard_key: &Key, boundary: &Rectangle) -> Option<String>;
     fn console_out(&mut self, message: &str, log_type: &LogType, boundary: &Rectangle);
+
+    fn clear(&mut self, boundary: &Rectangle);
 }
 
 //leaving this here
@@ -57,6 +60,9 @@ pub struct Rectangle {
     pub start: UCoord,
     pub size: PCoord,
 }
+
+/// The Statusline
+pub type Statusline = Vec<colored::ColoredString>;
 
 pub enum Mode {
     Normal,
