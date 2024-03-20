@@ -311,7 +311,7 @@ impl Controller {
                             name: path.clone(),
                             pixylene: Rc::new(RefCell::new(pixylene)),
                             last_action_name: None,
-                            project_file_path: Some(path.clone()),
+                            project_file_path: None,
                             modified: false,
                             //mode: Mode::Normal,
                             action_map,
@@ -599,7 +599,7 @@ impl Controller {
                                                               scale_up) {
                                     Ok(()) => {
                                         self.console_out(
-                                            &format!("exported to {}", input),
+                                            &format!("exported to {}", path),
                                             &LogType::Info
                                         );
                                     },
@@ -802,7 +802,7 @@ impl Controller {
 
                 let session = &self.sessions[self.sel_session as usize - 1];
                 let mut statusline: Statusline = Vec::new();
-                let padding = "          ".on_truecolor(60,60,60);
+                let padding = "     ".on_truecolor(60,60,60);
 
                 statusline.push(session.name.on_truecolor(60,60,60).bright_white());
                 statusline.push(padding.clone());
@@ -842,7 +842,7 @@ impl Controller {
                 colors_summary.sort_by_key(|(index, _)| *index);
                 for (index, color) in colors_summary {
                     statusline.push(
-                        format!(" {: <4}", index)
+                        format!(" {: <3}", index)
                         .on_truecolor(color.r, color.g, color.b).white()
                     );
                 }
@@ -857,7 +857,24 @@ impl Controller {
 fn get_pixylene_defaults(/*fallback: PixyleneFallback*/) -> PixyleneDefaults {
     PixyleneDefaults {
         dim: PCoord::new(64, 64).unwrap(),
-        palette: Palette::from(&[(1, "#ffffff"), (2, "#000000"), (3, "#00073d")]).unwrap(),
+        palette: Palette::from(&[
+            (1 , "#140c1c"),
+            (2 , "#442434"),
+            (3 , "#30346d"),
+            (4 , "#4e4a4e"),
+            (5 , "#854c30"),
+            (6 , "#346524"),
+            (7 , "#d04648"),
+            (8 , "#757161"),
+            (9 , "#597dce"),
+            (10, "#d27d2c"),
+            (11, "#8595a1"),
+            (12, "#6daa2c"),
+            (13, "#d2aa99"),
+            (14, "#6dc2ca"),
+            (15, "#dad45e"),
+            (16, "#deeed6"),
+        ]).unwrap(),
         repeat: PCoord::new(1, 2).unwrap(),
     }
 }
