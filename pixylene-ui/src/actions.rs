@@ -19,7 +19,11 @@ fn insert<T: Action + 'static>(action_map: &mut HashMap<String, ActionLocation>,
 pub fn add_my_native_actions(am: &mut HashMap<String, ActionLocation>) {
     // Insert Your Actions Here
     insert(am, "draw", Draw::new((UCoord{ x: 0, y: 0 }, 0), Some(Pixel::BLACK), BlendMode::Overwrite));
-    insert(am, "pencil", Pencil::new(3));
+
+    for i in 1..17 {
+        insert(am, &format!("pencil{}", i), Pencil::new(i));
+    }
+
     insert(am, "cursors_up", MoveAllCursors::new(Coord{ x: -1, y: 0 }));
     insert(am, "cursors_left", MoveAllCursors::new(Coord{ x: 0, y: -1 }));
     insert(am, "cursors_down", MoveAllCursors::new(Coord{ x: 1, y: 0 }));

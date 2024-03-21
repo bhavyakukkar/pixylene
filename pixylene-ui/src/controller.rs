@@ -21,6 +21,8 @@ use std::time::Duration;
 use clap::{ Subcommand };
 
 
+const PADDING: u8 = 1;
+
 type CommandMap = HashMap<String, UiFn>;
 
 #[derive(Subcommand)]
@@ -92,6 +94,7 @@ pub struct Controller {
     b_console: Option<Rectangle>,
     b_camera: Option<Rectangle>,
     b_statusline: Option<Rectangle>,
+    padding: u8,
 
     /// Manually set this to true if the user-interface has been started and we are not still in
     /// the CLI
@@ -110,11 +113,10 @@ impl Console for Controller {
 //impl<T: UserInterface + Console> Controller<T> {
 impl Controller {
 
-    fn set_boundaries(&mut self, b_camera: Rectangle, b_statusline: Rectangle,
-                      b_console: Rectangle) {
-        self.b_camera = Some(b_camera);
-        self.b_statusline = Some(b_statusline);
-        self.b_console = Some(b_console);
+    fn set_boundaries(&mut self, boundaries: (Rectangle, Rectangle, Rectangle)) {
+        self.b_camera = Some(boundaries.0);
+        self.b_statusline = Some(boundaries.1);
+        self.b_console = Some(boundaries.2);
     }
 
     fn console_in(&self, message: &str) -> Option<String> {
@@ -181,6 +183,7 @@ impl Controller {
             b_console: None,
             b_camera: None,
             b_statusline: None,
+            padding: PADDING,
 
             started: true,
         }
@@ -362,29 +365,23 @@ impl Controller {
         let window_size = self.target.borrow().get_size();
 
         let padding = 0;
-        self.set_boundaries(
-            /* camera: */Rectangle {
-                start: UCoord{ x: 0 + padding, y: 0 + padding },
-                size: PCoord::new(window_size.x() - 3 - 2*padding, window_size.y() - 2*padding)
-                    .unwrap()
-            },
-            /* statusline: */Rectangle {
-                start: UCoord{ x: window_size.x() - 2 - padding, y: 0 + padding },
-                size: PCoord::new(1, window_size.y() - 2*padding).unwrap()
-            },
-            /* console: */Rectangle {
-                start: UCoord{ x: window_size.x() - 1 - padding, y: 0 + padding },
-                size: PCoord::new(1, window_size.y() - 2*padding).unwrap()
-            }
-        );
+        self.set_boundaries(self.compute_boundaries(&window_size));
 
         // case when started from new_session instead of start directly
         if self.sessions.len() == 1 {
             self.sessions[0].pixylene.borrow_mut().project.out_dim = self.b_camera.unwrap().size;
         }
 
+        //clear entire screen
+        let current_dim = self.target.borrow().get_size();
+        self.target.borrow_mut().clear(&Rectangle{
+            start: UCoord{ x: 0, y: 0 },
+            size: current_dim,
+        });
+
         self.perform_ui(&PreviewFocusLayer);
         self.perform_ui(&UpdateStatusline);
+
         loop {
             //sleep(Duration::from_millis(1));
 
@@ -399,6 +396,11 @@ impl Controller {
                     self.console_out(&format!("unmapped key: {:?}", key), &LogType::Warning);
                 }
 
+                let current_dim = self.target.borrow().get_size();
+                self.target.borrow_mut().clear(&Rectangle{
+                    start: UCoord{ x: 0, y: 0 },
+                    size: current_dim,
+                });
                 self.perform_ui(&PreviewFocusLayer);
                 self.perform_ui(&UpdateStatusline);
             }
@@ -441,6 +443,8 @@ impl Controller {
 
     fn perform_ui(&mut self, func: &UiFn) {
         use UiFn::*;
+        let ( cb_camera, cb_statusline, cb_console ) =
+            self.compute_boundaries(&self.target.borrow().get_size());
 
         match func {
             //Sessions
@@ -674,10 +678,11 @@ impl Controller {
                 }
             },
             RunAction(action_name) => {
+                //use pixylene_actions_lua::mlua;
                 let mut self_clone = Controller::new(self.target.clone());
-                self_clone.set_boundaries(self.b_camera.unwrap(),
-                                          self.b_statusline.unwrap(),
-                                          self.b_console.unwrap());
+                self_clone.set_boundaries((self.b_camera.unwrap(),
+                                           self.b_statusline.unwrap(),
+                                           self.b_console.unwrap()));
 
                 let Self {
                     sessions,
@@ -704,15 +709,23 @@ impl Controller {
                                     native_action_manager.commit(&pixylene.borrow().project.canvas);
                                 },
                                 Err(err) => {
-                                    /*
                                     target.borrow_mut().console_out(
                                         //&format!("failed to perform: {}",
                                         &format!("{}",
-                                                 err.to_string().lines().collect::<String>()),
+                                        //match err {
+                                        //    //over here
+                                        //    //print only cause, not traceback
+                                        //    mlua::Error::CallbackError{ cause, .. } => cause,
+                                        //    mlua::Error::RuntimeError(msg) => msg,
+                                        //    otherwise => otherwise,
+                                        //}),
+
+                                        //todo: better reporting
+                                        err.to_string().lines().map(|s| s.to_string()
+                                        .replace("\t", " ")).collect::<Vec<String>>().join(", ")),
                                         &LogType::Error,
                                         &b_console.unwrap()
                                     );
-                                    */
                                 }
                             }
                         },
@@ -851,6 +864,27 @@ impl Controller {
                                                          &self.b_statusline.unwrap());
             }
         }
+    }
+
+    // returns boundaries of camera, statusline and console respectively
+    fn compute_boundaries(&self, window: &PCoord) -> (Rectangle, Rectangle, Rectangle) {
+        (
+        /* camera: */Rectangle {
+            start: UCoord{ x: 0 + self.padding as u16, y: 0 + self.padding as u16 },
+            size: PCoord::new(
+                window.x() - 3 - 2*self.padding as u16,
+                window.y() - 2*self.padding as u16
+            ).unwrap()
+        },
+        /* statusline: */Rectangle {
+            start: UCoord{ x: window.x() - 2 - self.padding as u16, y: 0 + self.padding as u16 },
+            size: PCoord::new(1, window.y() - 2*self.padding as u16).unwrap()
+        },
+        /* console: */Rectangle {
+            start: UCoord{ x: window.x() - 1 - self.padding as u16, y: 0 + self.padding as u16 },
+            size: PCoord::new(1, window.y() - 2*self.padding as u16).unwrap()
+        }
+        )
     }
 }
 
