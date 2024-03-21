@@ -20,8 +20,8 @@ impl LuaActionManager {
         use tealr::mlu::mlua::Value;
 
         let project_lua = Project(pixylene);
-        self.0.globals().set("Project", project_lua)?;
-        self.0.globals().set("Console", Console(console))?;
+        self.0.globals().set("Project", project_lua).unwrap();
+        self.0.globals().set("Console", Console(console)).unwrap();
         self.0.load(format!("actions.{0}.perform(actions.{0}, Project, Console)", action_name))
             .exec()?;
         //self.0.globals().set("Project", Value::Nil)?;
