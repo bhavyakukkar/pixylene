@@ -120,9 +120,13 @@ impl Controller {
     }
 
     fn console_in(&self, message: &str) -> Option<String> {
-        self.target.borrow_mut().console_in(message,
-                                        self.rev_keymap.get(&KeyFn::DiscardCommand).unwrap(),
-                                        &self.b_console.unwrap())
+        let input = self.target.borrow_mut().console_in(message,
+                                                        self.rev_keymap
+                                                            .get(&KeyFn::DiscardCommand)
+                                                            .unwrap(),
+                                                        &self.b_console.unwrap());
+        self.console_clear();
+        input
     }
 
     fn console_out(&self, message: &str, log_type: &LogType) {
@@ -646,7 +650,6 @@ impl Controller {
                 native_action_manager.redo(&mut pixylene.borrow_mut().project.canvas);
             },
 
-            //Command -> Recursive, translates string and calls this fn
             RunCommandSpecify => {
                 if let Some(cmd) = self.console_in(":") {
                     self.perform_ui(&RunCommand(cmd));

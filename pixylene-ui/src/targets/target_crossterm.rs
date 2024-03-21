@@ -275,18 +275,14 @@ impl UserInterface for TargetCrossterm {
             let event = read().unwrap();
             if let Event::Key(key) = event {
                 if key == *discard_key {
-                    execute!(stdout, Clear(ClearType::CurrentLine)).unwrap();
                     out = None;
                     break;
                 }
                 let KeyEvent { code, .. } = key;
                 match code {
                     KeyCode::Enter => {
-                        execute!(stdout, Clear(ClearType::CurrentLine)).unwrap();
                         out = Some(input);
                         break;
-                    },
-                    KeyCode::Esc => {
                     },
                     KeyCode::Backspace => {
                         if input.len() > 0 {
