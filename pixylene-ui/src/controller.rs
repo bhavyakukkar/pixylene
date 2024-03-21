@@ -397,10 +397,6 @@ impl Controller {
                 }
 
                 let current_dim = self.target.borrow().get_size();
-                self.target.borrow_mut().clear(&Rectangle{
-                    start: UCoord{ x: 0, y: 0 },
-                    size: current_dim,
-                });
                 self.perform_ui(&PreviewFocusLayer);
                 self.perform_ui(&UpdateStatusline);
             }
