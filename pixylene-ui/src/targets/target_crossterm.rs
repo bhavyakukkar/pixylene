@@ -9,22 +9,6 @@ use std::io::{ Write };
 /// Pixylene UI's Target for the [`crossterm`](crossterm) terminal manipulation library
 /// [Crossterm repository](https://github.com/crossterm-rs/crossterm)
 pub struct TargetCrossterm;
-//pub struct TargetCrossterm {
-//    b_camera: Rectangle,
-//    b_statusline: Rectangle,
-//    b_console: Rectangle,
-//}
-
-/*
-impl Console for TargetCrossterm {
-
-    fn cmdin(&self, message: &str) -> Option<String> {
-    }
-
-    fn cmdout(&self, message: &str, log_type: &LogType) {
-    }
-}
-*/
 
 impl UserInterface for TargetCrossterm {
 
@@ -339,7 +323,7 @@ impl UserInterface for TargetCrossterm {
                 LogType::Warning => Color::Rgb{ r: 70, g: 235, b: 235 },
                 LogType::Success => Color::Rgb{ r: 70, g: 255, b: 70 },
             }),
-            Print(&message),
+            Print(&message[0..std::cmp::min(message.len(), usize::from(boundary.size.y()))]),
             ResetColor,
         ).unwrap();
     }
@@ -349,18 +333,39 @@ impl UserInterface for TargetCrossterm {
 
     fn clear(&mut self, boundary: &Rectangle) {
         use terminal::{ Clear, ClearType };
-        use cursor::{ MoveTo };
+        use cursor::{ MoveTo, MoveRight };
+        use style::{ Print };
         let mut stdout = std::io::stdout();
 
         queue!(
             stdout,
-            MoveTo(boundary.start.y as u16, boundary.start.y as u16),
-
+            MoveTo(boundary.start.y as u16, boundary.start.x as u16),
             //todo: dont clear past console boundary
-            Clear(ClearType::UntilNewLine),
-        ).unwrap();
+        );
+        for i in 0..boundary.size.x() {
+            for j in 0..boundary.size.y() {
+                queue!(
+                    stdout,
+                    Print(' '),
+                ).unwrap();
+                if j < boundary.size.y() - 1 {
+                    queue!(stdout, MoveRight(1)).unwrap();
+                }
+            }
+            if i < boundary.size.x() - 1 {
+                queue!(stdout, MoveTo(boundary.start.y, boundary.start.x + i+1)).unwrap();
+            }
+        }
 
         _ = stdout.flush();
+    }
+
+    fn clear_all(&mut self) {
+        use terminal::{ Clear, ClearType };
+        queue!(
+            std::io::stdout(),
+            Clear(ClearType::All),
+        ).unwrap();
     }
 }
 

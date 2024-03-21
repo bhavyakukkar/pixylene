@@ -37,6 +37,7 @@ pub trait UserInterface {
     fn console_out(&mut self, message: &str, log_type: &LogType, boundary: &Rectangle);
 
     fn clear(&mut self, boundary: &Rectangle);
+    fn clear_all(&mut self);
 }
 
 //leaving this here

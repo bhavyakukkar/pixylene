@@ -201,4 +201,8 @@ impl UserInterface for TargetMinifb {
             message
         );
     }
+
+    fn clear_all(&mut self) {
+        self.1 = vec![0; self.1.len()];
+    }
 }
