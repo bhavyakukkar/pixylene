@@ -8,6 +8,7 @@
 :END:
 *** Next [0%]
 **** TODO actually use layer opacity & mute in Layer::merge
+**** TODO crossterm windows issue with double presses [[https://github.com/zyansheep/rustyline-async/pull/27/commits/a914c35243593928ce4b3db56aafa45b5db228f4][solution]]
 **** TODO target_minibuf: convert keys [[https://docs.rs/minifb/latest/src/minifb/key.rs.html#2][minifb]] [[https://docs.rs/crossterm/latest/crossterm/event/struct.KeyEvent.html][crossterm]]
 **** TODO Clap parses PathBuf instead of path string [[https://www.rustadventure.dev/introducing-clap/clap-v4/accepting-file-paths-as-arguments-in-clap][Tutorial]]
 **** TODO RectangularOutline, CircularFill Action
@@ -51,6 +52,7 @@
 **** TODO change-tree instead of change-stack, doesn't forget future changes after changes in undoed state
 **** TODO alternative fn ActionManager::perform_directly() directly takes dyn Action
 **** TODO handle all error messages larger than console size by converting them to cmdin's that print messages in chunks of console size
+**** TODO remove console_in and let all input be handled by controller showing typing of input through simply console_out
 
 *** Needs Debate [25%]
 **** DONE only 1 mode for selections, and three kinds of selections allowed: block, row or column
