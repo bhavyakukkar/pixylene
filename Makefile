@@ -5,3 +5,6 @@ actions-lua-test:
 
 editor-tui-linux:
 	cargo build -p pixylene-crossterm
+
+windows:
+	cargo build --target x86_64-pc-windows-gnu -p pixylene-ui

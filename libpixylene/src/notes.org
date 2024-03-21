@@ -50,6 +50,7 @@
 **** TODO layers vec and layer_order are separate and "tag-based" so that moving layers is trivial
 **** TODO change-tree instead of change-stack, doesn't forget future changes after changes in undoed state
 **** TODO alternative fn ActionManager::perform_directly() directly takes dyn Action
+**** TODO handle all error messages larger than console size by converting them to cmdin's that print messages in chunks of console size
 
 *** Needs Debate [25%]
 **** DONE only 1 mode for selections, and three kinds of selections allowed: block, row or column
