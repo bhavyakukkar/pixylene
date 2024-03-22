@@ -158,6 +158,11 @@ pub fn get_keybinds() -> (KeyMap, ReverseKeyMap) {
         ( Key::new(KeyCode::Char('0'), KeyModifiers::empty()),
             vec![UiFn::RunAction(String::from("pencil10"))] ),
 
+        ( Key::new(KeyCode::Char('u'), KeyModifiers::empty()),
+            vec![UiFn::Undo] ),
+        ( Key::new(KeyCode::Char('r'), KeyModifiers::CONTROL),
+            vec![UiFn::Redo] ),
+
         ( Key::new(KeyCode::Char('i'), KeyModifiers::empty()),
             vec![UiFn::RunAction(String::from("zoomin"))] ),
         ( Key::new(KeyCode::Char('o'), KeyModifiers::empty()),

@@ -6,15 +6,15 @@
 :PROPERTIES:
 :COOKIE_DATA: todo
 :END:
-*** Next [0%]
+*** Next [12%]
 **** TODO actually use layer opacity & mute in Layer::merge
-**** TODO crossterm windows issue with double presses [[https://github.com/zyansheep/rustyline-async/pull/27/commits/a914c35243593928ce4b3db56aafa45b5db228f4][solution]]
-**** TODO target_minibuf: convert keys [[https://docs.rs/minifb/latest/src/minifb/key.rs.html#2][minifb]] [[https://docs.rs/crossterm/latest/crossterm/event/struct.KeyEvent.html][crossterm]]
-**** TODO Clap parses PathBuf instead of path string [[https://www.rustadventure.dev/introducing-clap/clap-v4/accepting-file-paths-as-arguments-in-clap][Tutorial]]
 **** TODO RectangularOutline, CircularFill Action
 **** TODO Png to/fro Scene: fill more color-type/bit-depth combos
 **** TODO (pixylenetui) refresh on terminal resize for both targets [[https://docs.rs/crossterm/latest/crossterm/event/enum.Event.html#variant.Resize][Resize]]
+**** TODO Clap parses PathBuf instead of path string [[https://www.rustadventure.dev/introducing-clap/clap-v4/accepting-file-paths-as-arguments-in-clap][Tutorial]]
+**** TODO crossterm windows issue with double presses [[https://github.com/zyansheep/rustyline-async/pull/27/commits/a914c35243593928ce4b3db56aafa45b5db228f4][solution]]
 **** TODO helper screen to show keybind <-> actions map
+**** DONE target_minibuf: convert keys [[https://docs.rs/minifb/latest/src/minifb/key.rs.html#2][minifb]] [[https://docs.rs/crossterm/latest/crossterm/event/struct.KeyEvent.html][crossterm]]
 
 *** Making It Enjoyable To Use [15%]
 **** TODO switch x and y syntax since game design often uses flipped

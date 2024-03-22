@@ -10,7 +10,7 @@ use std::collections::HashMap;
 ///
 /// The palette works by using a hashmap of u8 indexes to Pixel definitions, and the most
 /// significant color at any time can be chosen by its index and picked.
-#[derive(Savefile, Clone)]
+#[derive(PartialEq, Savefile, Clone)]
 pub struct Palette {
     colors: HashMap<u8, Pixel>,
     equipped: Option<u8>,

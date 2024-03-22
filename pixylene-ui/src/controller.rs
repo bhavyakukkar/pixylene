@@ -705,7 +705,8 @@ impl Controller {
                             match lua_action_manager.invoke(&action_name, pixylene.clone(),
                                                             Rc::new(self_clone)) {
                                 Ok(()) => {
-                                    native_action_manager.commit(&pixylene.borrow().project.canvas);
+                                    _ = native_action_manager
+                                        .commit(&pixylene.borrow().project.canvas);
                                 },
                                 Err(err) => {
                                     target.borrow_mut().console_out(
@@ -729,12 +730,16 @@ impl Controller {
                             }
                         },
                         ActionLocation::Native(action) => {
-                            match native_action_manager.perform(
+                            let performed = native_action_manager.perform(
                                 &mut pixylene.borrow_mut().project,
                                 &self_clone,
                                 action.clone()
-                            ) {
-                                Ok(()) => (),
+                            );
+                            match performed {
+                                Ok(()) => {
+                                    _ = native_action_manager
+                                        .commit(&pixylene.borrow().project.canvas);
+                                },
                                 Err(err) => {
                                     target.borrow_mut().console_out(
                                         //&format!("failed to perform: {}", err.to_string()),

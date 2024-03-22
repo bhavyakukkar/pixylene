@@ -15,7 +15,7 @@ pub const MAX_LAYERS: u16 = u16::MAX;
 /// and layer are the pixel art itself, and palettes are required in indexed PNGs). 
 ///
 /// `Note`: All Canvas methods to access Layers use 0-based indexes
-#[derive(Clone, Savefile)]
+#[derive(PartialEq, Clone, Savefile)]
 pub struct Canvas {
     dimensions: PCoord,
     layers: Vec<Layer>,

@@ -6,7 +6,7 @@ use crate::{
 
 /// A [`Scene`](Scene) with additional information including an opacity, mute switch and a
 /// [`BlendMode`](BlendMode).
-#[derive(Savefile, Clone)]
+#[derive(PartialEq, Savefile, Clone)]
 pub struct Layer {
     pub scene: Scene,
     pub opacity: u8,

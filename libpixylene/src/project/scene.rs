@@ -6,7 +6,7 @@ use crate::{
 /// A two-dimensional grid of pixels.
 ///
 /// `Note`: Each item of the grid is an [`Option<Pixel>`] rather than simply a [`Pixel`].
-#[derive(Debug, Savefile, Clone)]
+#[derive(PartialEq, Debug, Savefile, Clone)]
 pub struct Scene {
     dim: PCoord,
     grid: Vec<Option<Pixel>>,
