@@ -4,7 +4,7 @@ use super::{ UCoord, PCoord };
 
 
 /// An integer coordinate type composed of two 32-bit integers.
-///gruvbox-material-dark-hard]]
+///
 /// `This type can be constructed directly`.
 #[derive(Copy, Clone, PartialEq, Default, Debug, Savefile)]
 pub struct Coord {
