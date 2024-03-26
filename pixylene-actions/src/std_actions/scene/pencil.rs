@@ -10,13 +10,14 @@ use std::cell::RefCell;
 
 
 /// An action that extends Draw to dynamically use the project's color at a specificed
-/// palette index and blend it normally with the existing color at each cursor
+/// palette index and blend it normally with the existing color at each cursor, taking the equipped
+/// pencil if index not specified
 pub struct Pencil {
-    palette_index: u8,
+    palette_index: Option<u8>,
 }
 
 impl Pencil {
-    pub fn new(palette_index: u8) -> Self {
+    pub fn new(palette_index: Option<u8>) -> Self {
         Pencil{ palette_index }
     }
 }
@@ -31,7 +32,11 @@ impl command::Action for Pencil {
         for cursor in cursors {
             if let Ok(draw) = (Draw::new(
                 cursor,
-                Some(*project.canvas.palette.get_color((&self).palette_index)?),
+                Some(match (&self).palette_index {
+                    Some(index) => *project.canvas.palette.get_color(index)?,
+                    None => *project.canvas.palette.get_equipped()?,
+                }),
+                //Some(*project.canvas.palette.get_color((&self).palette_index)?),
                 BlendMode::Normal,
             )).perform(project, console) {
                 for change in draw {
@@ -51,7 +56,11 @@ impl memento::Action for Pencil {
         for cursor in cursors {
             Draw::new(
                 cursor,
-                Some(*project.canvas.palette.get_color((&self).palette_index)?),
+                Some(match (&self).palette_index {
+                    Some(index) => *project.canvas.palette.get_color(index)?,
+                    None => *project.canvas.palette.get_equipped()?,
+                }),
+                //Some(*project.canvas.palette.get_color((&self).palette_index)?),
                 BlendMode::Normal,
             ).perform(project, console)?;
         }

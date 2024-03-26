@@ -71,4 +71,6 @@ impl ActionManager {
         canvas_history.redo(canvas_state);
         *canvas = canvas_state.clone();
     }
+
+    //todo: add methods to go to next/previous branch
 }
