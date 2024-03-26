@@ -238,7 +238,7 @@ impl Controller {
                 };
 
                 //toggle 1 cursor at center
-                pixylene.project.toggle_cursor_at((UCoord {
+                pixylene.project.toggle_cursor_at(&(UCoord {
                     x: u16::from(dim.x()).checked_div(2).unwrap(),
                     y: u16::from(dim.y()).checked_div(2).unwrap(),
                 }, 0)).unwrap(); //cant fail because x,y less than dim and we know there is at
@@ -307,7 +307,7 @@ impl Controller {
                         };
 
                         //toggle 1 cursor at center
-                        pixylene.project.toggle_cursor_at((UCoord {
+                        pixylene.project.toggle_cursor_at(&(UCoord {
                             x: u16::from(dim.x()).checked_div(2).unwrap(),
                             y: u16::from(dim.y()).checked_div(2).unwrap(),
                         }, 0)).unwrap(); //cant fail because x,y less than dim and we know there is at
@@ -651,6 +651,7 @@ impl Controller {
             },
 
             RunCommandSpecify => {
+                self.console_clear();
                 if let Some(cmd) = self.console_in(":") {
                     self.perform_ui(&RunCommand(cmd));
                 } else {
@@ -713,7 +714,6 @@ impl Controller {
                                         //&format!("failed to perform: {}",
                                         &format!("{}",
                                         //match err {
-                                        //    //over here
                                         //    //print only cause, not traceback
                                         //    mlua::Error::CallbackError{ cause, .. } => cause,
                                         //    mlua::Error::RuntimeError(msg) => msg,
