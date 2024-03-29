@@ -23,8 +23,3 @@ pub fn include(
     Ok(())
 }
 
-pub enum AbsOrRel<A, B> {
-    Abs(A),
-    Rel(B),
-}
-pub use AbsOrRel::*;

@@ -5,6 +5,6 @@ edition = "2021"
 
 [dependencies]
 libpixylene = { path = "../libpixylene" }
-#mlua = "0.9.5"
+mlua = { version = "0.9.5", features = [ "vendored" ] }
 pixylene-actions = { path = "../pixylene-actions" }
 tealr = { version = "0.9.1", features = [ "mlua_lua54", "derive" ] }

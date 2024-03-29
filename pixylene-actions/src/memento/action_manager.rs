@@ -54,8 +54,10 @@ impl ActionManager {
 
     pub fn commit(&mut self, canvas: &Canvas) {
         let Self { ref mut canvas_state, ref mut canvas_history } = self;
-        let transform = TransformCanvas(canvas_state.clone(), canvas.clone());
-        canvas_history.edit(canvas_state, transform);
+        if *canvas != *canvas_state {
+            let transform = TransformCanvas(canvas_state.clone(), canvas.clone());
+            canvas_history.edit(canvas_state, transform);
+        }
     }
 
     pub fn undo(&mut self, canvas: &mut Canvas) {
@@ -69,4 +71,6 @@ impl ActionManager {
         canvas_history.redo(canvas_state);
         *canvas = canvas_state.clone();
     }
+
+    //todo: add methods to go to next/previous branch
 }

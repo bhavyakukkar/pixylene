@@ -147,17 +147,17 @@ impl Project {
     ///
     /// [cloob]: ProjectError::CursorLayerOutOfBounds
     /// [cioob]: ProjectError::CursorCoordOutOfBounds
-    pub fn is_cursor_at(&self, coord: UCoord, layer: u16) -> Result<bool, ProjectError> {
+    pub fn is_cursor_at(&self, cursor: &(UCoord, u16)) -> Result<bool, ProjectError> {
         use ProjectError::{ CursorCoordOutOfBounds, CursorLayerOutOfBounds };
 
-        if layer < self.canvas.num_layers() {
-            if coord.x < self.canvas.dim().x() && coord.y < self.canvas.dim().y() {
-                Ok(self.cursors.get(&(coord, layer)).is_some())
+        if cursor.1 < self.canvas.num_layers() {
+            if cursor.0.x < self.canvas.dim().x() && cursor.0.y < self.canvas.dim().y() {
+                Ok(self.cursors.get(cursor).is_some())
             } else {
-                Err(CursorCoordOutOfBounds(coord, self.canvas.dim()))
+                Err(CursorCoordOutOfBounds(cursor.0.clone(), self.canvas.dim()))
             }
         } else {
-            Err(CursorLayerOutOfBounds(layer, self.canvas.num_layers()))
+            Err(CursorLayerOutOfBounds(cursor.1, self.canvas.num_layers()))
         }
     }
 
@@ -169,7 +169,7 @@ impl Project {
     ///
     /// [cloob]: ProjectError::CursorLayerOutOfBounds
     /// [cioob]: ProjectError::CursorCoordOutOfBounds
-    pub fn toggle_cursor_at(&mut self, cursor: (UCoord, u16)) -> Result<(), ProjectError> {
+    pub fn toggle_cursor_at(&mut self, cursor: &(UCoord, u16)) -> Result<(), ProjectError> {
         use ProjectError::{ CursorCoordOutOfBounds, CursorLayerOutOfBounds };
 
         if cursor.1 < self.canvas.num_layers() {
@@ -178,7 +178,7 @@ impl Project {
                     self.cursors.remove(&cursor).unwrap();
                     self.num_cursors -= 1;
                 } else {
-                    _ = self.cursors.insert(cursor, ());
+                    _ = self.cursors.insert(cursor.clone(), ());
                     self.num_cursors += 1;
                 }
                 Ok(())

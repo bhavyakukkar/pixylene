@@ -120,9 +120,13 @@ impl Controller {
     }
 
     fn console_in(&self, message: &str) -> Option<String> {
-        self.target.borrow_mut().console_in(message,
-                                        self.rev_keymap.get(&KeyFn::DiscardCommand).unwrap(),
-                                        &self.b_console.unwrap())
+        let input = self.target.borrow_mut().console_in(message,
+                                                        self.rev_keymap
+                                                            .get(&KeyFn::DiscardCommand)
+                                                            .unwrap(),
+                                                        &self.b_console.unwrap());
+        self.console_clear();
+        input
     }
 
     fn console_out(&self, message: &str, log_type: &LogType) {
@@ -234,7 +238,7 @@ impl Controller {
                 };
 
                 //toggle 1 cursor at center
-                pixylene.project.toggle_cursor_at((UCoord {
+                pixylene.project.toggle_cursor_at(&(UCoord {
                     x: u16::from(dim.x()).checked_div(2).unwrap(),
                     y: u16::from(dim.y()).checked_div(2).unwrap(),
                 }, 0)).unwrap(); //cant fail because x,y less than dim and we know there is at
@@ -303,7 +307,7 @@ impl Controller {
                         };
 
                         //toggle 1 cursor at center
-                        pixylene.project.toggle_cursor_at((UCoord {
+                        pixylene.project.toggle_cursor_at(&(UCoord {
                             x: u16::from(dim.x()).checked_div(2).unwrap(),
                             y: u16::from(dim.y()).checked_div(2).unwrap(),
                         }, 0)).unwrap(); //cant fail because x,y less than dim and we know there is at
@@ -646,8 +650,8 @@ impl Controller {
                 native_action_manager.redo(&mut pixylene.borrow_mut().project.canvas);
             },
 
-            //Command -> Recursive, translates string and calls this fn
             RunCommandSpecify => {
+                self.console_clear();
                 if let Some(cmd) = self.console_in(":") {
                     self.perform_ui(&RunCommand(cmd));
                 } else {
@@ -702,14 +706,14 @@ impl Controller {
                             match lua_action_manager.invoke(&action_name, pixylene.clone(),
                                                             Rc::new(self_clone)) {
                                 Ok(()) => {
-                                    native_action_manager.commit(&pixylene.borrow().project.canvas);
+                                    _ = native_action_manager
+                                        .commit(&pixylene.borrow().project.canvas);
                                 },
                                 Err(err) => {
                                     target.borrow_mut().console_out(
                                         //&format!("failed to perform: {}",
                                         &format!("{}",
                                         //match err {
-                                        //    //over here
                                         //    //print only cause, not traceback
                                         //    mlua::Error::CallbackError{ cause, .. } => cause,
                                         //    mlua::Error::RuntimeError(msg) => msg,
@@ -726,12 +730,16 @@ impl Controller {
                             }
                         },
                         ActionLocation::Native(action) => {
-                            match native_action_manager.perform(
+                            let performed = native_action_manager.perform(
                                 &mut pixylene.borrow_mut().project,
                                 &self_clone,
                                 action.clone()
-                            ) {
-                                Ok(()) => (),
+                            );
+                            match performed {
+                                Ok(()) => {
+                                    _ = native_action_manager
+                                        .commit(&pixylene.borrow().project.canvas);
+                                },
                                 Err(err) => {
                                     target.borrow_mut().console_out(
                                         //&format!("failed to perform: {}", err.to_string()),

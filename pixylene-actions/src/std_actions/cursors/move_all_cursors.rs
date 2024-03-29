@@ -4,8 +4,8 @@ use libpixylene::{
     types::{ Coord, UCoord },
     project::{ Project },
 };
-use std::rc::Rc;
-use std::cell::RefCell;
+//use std::rc::Rc;
+//use std::cell::RefCell;
 use std::collections::HashMap;
 
 
@@ -39,7 +39,7 @@ impl memento::Action for MoveAllCursors {
         }
         _ = project.clear_cursors();
         for cursor in new_cursors {
-            project.toggle_cursor_at(cursor.0)?;
+            project.toggle_cursor_at(&cursor.0)?;
         }
         Ok(())
     }

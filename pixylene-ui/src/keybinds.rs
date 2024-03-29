@@ -137,6 +137,15 @@ pub fn get_keybinds() -> (KeyMap, ReverseKeyMap) {
         ( Key::new(KeyCode::Char('l'), KeyModifiers::empty()),
             vec![UiFn::RunAction(String::from("cursors_right"))] ),
 
+        ( Key::new(KeyCode::Char('h'), KeyModifiers::CONTROL),
+            vec![UiFn::RunAction(String::from("dup_cursors_left"))] ),
+        ( Key::new(KeyCode::Char('j'), KeyModifiers::CONTROL),
+            vec![UiFn::RunAction(String::from("dup_cursors_down"))] ),
+        ( Key::new(KeyCode::Char('k'), KeyModifiers::CONTROL),
+            vec![UiFn::RunAction(String::from("dup_cursors_up"))] ),
+        ( Key::new(KeyCode::Char('l'), KeyModifiers::CONTROL),
+            vec![UiFn::RunAction(String::from("dup_cursors_right"))] ),
+
         ( Key::new(KeyCode::Char('1'), KeyModifiers::empty()),
             vec![UiFn::RunAction(String::from("pencil1"))] ),
         ( Key::new(KeyCode::Char('2'), KeyModifiers::empty()),
@@ -157,6 +166,11 @@ pub fn get_keybinds() -> (KeyMap, ReverseKeyMap) {
             vec![UiFn::RunAction(String::from("pencil9"))] ),
         ( Key::new(KeyCode::Char('0'), KeyModifiers::empty()),
             vec![UiFn::RunAction(String::from("pencil10"))] ),
+
+        ( Key::new(KeyCode::Char('u'), KeyModifiers::empty()),
+            vec![UiFn::Undo] ),
+        ( Key::new(KeyCode::Char('r'), KeyModifiers::CONTROL),
+            vec![UiFn::Redo] ),
 
         ( Key::new(KeyCode::Char('i'), KeyModifiers::empty()),
             vec![UiFn::RunAction(String::from("zoomin"))] ),
