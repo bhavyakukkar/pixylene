@@ -1,40 +1,47 @@
 #+title: Pixylene
-#+date: <2024-02-02 Fri>
 
 An extensible pixel art editor.
 
 ** Notice
-*This application is still in very early stages, lacks basic features, and is generally very not-fun to use.*
+*This application is still in very early stages, lacks basic features, lacks a manual, and is generally very not-fun to use.* Please refer to this [[./libpixylene/src/notes.org][roadmap of sorts]].
 
-[[./src/libpixylene/src/notes.org][a roadmap of sorts]]
 
-** Build
-_Dependencies:_ Cargo
+** Build (w/ Cargo)
 
-Clone the last working commit (i forgot to split into stable/unstable branches)
-#+begin_src sh
-git clone https://github.com/bhavyakukkar/pixylene.git
-cd pixylene
-git checkout a0dbf79
-#+end_src
++ Clone
+  #+begin_src sh
+  git clone https://github.com/bhavyakukkar/pixylene.git
+  cd pixylene
+  #+end_src
 
-Then enter src and build
-#+begin_src sh
-cd src
-cargo build
-#+end_src
-The executable will be built to *src/target/debug/pixylenetui*
++ Build TUI (runs in the terminal)
+  #+begin_src sh
+  cargo build \
+      -p pixylene-ui \
+      -F crossterm \
+      --release
+  #+end_src
+
++ Build GUI (runs in a standalone window) (*currently unstable*)
+  #+begin_src sh
+  cargo build \
+      -p pixylene-ui \
+      -F minifb \
+      --release
+  #+end_src
+
++ The executable will be built to *src/target/debug/pixylene-ui*
 
 ** Usage
 #+begin_src sh
 # new project
-pixylenetui new
+pixylene-ui new
 
-# open png
-pixylenetui import test.png
+# new project from png
+pixylene-ui import test.png
 
 # open saved project
-pixylenetui open pixylene_project
+pixylene-ui open ~/project.pi
 #+end_src
 
 ** Screenshots:
