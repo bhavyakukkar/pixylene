@@ -30,7 +30,7 @@ An extensible pixel art editor.
       --release
   #+end_src
 
-+ The executable will be built to *src/target/debug/pixylene-ui*
++ The executable will be built to *target/release/pixylene-ui*
 
 ** Usage
 #+begin_src sh
