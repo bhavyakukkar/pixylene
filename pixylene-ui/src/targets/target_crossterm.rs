@@ -120,13 +120,20 @@ impl UserInterface for TargetCrossterm {
     }
 
     fn get_key(&self) -> Option<Key> {
-        use event::{ Event, read };
+        use event::{ Event, KeyEvent, KeyCode, KeyModifiers, KeyEventKind, read };
 
         loop {
             //blocking read
             match read().unwrap() {
                 Event::Key(key_event) => {
-                    return Some(key_event);
+                    if key_event.kind == KeyEventKind::Press {
+                        if let KeyCode::Char(c) = key_event.code {
+                            return Some(KeyEvent::new(KeyCode::Char(c),
+                                        key_event.modifiers.difference(KeyModifiers::SHIFT)));
+                        } else {
+                            return Some(key_event);
+                        }
+                    }
                 },
                 _ => (),
             }
@@ -263,7 +270,7 @@ impl UserInterface for TargetCrossterm {
             stdout,
             ResetColor,
             MoveTo(boundary.start.y as u16, boundary.start.x as u16),
-            Clear(ClearType::UntilNewLine),
+            //Clear(ClearType::UntilNewLine),
             SetForegroundColor(Color::Rgb{ r: 220, g: 220, b: 220 }),
             Print(&message),
             ResetColor,
@@ -312,7 +319,7 @@ impl UserInterface for TargetCrossterm {
             stdout,
             ResetColor,
             MoveTo(boundary.start.y as u16, boundary.start.x as u16),
-            Clear(ClearType::UntilNewLine),
+            //Clear(ClearType::UntilNewLine),
             SetForegroundColor(match log_type {
                 LogType::Info => Color::Rgb{ r: 240, g: 240, b: 240 },
                 LogType::Error => Color::Rgb{ r: 255, g: 70, b: 70 },
@@ -344,9 +351,11 @@ impl UserInterface for TargetCrossterm {
                     stdout,
                     Print(' '),
                 ).unwrap();
+                /*
                 if j < boundary.size.y() - 1 {
                     queue!(stdout, MoveRight(1)).unwrap();
                 }
+                */
             }
             if i < boundary.size.x() - 1 {
                 queue!(stdout, MoveTo(boundary.start.y, boundary.start.x + i+1)).unwrap();
