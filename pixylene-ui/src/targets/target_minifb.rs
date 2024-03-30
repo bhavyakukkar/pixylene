@@ -317,7 +317,32 @@ impl UserInterface for TargetMinifb {
     fn draw_paragraph(&mut self, paragraph: Vec<String>) { todo!() }
 
     fn clear(&mut self, boundary: &Rectangle) { 
-        //todo
+        /*
+        let size = self.get_size();
+        let ref mut framebuffer = self.1;
+        let mut text = font5x8::new_renderer(
+            (PIXELFACTOR*size.y()).into(),
+            (PIXELFACTOR*size.x()).into(),
+            0xFFFFFFFF
+        );
+        let out: Option<String>;
+        */
+        let ref mut framebuffer = self.1;
+
+        for i in 0..boundary.size.x() {
+            for j in 0..boundary.size.y() {
+                for s in 0..PIXELFACTOR {
+                    for t in 0..PIXELFACTOR {
+                        let index =
+                            ((boundary.start.x + i) as usize*PIXELFACTOR as usize*WIDTH as usize) +
+                            (s as usize*WIDTH as usize) +
+                            ((boundary.start.y + j) as usize*PIXELFACTOR as usize) +
+                            (t as usize);
+                        framebuffer[index] = 0;
+                    }
+                }
+            }
+        }
     }
 
     fn console_in(&mut self, message: &str, discard_key: &ui::Key,
