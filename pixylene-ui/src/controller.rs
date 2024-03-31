@@ -361,7 +361,7 @@ impl Controller {
     }
 
     fn start(&mut self) {
-        use UiFn::{ PreviewFocusLayer, UpdateStatusline };
+        use UiFn::{ RunKey, PreviewFocusLayer, UpdateStatusline };
         //let mut mode = Mode::Normal;
 
         self.target.borrow_mut().initialize();
@@ -392,13 +392,7 @@ impl Controller {
             if !self.target.borrow_mut().refresh() { break; }
             let key = self.target.borrow().get_key();
             if let Some(key) = key {
-                if let Some(funcs) = self.keymap.get(&key) {
-                    for func in (*funcs).clone() {
-                        self.perform_ui(&func);
-                    }
-                } else {
-                    self.console_out(&format!("unmapped key: {:?}", key), &LogType::Warning);
-                }
+                self.perform_ui(&RunKey(key));
 
                 let current_dim = self.target.borrow().get_size();
                 self.perform_ui(&PreviewFocusLayer);
@@ -650,6 +644,16 @@ impl Controller {
                 native_action_manager.redo(&mut pixylene.borrow_mut().project.canvas);
             },
 
+            RunKey(key) => {
+                if let Some(funcs) = self.keymap.get(&key) {
+                    for func in (*funcs).clone() {
+                        self.perform_ui(&func);
+                    }
+                } else {
+                    self.console_out(&format!("unmapped key: {:?}", key), &LogType::Warning);
+                }
+            },
+
             RunCommandSpecify => {
                 self.console_clear();
                 if let Some(cmd) = self.console_in(":") {
@@ -657,7 +661,7 @@ impl Controller {
                 } else {
                     self.console_clear();
                 }
-            }
+            },
             RunCommand(command) => {
                 let mut func: Option<UiFn> = None;
                 if let Some(mapped_func) = self.cmd_map.get(command) {

@@ -23,6 +23,8 @@ pub enum UiFn {
     Undo,
     Redo,
 
+    RunKey(Key),
+
     RunCommand(String),
     RunCommandSpecify,
 
