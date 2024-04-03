@@ -1,3 +1,5 @@
+use super::UCoord;
+
 use std::fmt;
 
 /// A `P`ositive `Coord`inate type composed of two positive (>= 1) 16-bit unsigned integers.
@@ -56,5 +58,20 @@ impl fmt::Display for PCoord {
 impl From<(usize, usize)> for PCoord {
     fn from(item: (usize, usize)) -> PCoord {
         PCoord{ x: u16::try_from(item.0).unwrap(), y: u16::try_from(item.1).unwrap() }
+    }
+}
+
+impl TryFrom<UCoord> for PCoord {
+    type Error = String;
+    fn try_from(item: UCoord) -> Result<PCoord, String> {
+        if item.x == 0 {
+            Err(String::from("Cannot convert to PCoord since x of UCoord found to be 0"))
+        }
+        else if item.y == 0 {
+            Err(String::from("Cannot convert to PCoord since y of UCoord found to be 0"))
+        }
+        else {
+            Ok(PCoord::new(item.x, item.y).unwrap()) //wont fail
+        }
     }
 }

@@ -40,17 +40,11 @@ pub trait UserInterface {
     fn clear_all(&mut self);
 }
 
-//leaving this here
-//Cursors similar to helix where clone_cursor_left clones
-//the leftmost cursor/s, and vice versa wrt up, down & right
-
-
-/// A Real Key on a keyboard that can be mapped to execute a [`KeyFn`](KeyFn).
+/// A Real Key on a keyboard that can be mapped to execute a [`UiFn`](crate::keybinds::UiFn) or
+/// [`ReqUiFn`](crate::keybinds::ReqUiFn).
 ///
 /// `Note:` This was made primarily with compatibility to [`crossterm`](crossterm) in mind and
-/// hence is simply a type alias to crossterm's [`KeyEvent`](crossterm::event::KeyEvent). After
-/// also implementing a target to [`minibf`](minifb) and having to use its key system, I went ahead
-/// and decided to continue using crossterm's keys.
+/// hence is simply a type alias to crossterm's [`KeyEvent`](crossterm::event::KeyEvent).
 ///
 /// Other target implementations require manual association.
 pub type Key = crossterm::event::KeyEvent;

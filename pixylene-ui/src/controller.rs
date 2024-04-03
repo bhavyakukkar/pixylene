@@ -1,6 +1,7 @@
 use crate::{
-    ui::{ UserInterface, Mode, Rectangle, Statusline },
-    keybinds::{ KeyMap, ReverseKeyMap, KeyFn, UiFn, get_keybinds },
+    ui::{ UserInterface, Mode, Rectangle, Statusline, Key },
+    keybinds::{ KeyMap, ReqUiFnMap, UiFn, get_keybinds },
+    config::{ Config, generate_config },
     actions::{ ActionLocation, add_my_native_actions },
 };
 
@@ -9,6 +10,7 @@ use libpixylene::{
     project::{ OPixel, Layer, Palette },
     types::{ UCoord, PCoord, Coord, Pixel },
 };
+use crossterm::event;
 use pixylene_actions::{ memento::{ Action, ActionManager }, Console, LogType };
 use pixylene_actions_lua::LuaActionManager;
 use std::collections::HashMap;
@@ -55,13 +57,13 @@ pub struct ConsoleCell {
 
 impl ConsoleCell {
     pub fn get_console<'a>(&'a self, target: Rc<RefCell<dyn Target + 'static>>,
-                           rev_keymap: &ReverseKeyMap)
+                           rev_keymap: &ReqUiFnMap)
         -> Console
     {
         Console {
             cmdin: Box::new(|message: String| -> Option<String> {
                     target.borrow().console_in(&message,
-                                               &rev_keymap.get(&KeyFn::DiscardCommand)
+                                               &rev_keymap.get(&ReqUiFn::DiscardCommand)
                                                .unwrap().clone(),
                                                &self.b_console.unwrap())
             }),
@@ -87,7 +89,8 @@ pub struct Controller {
     actions_loader: fn(&mut ActionManager) -> (),
 
     keymap: KeyMap,
-    rev_keymap: ReverseKeyMap,
+    rev_keymap: ReqUiFnMap,
+    every_frame: Vec<UiFn>,
     cmd_map: CommandMap,
 
     //Window boundaries
@@ -121,9 +124,7 @@ impl Controller {
 
     fn console_in(&self, message: &str) -> Option<String> {
         let input = self.target.borrow_mut().console_in(message,
-                                                        self.rev_keymap
-                                                            .get(&KeyFn::DiscardCommand)
-                                                            .unwrap(),
+                                                        &self.rev_keymap.discard_command,
                                                         &self.b_console.unwrap());
         self.console_clear();
         input
@@ -139,22 +140,89 @@ impl Controller {
         self.target.borrow_mut().clear(&self.b_console.unwrap());
     }
 
-    //pub fn new(target: Rc<RefCell<T>>) -> Self {
-    pub fn new(target: Rc<RefCell<dyn UserInterface>>) -> Self {
+    pub fn new(target: Rc<RefCell<dyn UserInterface>>) -> Result<Self, String> {
         use UiFn::*;
+        use event::{ KeyModifiers };
+        use colored::Colorize;
+        let mut is_default = false;
 
-        //Go parse TOML config and get pixylene defaults
-        let defaults = get_pixylene_defaults();
+        let config: Config = (match generate_config() {
+            Some(c) => c,
+            None => {
+                is_default = true;
+                Ok(Default::default())
+            }
+        }).map_err(|err| {
+            return err.to_string();
+        })?;
 
-        //Go parse TOML config, get keybinds, go deserialize them into key-map and reverse key-map
-        let ( keymap, rev_keymap ): (KeyMap, ReverseKeyMap) = get_keybinds();
+        let defaults = PixyleneDefaults {
+            dim: UCoord{
+                x: config.defaults.dimensions.x,
+                y: config.defaults.dimensions.y,
+            }.try_into().map_err(|err| format!(
+                    "{}{}{}",
+                    "Config File Error: ".red().bold(),
+                    "defaults.dimensions\n".yellow().italic(),
+                    err,
+            ))?,
+            repeat: UCoord{
+                x: config.defaults.repeat.x,
+                y: config.defaults.repeat.y,
+            }.try_into().map_err(|err| format!(
+                    "{}{}{}",
+                    "Config File Error: ".red().bold(),
+                    "defaults.repeat\n".italic(),
+                    err,
+            ))?,
+            palette: Palette::from(&config.defaults.palette.iter()
+                                   .map(|entry| (entry.id, entry.c.as_str()))
+                                   .collect::<Vec<(u8, &str)>>()).map_err(|err| format!(
+                                           "{}{}{}",
+                                           "Config File Error: ".red().bold(),
+                                           "defaults.palette\n".italic(),
+                                           err,
+                                    ))?,
+        };
+
+        let mut keymap: KeyMap = HashMap::new();
+        if !config.new_keys {
+            _ = <Config as Default>::default().keys.into_iter().map(|entry| {
+                keymap.insert(Key::new(entry.k.c, entry.k.m.unwrap_or(KeyModifiers::empty())),
+                              entry.f);
+            }).collect::<Vec<()>>();
+        }
+
+        if !is_default {
+            config.keys.into_iter().map(|entry| {
+                keymap.insert(Key::new(entry.k.c, entry.k.m.unwrap_or(KeyModifiers::empty())),
+                              entry.f);
+            }).collect::<Vec<()>>();
+        }
+
+        let rev_keymap = ReqUiFnMap {
+            start_command: Key::new(
+                config.required_keys.start_command.c,
+                config.required_keys.start_command.m.unwrap_or(KeyModifiers::empty())
+            ),
+            discard_command: Key::new(
+                config.required_keys.discard_command.c,
+                config.required_keys.discard_command.m.unwrap_or(KeyModifiers::empty())
+            ),
+            force_quit: Key::new(
+                config.required_keys.force_quit.c,
+                config.required_keys.force_quit.m.unwrap_or(KeyModifiers::empty())
+            ),
+        };
+
+        let every_frame = config.every_frame;
 
         let actions_loader = |_action_manager: &mut ActionManager| {
             ()
         };
         //let target_clone: Rc<RefCell<dyn Target>> = Rc::clone(&target);
 
-        Self {
+        Ok(Self {
             target,
 
             sessions: Vec::new(),
@@ -164,6 +232,9 @@ impl Controller {
 
             actions_loader,
 
+            keymap,
+            rev_keymap,
+            every_frame,
             cmd_map: CommandMap::from([
                 (String::from("new"), New),
                 (String::from("open"), Open),
@@ -181,8 +252,6 @@ impl Controller {
                 (String::from("showproject"), PreviewProject),
                 (String::from("showstatus"), UpdateStatusline),
             ]),
-            keymap,
-            rev_keymap,
 
             b_console: None,
             b_camera: None,
@@ -190,7 +259,7 @@ impl Controller {
             padding: PADDING,
 
             started: true,
-        }
+        })
     }
 
     pub fn new_session(&mut self, start_type: &Option<StartType>) {
@@ -361,7 +430,7 @@ impl Controller {
     }
 
     fn start(&mut self) {
-        use UiFn::{ RunKey, PreviewFocusLayer, UpdateStatusline };
+        use UiFn::{ RunKey, ForceQuit, RunCommandSpecify };
         //let mut mode = Mode::Normal;
 
         self.target.borrow_mut().initialize();
@@ -383,20 +452,26 @@ impl Controller {
             size: current_dim,
         });
 
-        self.perform_ui(&PreviewFocusLayer);
-        self.perform_ui(&UpdateStatusline);
+        for func in self.every_frame.clone() {
+            self.perform_ui(&func);
+        }
+        //self.perform_ui(&PreviewFocusLayer);
+        //self.perform_ui(&UpdateStatusline);
 
         loop {
             //sleep(Duration::from_millis(1));
 
-            if !self.target.borrow_mut().refresh() { break; }
+            if !self.target.borrow_mut().refresh() {
+                self.perform_ui(&ForceQuit);
+            }
             let key = self.target.borrow().get_key();
             if let Some(key) = key {
                 self.perform_ui(&RunKey(key));
 
                 let current_dim = self.target.borrow().get_size();
-                self.perform_ui(&PreviewFocusLayer);
-                self.perform_ui(&UpdateStatusline);
+                for func in self.every_frame.clone() {
+                    self.perform_ui(&func);
+                }
             }
             /*
             match &mode {
@@ -466,16 +541,8 @@ impl Controller {
             Quit => {
                 if self.sessions[self.sel_session as usize - 1].modified {
                     self.console_out(
-                        &format!(
-                            "project has been modified since last change, \
-                            force quit ({:?}) to discard modifications",
-                            self.rev_keymap.get(&KeyFn::ForceQuit), //todo: do reverse lookup on
-                                                                    //this instead of using special
-                                                                    //rev_keymap reversed for
-                                                                    //operations that require
-                                                                    //reverse mapping like
-                                                                    //discard-key
-                        ),
+                        "project has been modified since last change, force quit (:q!) to discard \
+                        modifications",
                         &LogType::Error,
                     );
                 } else {
@@ -645,12 +712,23 @@ impl Controller {
             },
 
             RunKey(key) => {
-                if let Some(funcs) = self.keymap.get(&key) {
-                    for func in (*funcs).clone() {
-                        self.perform_ui(&func);
+                //special required keys
+                if *key == self.rev_keymap.force_quit {
+                    self.perform_ui(&ForceQuit);
+                }
+                else if *key == self.rev_keymap.start_command {
+                    self.perform_ui(&RunCommandSpecify);
+                }
+
+                //other keys
+                else {
+                    if let Some(funcs) = self.keymap.get(&key) {
+                        for func in (*funcs).clone() {
+                            self.perform_ui(&func);
+                        }
+                    } else {
+                        self.console_out(&format!("unmapped key: {:?}", key), &LogType::Warning);
                     }
-                } else {
-                    self.console_out(&format!("unmapped key: {:?}", key), &LogType::Warning);
                 }
             },
 
@@ -683,7 +761,7 @@ impl Controller {
             },
             RunAction(action_name) => {
                 //use pixylene_actions_lua::mlua;
-                let mut self_clone = Controller::new(self.target.clone());
+                let mut self_clone = Controller::new(self.target.clone()).unwrap();
                 self_clone.set_boundaries((self.b_camera.unwrap(),
                                            self.b_statusline.unwrap(),
                                            self.b_console.unwrap()));
@@ -893,31 +971,6 @@ impl Controller {
             size: PCoord::new(1, window.y() - 2*self.padding as u16).unwrap()
         }
         )
-    }
-}
-
-fn get_pixylene_defaults(/*fallback: PixyleneFallback*/) -> PixyleneDefaults {
-    PixyleneDefaults {
-        dim: PCoord::new(64, 64).unwrap(),
-        palette: Palette::from(&[
-            (1 , "#140c1c"),
-            (2 , "#442434"),
-            (3 , "#30346d"),
-            (4 , "#4e4a4e"),
-            (5 , "#854c30"),
-            (6 , "#346524"),
-            (7 , "#d04648"),
-            (8 , "#757161"),
-            (9 , "#597dce"),
-            (10, "#d27d2c"),
-            (11, "#8595a1"),
-            (12, "#6daa2c"),
-            (13, "#d2aa99"),
-            (14, "#6dc2ca"),
-            (15, "#dad45e"),
-            (16, "#deeed6"),
-        ]).unwrap(),
-        repeat: PCoord::new(1, 2).unwrap(),
     }
 }
 

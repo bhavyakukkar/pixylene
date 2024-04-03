@@ -4,6 +4,8 @@ mod keybinds;
 
 mod ui;
 
+mod config;
+
 mod targets;
 
 pub mod actions;
@@ -31,8 +33,12 @@ fn main() {
     #[cfg(feature = "minifb")]
     let target = targets::TargetMinifb::new();
 
-    let mut pixylene_ui = controller::Controller::new(Rc::new(RefCell::new(target)));
-    let cli = Cli::parse();
+    match controller::Controller::new(Rc::new(RefCell::new(target))) {
+        Ok(mut pixylene_ui) => {
+            let cli = Cli::parse();
 
-    pixylene_ui.new_session(&cli.command);
+            pixylene_ui.new_session(&cli.command);
+        },
+        Err(error) => eprintln!("{}", error)
+    }
 }
