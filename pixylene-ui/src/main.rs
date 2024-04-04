@@ -1,7 +1,5 @@
 //todo: make prelude of all types required to impl UserInterface and Console for a target
 
-mod keybinds;
-
 mod ui;
 
 mod config;

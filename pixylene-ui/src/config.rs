@@ -1,4 +1,4 @@
-use crate::keybinds::UiFn;
+use crate::ui::UiFn;
 
 use crossterm::{ event };
 use serde::{ Deserialize };

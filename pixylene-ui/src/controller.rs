@@ -1,6 +1,5 @@
 use crate::{
-    ui::{ UserInterface, Rectangle, Statusline, Key },
-    keybinds::{ KeyMap, ReqUiFnMap, UiFn },
+    ui::{ UserInterface, Rectangle, Statusline, Key, KeyMap, ReqUiFnMap, UiFn },
     config::{ Config, generate_config },
     actions::{ ActionLocation, add_my_native_actions },
 };
