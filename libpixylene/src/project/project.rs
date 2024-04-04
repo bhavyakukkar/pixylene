@@ -1,7 +1,6 @@
 use crate::{
     types::{ Coord, PCoord, UCoord, Pixel, BlendMode },
     project::{ Layer, OPixel, Canvas, CanvasError },
-    utils::messages::{ PCOORD_NOTFAIL },
 };
 
 use std::collections::HashMap;
@@ -52,9 +51,9 @@ impl Project {
         Project {
             canvas,
             focus: (Coord{x: 0, y: 0}, 0),
-            out_dim: PCoord::new(10, 10).expect(PCOORD_NOTFAIL),
+            out_dim: PCoord::new(10, 10).unwrap(), //shouldn't fail
             out_mul: 1,
-            out_repeat: PCoord::new(1, 2).expect(PCOORD_NOTFAIL),
+            out_repeat: PCoord::new(1, 2).unwrap(), //shouldn't fail
             cursors: HashMap::new(),
             num_cursors: 0,
             sel_cursor: None,

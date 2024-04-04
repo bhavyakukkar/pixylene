@@ -3,13 +3,6 @@ pub mod messages {
         "Cannot parse u32 to usize: pixylene requires at least a 32-bit system";
     pub const U16TOISIZE: &str =
         "Cannot parse u16 to isize: pixylene requires at least a 32-bit system";
-    pub const DIVZERO: &str =
-        "Clearly dividing by 255 not 0";
-    pub const CMPSTMSG: &str =
-        "Since (frac_a + frac_b) is in range (0,255), range of computed composite is guaranteed \
-        to be in range (0,255)";
-    pub const SUM255: &str =
-        "Guaranteed to sum to 255";
     pub const PCOORD_NOTFAIL: &str =
         "This shouldn't fail since PCoord was constructed from non-zero literals";
     pub const EQUIPPEDISINPALETTE: &str =

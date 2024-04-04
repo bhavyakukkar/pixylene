@@ -1,4 +1,4 @@
-use crate::{ Console, ActionError, command, memento };
+use crate::{ Console, ActionError, memento };
 
 use libpixylene::{
     types::{ Coord, UCoord },

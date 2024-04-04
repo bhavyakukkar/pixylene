@@ -1,5 +1,3 @@
-use crate::utils::messages;
-
 use tealr::{
     mlu::{
         mlua::{
@@ -129,7 +127,7 @@ impl TealData for PCoord {
                         boxed_error("Addition of y coordinates of the two PCoord's has overflowed")
                     )))?;
 
-                Ok(PCoord(types::PCoord::new(x,y).expect(messages::PCOORD_NOTFAIL)))
+                Ok(PCoord(types::PCoord::new(x,y).unwrap()))
             });
         }
 

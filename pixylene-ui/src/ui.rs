@@ -1,7 +1,6 @@
-use libpixylene::{ types::{ UCoord, PCoord }, project::{ Project, OPixel } };
-use pixylene_actions::{ memento::ActionManager, LogType };
+use libpixylene::{ types::{ UCoord, PCoord }, project::{ OPixel } };
+use pixylene_actions::{ LogType };
 
-use std::fmt;
 
 /// Trait needed for any User Interface Target to implement so that it can be controlled by
 /// [`Controller`][c]
@@ -30,8 +29,6 @@ pub trait UserInterface {
     fn draw_paragraph(&mut self, paragraph: Vec<String>);
 
     fn draw_statusline(&mut self, statusline: &Statusline, boundary: &Rectangle);
-    //fn draw_statusline(&mut self, project: &Project, action_manager: &ActionManager, mode: &Mode,
-    //                   session: &u8, boundary: &Rectangle);
 
     fn console_in(&mut self, message: &str, discard_key: &Key, boundary: &Rectangle) -> Option<String>;
     fn console_out(&mut self, message: &str, log_type: &LogType, boundary: &Rectangle);
@@ -58,26 +55,3 @@ pub struct Rectangle {
 
 /// The Statusline
 pub type Statusline = Vec<colored::ColoredString>;
-
-pub enum Mode {
-    Normal,
-    Ooze,
-    Shape,
-    Layer,
-    Command,
-    Cursors,
-}
-
-impl fmt::Display for Mode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use Mode::*;
-        match self {
-            Normal => write!(f, "{}", "Normal"),
-            Ooze => write!(f, "{}", "Ooze"),
-            Shape => write!(f, "{}", "Shape"),
-            Layer => write!(f, "{}", "Layer"),
-            Command => write!(f, "{}", "Command"),
-            Cursors => write!(f, "{}", "Cursors"),
-        }
-    }
-}

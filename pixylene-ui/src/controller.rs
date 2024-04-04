@@ -1,6 +1,6 @@
 use crate::{
-    ui::{ UserInterface, Mode, Rectangle, Statusline, Key },
-    keybinds::{ KeyMap, ReqUiFnMap, UiFn, get_keybinds },
+    ui::{ UserInterface, Rectangle, Statusline, Key },
+    keybinds::{ KeyMap, ReqUiFnMap, UiFn },
     config::{ Config, generate_config },
     actions::{ ActionLocation, add_my_native_actions },
 };
@@ -11,15 +11,13 @@ use libpixylene::{
     types::{ UCoord, PCoord, Coord, Pixel },
 };
 use crossterm::event;
-use pixylene_actions::{ memento::{ Action, ActionManager }, Console, LogType };
+use pixylene_actions::{ memento::{ ActionManager }, Console, LogType };
 use pixylene_actions_lua::LuaActionManager;
 use std::collections::HashMap;
 use std::process::exit;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::path::Path;
-use std::thread::{ sleep };
-use std::time::Duration;
 use clap::{ Subcommand };
 
 
@@ -43,7 +41,6 @@ pub struct PixyleneSession {
     last_action_name: Option<String>,
     project_file_path: Option<String>,
     modified: bool,
-    //mode: Mode,
 
     action_map: HashMap<String, ActionLocation>,
     native_action_manager: ActionManager,
@@ -84,9 +81,6 @@ pub struct Controller {
     sel_session: u8,
 
     defaults: PixyleneDefaults,
-
-    //console: Console,
-    actions_loader: fn(&mut ActionManager) -> (),
 
     keymap: KeyMap,
     rev_keymap: ReqUiFnMap,
@@ -194,7 +188,7 @@ impl Controller {
         }
 
         if !is_default {
-            config.keys.into_iter().map(|entry| {
+            _ = config.keys.into_iter().map(|entry| {
                 keymap.insert(Key::new(entry.k.c, entry.k.m.unwrap_or(KeyModifiers::empty())),
                               entry.f);
             }).collect::<Vec<()>>();
@@ -217,11 +211,6 @@ impl Controller {
 
         let every_frame = config.every_frame;
 
-        let actions_loader = |_action_manager: &mut ActionManager| {
-            ()
-        };
-        //let target_clone: Rc<RefCell<dyn Target>> = Rc::clone(&target);
-
         Ok(Self {
             target,
 
@@ -229,8 +218,6 @@ impl Controller {
             sel_session: 0,
 
             defaults,
-
-            actions_loader,
 
             keymap,
             rev_keymap,
@@ -272,16 +259,13 @@ impl Controller {
             }
         }
 
-        //Load the UI-wide actions into the action_manager for this new session
-        //let mut action_manager = ActionManager::new(HashMap::new());
         let native_action_manager;
-        //(self.actions_loader)(&mut action_manager);
 
         let lua_action_manager = LuaActionManager::setup(
             Path::new("/home/bhavya/.config/pixylene.lua")
         ).unwrap();
         let mut action_map: HashMap<String, ActionLocation> = HashMap::new();
-        lua_action_manager.list_actions().iter().map(|action_name| {
+        _ = lua_action_manager.list_actions().iter().map(|action_name| {
             action_map.insert(action_name.clone(), ActionLocation::Lua);
         }).collect::<Vec<()>>();
 
@@ -320,7 +304,6 @@ impl Controller {
                     last_action_name: None,
                     project_file_path: None,
                     modified: false,
-                    //mode: Mode::Normal,
                     action_map,
                     native_action_manager,
                     lua_action_manager,
@@ -340,7 +323,6 @@ impl Controller {
                             last_action_name: None,
                             project_file_path: Some(path.clone()),
                             modified: false,
-                            //mode: Mode::Normal,
                             action_map,
                             native_action_manager,
                             lua_action_manager,
@@ -389,7 +371,6 @@ impl Controller {
                             last_action_name: None,
                             project_file_path: None,
                             modified: false,
-                            //mode: Mode::Normal,
                             action_map,
                             native_action_manager,
                             lua_action_manager,
@@ -430,14 +411,12 @@ impl Controller {
     }
 
     fn start(&mut self) {
-        use UiFn::{ RunKey, ForceQuit, RunCommandSpecify };
-        //let mut mode = Mode::Normal;
+        use UiFn::{ RunKey, ForceQuit };
 
         self.target.borrow_mut().initialize();
 
         let window_size = self.target.borrow().get_size();
 
-        let padding = 0;
         self.set_boundaries(self.compute_boundaries(&window_size));
 
         // case when started from new_session instead of start directly
@@ -455,8 +434,6 @@ impl Controller {
         for func in self.every_frame.clone() {
             self.perform_ui(&func);
         }
-        //self.perform_ui(&PreviewFocusLayer);
-        //self.perform_ui(&UpdateStatusline);
 
         loop {
             //sleep(Duration::from_millis(1));
@@ -468,52 +445,15 @@ impl Controller {
             if let Some(key) = key {
                 self.perform_ui(&RunKey(key));
 
-                let current_dim = self.target.borrow().get_size();
                 for func in self.every_frame.clone() {
                     self.perform_ui(&func);
                 }
             }
-            /*
-            match &mode {
-                Mode::Normal => {
-                    /*
-                    
-                    C-s => emacs_mode = Mode::Shape { Some(last_shape) },
-                    C-S-s => emacs_mode = Mode::Shape { None },
-
-                    */
-                }
-                Mode::Ooze => {
-                }
-                Mode::Shape/*{ shape }*/ => {
-                }
-
-                //Modes that do not use the equipped color
-                Mode::Layer => {
-                    /*
-
-                    n => new layer
-                    d => delete layer
-                    r => rename layer
-                    c => clone layer
-                    - => go to lower layer
-                    + => go to upper layer
-
-                    */
-                }
-                Mode::Command => {
-                }
-                Mode::Cursors => {
-                }
-            }
-            */
         }
     }
 
     fn perform_ui(&mut self, func: &UiFn) {
         use UiFn::*;
-        let ( cb_camera, cb_statusline, cb_console ) =
-            self.compute_boundaries(&self.target.borrow().get_size());
 
         match func {
             //Sessions
@@ -976,7 +916,7 @@ impl Controller {
 
 struct Echo;
 impl pixylene_actions::memento::Action for Echo {
-    fn perform(&mut self, project: &mut libpixylene::project::Project, console: &dyn Console)
+    fn perform(&mut self, _project: &mut libpixylene::project::Project, console: &dyn Console)
     -> pixylene_actions::memento::ActionResult {
         console.cmdout("heyyy :3 :3 :3", &LogType::Error);
         Ok(())

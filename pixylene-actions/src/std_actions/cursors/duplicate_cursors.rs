@@ -1,12 +1,10 @@
-use crate::{ Console, ActionError, command, memento, utils::Direction };
+use crate::{ Console, ActionError, memento, utils::Direction };
 
 use libpixylene::{
     types::{ Coord, UCoord },
     project::{ Project },
 };
-//use std::rc::Rc;
-//use std::cell::RefCell;
-use std::collections::HashMap;
+
 
 pub struct DuplicateCursors {
     direction: Direction,
@@ -41,7 +39,7 @@ impl memento::Action for DuplicateCursors {
                     y: dup_cursor.y.try_into().unwrap(),
                 };
                 if !project.is_cursor_at(&(dup_ucoord, cursor.1))? {
-                    project.toggle_cursor_at(&(dup_ucoord, cursor.1));
+                    project.toggle_cursor_at(&(dup_ucoord, cursor.1))?;
                 }
             }
         }

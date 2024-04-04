@@ -1,5 +1,3 @@
-use crate::utils::messages::{ DIVZERO, CMPSTMSG };
-
 use std::fmt;
 
 
@@ -58,26 +56,33 @@ impl Pixel {
     ///
     /// [pd]: https://dl.acm.org/doi/abs/10.1145/800031.808606
     pub fn darken(&mut self, factor: u8) {
-        self.r = (self.r as u16 * factor as u16).checked_div(255)
-            .expect(DIVZERO).try_into().expect(CMPSTMSG);
-        self.g = (self.g as u16 * factor as u16).checked_div(255)
-            .expect(DIVZERO).try_into().expect(CMPSTMSG);
-        self.b = (self.b as u16 * factor as u16).checked_div(255)
-            .expect(DIVZERO).try_into().expect(CMPSTMSG);
+        self.r = (self.r as u16 * factor as u16)
+            .checked_div(255).unwrap() //Clearly dividing by 255 not 0
+            .try_into().unwrap(); //guaranteed to be in range (0,255)
+        self.g = (self.g as u16 * factor as u16)
+            .checked_div(255).unwrap() //Clearly dividing by 255 not 0
+            .try_into().unwrap(); //guaranteed to be in range (0,255)
+        self.b = (self.b as u16 * factor as u16)
+            .checked_div(255).unwrap() //Clearly dividing by 255 not 0
+            .try_into().unwrap(); //guaranteed to be in range (0,255)
     }
 
     /// Dissolve operation as descibed by [`Porter & Duff`][pd]
     ///
     /// [pd]: https://dl.acm.org/doi/abs/10.1145/800031.808606
     pub fn dissolve(&mut self, factor: u8) {
-        self.r = (self.r as u16 * factor as u16).checked_div(255)
-            .expect(DIVZERO).try_into().expect(CMPSTMSG);
-        self.g = (self.g as u16 * factor as u16).checked_div(255)
-            .expect(DIVZERO).try_into().expect(CMPSTMSG);
-        self.b = (self.b as u16 * factor as u16).checked_div(255)
-            .expect(DIVZERO).try_into().expect(CMPSTMSG);
-        self.a = (self.a as u16 * factor as u16).checked_div(255)
-            .expect(DIVZERO).try_into().expect(CMPSTMSG);
+        self.r = (self.r as u16 * factor as u16)
+            .checked_div(255).unwrap() //Clearly dividing by 255 not 0
+            .try_into().unwrap(); //guaranteed to be in range (0,255)
+        self.g = (self.g as u16 * factor as u16)
+            .checked_div(255).unwrap() //Clearly dividing by 255 not 0
+            .try_into().unwrap(); //guaranteed to be in range (0,255)
+        self.b = (self.b as u16 * factor as u16)
+            .checked_div(255).unwrap() //Clearly dividing by 255 not 0
+            .try_into().unwrap(); //guaranteed to be in range (0,255)
+        self.a = (self.a as u16 * factor as u16)
+            .checked_div(255).unwrap() //Clearly dividing by 255 not 0
+            .try_into().unwrap(); //guaranteed to be in range (0,255)
     }
 }
 

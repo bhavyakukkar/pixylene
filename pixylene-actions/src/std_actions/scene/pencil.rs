@@ -2,11 +2,9 @@ use crate::{ Console, command, memento };
 use super::Draw;
 
 use libpixylene::{
-    types::{ UCoord, Pixel, BlendMode },
+    types::{ UCoord, BlendMode },
     project::{ Project },
 };
-use std::rc::Rc;
-use std::cell::RefCell;
 
 
 /// An action that extends Draw to dynamically use the project's color at a specificed

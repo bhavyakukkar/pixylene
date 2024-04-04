@@ -1,10 +1,7 @@
-use crate::{
-    ui::{ Key },
-    keybinds::{ ReqUiFnMap, UiFn },
-};
+use crate::keybinds::UiFn;
 
 use crossterm::{ event };
-use serde::{ Serialize, Serializer, Deserialize };
+use serde::{ Deserialize };
 use toml::{ from_str, de::Error };
 
 

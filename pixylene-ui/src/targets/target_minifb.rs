@@ -1,4 +1,4 @@
-use crate::ui::{ UserInterface, self, Rectangle, Mode, Statusline };
+use crate::ui::{ UserInterface, self, Rectangle, Statusline };
 
 use libpixylene::{ types::{ UCoord, PCoord }, project::{ Project, OPixel } };
 use pixylene_actions::{ memento::ActionManager, LogType };

@@ -1,7 +1,7 @@
-use crate::ui::{ UserInterface, Key, Rectangle, Mode, Statusline };
+use crate::ui::{ UserInterface, Key, Rectangle, Statusline };
 
-use libpixylene::{ types::{ UCoord, PCoord }, project::{ Project, OPixel } };
-use pixylene_actions::{ memento::ActionManager, LogType };
+use libpixylene::{ types::{ PCoord }, project::{ OPixel } };
+use pixylene_actions::{ LogType };
 use crossterm::{ event, cursor, terminal, style, queue, execute };
 use std::io::{ Write };
 
@@ -146,9 +146,8 @@ impl UserInterface for TargetCrossterm {
     }
 
     fn draw_statusline(&mut self, statusline: &Statusline, boundary: &Rectangle) {
-        use terminal::{ size, Clear, ClearType };
         use cursor::{ MoveTo };
-        use style::{ Print, SetForegroundColor, SetBackgroundColor, Color, Color::*, ResetColor,
+        use style::{ Print, SetForegroundColor, SetBackgroundColor, ResetColor,
                      SetAttribute, Attribute };
 
         let mut stdout = std::io::stdout();
@@ -166,7 +165,7 @@ impl UserInterface for TargetCrossterm {
                 Print(colored_string),
                 SetAttribute(Attribute::Reset),
                 ResetColor,
-            );
+            ).unwrap();
         }
         _ = stdout.flush();
     }
@@ -310,7 +309,6 @@ impl UserInterface for TargetCrossterm {
     }
 
     fn console_out(&mut self, message: &str, log_type: &LogType, boundary: &Rectangle) {
-        use terminal::{ Clear, ClearType };
         use cursor::{ MoveTo };
         use style::{ SetForegroundColor, Color, Print, ResetColor };
         let mut stdout = std::io::stdout();
@@ -335,8 +333,7 @@ impl UserInterface for TargetCrossterm {
     }
 
     fn clear(&mut self, boundary: &Rectangle) {
-        use terminal::{ Clear, ClearType };
-        use cursor::{ MoveTo, MoveRight };
+        use cursor::{ MoveTo };
         use style::{ Print };
         let mut stdout = std::io::stdout();
 
@@ -344,18 +341,13 @@ impl UserInterface for TargetCrossterm {
             stdout,
             MoveTo(boundary.start.y as u16, boundary.start.x as u16),
             //todo: dont clear past console boundary
-        );
+        ).unwrap();
         for i in 0..boundary.size.x() {
-            for j in 0..boundary.size.y() {
+            for _ in 0..boundary.size.y() {
                 queue!(
                     stdout,
                     Print(' '),
                 ).unwrap();
-                /*
-                if j < boundary.size.y() - 1 {
-                    queue!(stdout, MoveRight(1)).unwrap();
-                }
-                */
             }
             if i < boundary.size.x() - 1 {
                 queue!(stdout, MoveTo(boundary.start.y, boundary.start.x + i+1)).unwrap();
