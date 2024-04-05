@@ -60,6 +60,7 @@ pub fn generate_config() -> Option<Result<Config, Error>> {
     keys = [
         # { k = { c = { Char = ':' }, m = "CONTROL" }, f = "RunCommandSpecify" },
         { k = { c = { Char = 'x' }, m = "ALT" }, f = [ "RunCommandSpecify" ] },
+        { k = { c = { Char = ';' } }, f = [ "RunLastAction" ] },
     ]
     every_frame = [ "PreviewFocusLayer", "UpdateStatusline" ]
 

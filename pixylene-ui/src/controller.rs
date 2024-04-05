@@ -718,59 +718,69 @@ impl Controller {
                     ref mut action_map,
                     ref mut native_action_manager,
                     ref mut lua_action_manager,
+                    ref mut last_action_name,
                     ..
                 } = &mut sessions[*sel_session as usize - 1];
 
                 match action_map.get(&action_name.clone()) {
-                    Some(action_location) => match action_location {
-                        ActionLocation::Lua => {
-                            match lua_action_manager.invoke(&action_name, pixylene.clone(),
-                                                            Rc::new(self_clone)) {
-                                Ok(()) => {
-                                    _ = native_action_manager
-                                        .commit(&pixylene.borrow().project.canvas);
-                                },
-                                Err(err) => {
-                                    target.borrow_mut().console_out(
-                                        //&format!("failed to perform: {}",
-                                        &format!("{}",
-                                        //match err {
-                                        //    //print only cause, not traceback
-                                        //    mlua::Error::CallbackError{ cause, .. } => cause,
-                                        //    mlua::Error::RuntimeError(msg) => msg,
-                                        //    otherwise => otherwise,
-                                        //}),
+                    Some(action_location) => {
+                        //over here
+                        match action_location {
+                            ActionLocation::Lua => {
+                                match lua_action_manager.invoke(&action_name, pixylene.clone(),
+                                                                Rc::new(self_clone)) {
+                                    Ok(()) => {
+                                        if native_action_manager
+                                            .commit(&pixylene.borrow().project.canvas)
+                                        {
+                                            *last_action_name = Some(action_name.clone());
+                                        }
+                                    },
+                                    Err(err) => {
+                                        target.borrow_mut().console_out(
+                                            //&format!("failed to perform: {}",
+                                            &format!("{}",
+                                            //match err {
+                                            //    //print only cause, not traceback
+                                            //    mlua::Error::CallbackError{ cause, .. } => cause,
+                                            //    mlua::Error::RuntimeError(msg) => msg,
+                                            //    otherwise => otherwise,
+                                            //}),
 
-                                        //todo: better reporting
-                                        err.to_string().lines().map(|s| s.to_string()
-                                        .replace("\t", " ")).collect::<Vec<String>>().join(", ")),
-                                        &LogType::Error,
-                                        &b_console.unwrap()
-                                    );
+                                            //todo: better reporting
+                                            err.to_string().lines().map(|s| s.to_string()
+                                            .replace("\t", " ")).collect::<Vec<String>>().join(", ")),
+                                            &LogType::Error,
+                                            &b_console.unwrap()
+                                        );
+                                    }
                                 }
-                            }
-                        },
-                        ActionLocation::Native(action) => {
-                            let performed = native_action_manager.perform(
-                                &mut pixylene.borrow_mut().project,
-                                &self_clone,
-                                action.clone()
-                            );
-                            match performed {
-                                Ok(()) => {
-                                    _ = native_action_manager
-                                        .commit(&pixylene.borrow().project.canvas);
-                                },
-                                Err(err) => {
-                                    target.borrow_mut().console_out(
-                                        //&format!("failed to perform: {}", err.to_string()),
-                                        &format!("{}", err.to_string()),
-                                        &LogType::Error,
-                                        &b_console.unwrap()
-                                    );
+                            },
+                            ActionLocation::Native(action) => {
+                                let performed = native_action_manager.perform(
+                                    &mut pixylene.borrow_mut().project,
+                                    &self_clone,
+                                    action.clone()
+                                );
+                                match performed {
+                                    Ok(()) => {
+                                        if native_action_manager
+                                            .commit(&pixylene.borrow().project.canvas)
+                                        {
+                                            *last_action_name = Some(action_name.clone());
+                                        }
+                                    },
+                                    Err(err) => {
+                                        target.borrow_mut().console_out(
+                                            //&format!("failed to perform: {}", err.to_string()),
+                                            &format!("{}", err.to_string()),
+                                            &LogType::Error,
+                                            &b_console.unwrap()
+                                        );
+                                    }
                                 }
-                            }
-                        },
+                            },
+                        }
                     },
                     None => {
                         target.borrow_mut().console_out(
@@ -800,7 +810,13 @@ impl Controller {
                 */
             },
             RunLastAction => {
-                todo!()
+                let session_index = self.sel_session as usize - 1;
+                if let Some(action_name) = &self.sessions[session_index].last_action_name {
+                    self.perform_ui(&RunAction(action_name.clone()));
+                }
+                else {
+                    self.console_out("no previous action to repeat", &LogType::Warning);
+                }
             },
 
             PreviewFocusLayer => {
