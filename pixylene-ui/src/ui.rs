@@ -2,6 +2,7 @@ use libpixylene::{ types::{ UCoord, PCoord }, project::{ OPixel } };
 use pixylene_actions::{ LogType };
 use serde::{ Deserialize };
 use std::collections::HashMap;
+use crossterm::event::{ KeyCode, KeyEvent, KeyModifiers };
 
 
 /// Trait needed for any User Interface Target to implement so that it can be controlled by
@@ -46,8 +47,38 @@ pub trait UserInterface {
 /// hence is simply a type alias to crossterm's [`KeyEvent`](crossterm::event::KeyEvent).
 ///
 /// Other target implementations require manual association.
-pub type Key = crossterm::event::KeyEvent;
+//pub type Key = crossterm::event::KeyEvent;
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
+pub struct Key {
+    #[serde(rename = "c")]
+    code: KeyCode,
+    #[serde(rename = "m")]
+    modifiers: Option<KeyModifiers>,
+}
 
+impl Key {
+    pub fn new(code: KeyCode, modifiers: Option<KeyModifiers>) -> Key {
+        let key_event = KeyEvent::new(code, modifiers.unwrap_or(KeyModifiers::empty()));
+        Key {
+            code: key_event.code,
+            modifiers: Some(key_event.modifiers),
+        }
+    }
+
+    pub fn code(&self) -> KeyCode {
+        self.code.clone()
+    }
+
+    pub fn modifiers(&self) -> KeyModifiers {
+        self.modifiers.unwrap_or(KeyModifiers::empty()).clone()
+    }
+}
+
+impl From<KeyEvent> for Key {
+    fn from(item: KeyEvent) -> Key {
+        Key { code: item.code, modifiers: Some(item.modifiers) }
+    }
+}
 
 #[derive(Copy, Clone)]
 pub struct Rectangle {

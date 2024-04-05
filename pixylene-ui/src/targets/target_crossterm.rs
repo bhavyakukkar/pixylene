@@ -120,7 +120,7 @@ impl UserInterface for TargetCrossterm {
     }
 
     fn get_key(&self) -> Option<Key> {
-        use event::{ Event, KeyEvent, KeyCode, KeyModifiers, KeyEventKind, read };
+        use event::{ Event, KeyCode, KeyModifiers, KeyEventKind, read };
 
         loop {
             //blocking read
@@ -128,10 +128,10 @@ impl UserInterface for TargetCrossterm {
                 Event::Key(key_event) => {
                     if key_event.kind == KeyEventKind::Press {
                         if let KeyCode::Char(c) = key_event.code {
-                            return Some(KeyEvent::new(KeyCode::Char(c),
-                                        key_event.modifiers.difference(KeyModifiers::SHIFT)));
+                            return Some(Key::new(KeyCode::Char(c),
+                                        Some(key_event.modifiers.difference(KeyModifiers::SHIFT))));
                         } else {
-                            return Some(key_event);
+                            return Some(key_event.into());
                         }
                     }
                 },
@@ -280,7 +280,7 @@ impl UserInterface for TargetCrossterm {
         loop {
             let event = read().unwrap();
             if let Event::Key(key) = event {
-                if key == *discard_key {
+                if Key::from(key) == *discard_key {
                     out = None;
                     break;
                 }

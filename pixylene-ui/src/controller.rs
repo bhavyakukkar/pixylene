@@ -9,7 +9,6 @@ use libpixylene::{
     project::{ OPixel, Layer, Palette },
     types::{ UCoord, PCoord, Coord, Pixel },
 };
-use crossterm::event;
 use pixylene_actions::{ memento::{ ActionManager }, Console, LogType };
 use pixylene_actions_lua::LuaActionManager;
 use std::collections::HashMap;
@@ -135,7 +134,6 @@ impl Controller {
 
     pub fn new(target: Rc<RefCell<dyn UserInterface>>) -> Result<Self, String> {
         use UiFn::*;
-        use event::{ KeyModifiers };
         use colored::Colorize;
         let mut is_default = false;
 
@@ -181,32 +179,17 @@ impl Controller {
         let mut keymap: KeyMap = HashMap::new();
         if !config.new_keys {
             _ = <Config as Default>::default().keys.into_iter().map(|entry| {
-                keymap.insert(Key::new(entry.k.c, entry.k.m.unwrap_or(KeyModifiers::empty())),
-                              entry.f);
+                keymap.insert(Key::new(entry.k.code(), Some(entry.k.modifiers())), entry.f);
             }).collect::<Vec<()>>();
         }
 
         if !is_default {
             _ = config.keys.into_iter().map(|entry| {
-                keymap.insert(Key::new(entry.k.c, entry.k.m.unwrap_or(KeyModifiers::empty())),
-                              entry.f);
+                keymap.insert(Key::new(entry.k.code(), Some(entry.k.modifiers())), entry.f);
             }).collect::<Vec<()>>();
         }
 
-        let rev_keymap = ReqUiFnMap {
-            start_command: Key::new(
-                config.required_keys.start_command.c,
-                config.required_keys.start_command.m.unwrap_or(KeyModifiers::empty())
-            ),
-            discard_command: Key::new(
-                config.required_keys.discard_command.c,
-                config.required_keys.discard_command.m.unwrap_or(KeyModifiers::empty())
-            ),
-            force_quit: Key::new(
-                config.required_keys.force_quit.c,
-                config.required_keys.force_quit.m.unwrap_or(KeyModifiers::empty())
-            ),
-        };
+        let rev_keymap = config.required_keys;
 
         let every_frame = config.every_frame;
 

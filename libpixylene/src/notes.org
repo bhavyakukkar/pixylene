@@ -10,7 +10,7 @@
 **** KILL copy KeyEvent logic for ui::Key instead of using as a typedef (not needed)
 **** KILL add new Key variant that gets called every frame (PreviewFocusLayer, UpdateStatusline) so users can set UiFns to perform every frame (decided to have explicit vector of UiFn's people want to perform every frame)
 **** TODO implement Project::resize and private Canvas::resize and make comment about how Canvas can only be resized from Project
-**** TODO recheck that its still working on windows since bumped crossterm back to 0.27
+**** TODO recheck that its still working on minifb and windows since bumped crossterm back to 0.27
 **** DONE TOML parser for UiFn, Key & KeyFn
 **** TODO it would be good if palette's equipped color is guaranteed to always exist and is some default color if palette is empty. helps the action authors
 **** TODO actually use layer opacity & mute in Layer::merge

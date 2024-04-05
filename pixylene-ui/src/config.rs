@@ -1,4 +1,4 @@
-use crate::ui::UiFn;
+use crate::ui::{ UiFn, Key, ReqUiFnMap };
 
 use crossterm::{ event };
 use serde::{ Deserialize };
@@ -6,23 +6,8 @@ use toml::{ from_str, de::Error };
 
 
 #[derive(Debug, Deserialize)]
-pub struct KeyEntry {
-    pub c: event::KeyCode,
-    pub m: Option<event::KeyModifiers>,
-}
-
-//todo: later may be better idea to copy crossterm::KeyEvent because this will manually need to be
-//expanded to account for more variants
-#[derive(Debug, Deserialize)]
-pub struct ReqUiFnMapConfig {
-    pub discard_command: KeyEntry,
-    pub start_command: KeyEntry,
-    pub force_quit: KeyEntry,
-}
-
-#[derive(Debug, Deserialize)]
 pub struct KeyXUiFnEntry {
-    pub k: KeyEntry,
+    pub k: Key,
     pub f: Vec<UiFn>,
 }
 
@@ -47,7 +32,7 @@ pub struct PixyleneDefaultsConfig {
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
-    pub required_keys: ReqUiFnMapConfig,
+    pub required_keys: ReqUiFnMap,
     pub keys: Vec<KeyXUiFnEntry>,
     pub new_keys: bool,
     pub every_frame: Vec<UiFn>,
@@ -104,14 +89,14 @@ impl Default for Config {
         use event::{ KeyCode::*, KeyModifiers };
         type KM = KeyModifiers;
         type KUE = KeyXUiFnEntry;
-        type KE = KeyEntry;
         type PCE = PaletteColorEntry;
+        type K = Key;
 
         Config {
-            required_keys: ReqUiFnMapConfig {
-                start_command: KE { c: Char(':'), m: None },
-                discard_command: KE { c: Esc, m: Some(KM::empty()) },
-                force_quit: KE { c: Char('c'), m: Some(KM::CONTROL) },
+            required_keys: ReqUiFnMap {
+                start_command: K::new(Char(':'), None),
+                discard_command: K::new(Esc, Some(KM::empty())),
+                force_quit: K::new(Char('c'), Some(KM::CONTROL)),
             },
             new_keys: false,
             every_frame: vec![UiFn::PreviewFocusLayer, UiFn::UpdateStatusline],
@@ -138,56 +123,56 @@ impl Default for Config {
                 ],
             },
             keys: vec![
-                KUE { k: KE { c: Char(':'), m: Some(KM::empty())  }, f: vec![UiFn::RunCommandSpecify] },
-                KUE { k: KE { c: Esc, m: Some(KM::empty())  }, f: vec![UiFn::Quit] },
+                KUE { k: K::new(Char(':'), Some(KM::empty())), f: vec![UiFn::RunCommandSpecify] },
+                KUE { k: K::new(Esc, Some(KM::empty())), f: vec![UiFn::Quit] },
 
-                KUE { k: KE { c: Char('h'), m: Some(KM::empty())  },
+                KUE { k: K::new(Char('h'), Some(KM::empty())),
                       f: vec![UiFn::RunAction(String::from("cursors_left"))] },
-                KUE { k: KE { c: Char('j'), m: Some(KM::empty())  },
+                KUE { k: K::new(Char('j'), Some(KM::empty())),
                       f: vec![UiFn::RunAction(String::from("cursors_down"))] },
-                KUE { k: KE { c: Char('k'), m: Some(KM::empty())  },
+                KUE { k: K::new(Char('k'), Some(KM::empty())),
                       f: vec![UiFn::RunAction(String::from("cursors_up"))] },
-                KUE { k: KE { c: Char('l'), m: Some(KM::empty())  },
+                KUE { k: K::new(Char('l'), Some(KM::empty())),
                       f: vec![UiFn::RunAction(String::from("cursors_right"))] },
 
-                KUE { k: KE { c: Char('h'), m: Some(KM::CONTROL)  },
+                KUE { k: K::new(Char('h'), Some(KM::CONTROL)),
                       f: vec![UiFn::RunAction(String::from("dup_cursors_left"))] },
-                KUE { k: KE { c: Char('j'), m: Some(KM::CONTROL)  },
+                KUE { k: K::new(Char('j'), Some(KM::CONTROL)),
                       f: vec![UiFn::RunAction(String::from("dup_cursors_down"))] },
-                KUE { k: KE { c: Char('k'), m: Some(KM::CONTROL)  },
+                KUE { k: K::new(Char('k'), Some(KM::CONTROL)),
                       f: vec![UiFn::RunAction(String::from("dup_cursors_up"))] },
-                KUE { k: KE { c: Char('l'), m: Some(KM::CONTROL)  },
+                KUE { k: K::new(Char('l'), Some(KM::CONTROL)),
                       f: vec![UiFn::RunAction(String::from("dup_cursors_right"))] },
 
-                KUE { k: KE { c: Char('1'), m: Some(KM::empty())  },
+                KUE { k: K::new(Char('1'), Some(KM::empty())),
                       f: vec![UiFn::RunAction(String::from("pencil1"))] },
-                KUE { k: KE { c: Char('2'), m: Some(KM::empty())  },
+                KUE { k: K::new(Char('2'), Some(KM::empty())),
                       f: vec![UiFn::RunAction(String::from("pencil2"))] },
-                KUE { k: KE { c: Char('3'), m: Some(KM::empty())  },
+                KUE { k: K::new(Char('3'), Some(KM::empty())),
                       f: vec![UiFn::RunAction(String::from("pencil3"))] },
-                KUE { k: KE { c: Char('4'), m: Some(KM::empty())  },
+                KUE { k: K::new(Char('4'), Some(KM::empty())),
                       f: vec![UiFn::RunAction(String::from("pencil4"))] },
-                KUE { k: KE { c: Char('5'), m: Some(KM::empty())  },
+                KUE { k: K::new(Char('5'), Some(KM::empty())),
                       f: vec![UiFn::RunAction(String::from("pencil5"))] },
-                KUE { k: KE { c: Char('6'), m: Some(KM::empty())  },
+                KUE { k: K::new(Char('6'), Some(KM::empty())),
                       f: vec![UiFn::RunAction(String::from("pencil6"))] },
-                KUE { k: KE { c: Char('7'), m: Some(KM::empty())  },
+                KUE { k: K::new(Char('7'), Some(KM::empty())),
                       f: vec![UiFn::RunAction(String::from("pencil7"))] },
-                KUE { k: KE { c: Char('8'), m: Some(KM::empty())  },
+                KUE { k: K::new(Char('8'), Some(KM::empty())),
                       f: vec![UiFn::RunAction(String::from("pencil8"))] },
-                KUE { k: KE { c: Char('9'), m: Some(KM::empty())  },
+                KUE { k: K::new(Char('9'), Some(KM::empty())),
                       f: vec![UiFn::RunAction(String::from("pencil9"))] },
-                KUE { k: KE { c: Char('0'), m: Some(KM::empty())  },
+                KUE { k: K::new(Char('0'), Some(KM::empty())),
                       f: vec![UiFn::RunAction(String::from("pencil10"))] },
 
-                KUE { k: KE { c: Char('u'), m: Some(KM::empty())  },
+                KUE { k: K::new(Char('u'), Some(KM::empty())),
                       f: vec![UiFn::Undo] },
-                KUE { k: KE { c: Char('r'), m: Some(KM::CONTROL)  },
+                KUE { k: K::new(Char('r'), Some(KM::CONTROL)),
                       f: vec![UiFn::Redo] },
 
-                KUE { k: KE { c: Char('i'), m: Some(KM::empty())  },
+                KUE { k: K::new(Char('i'), Some(KM::empty())),
                       f: vec![UiFn::RunAction(String::from("zoomin"))] },
-                KUE { k: KE { c: Char('o'), m: Some(KM::empty())  },
+                KUE { k: K::new(Char('o'), Some(KM::empty())),
                       f: vec![UiFn::RunAction(String::from("zoomout"))] },
             ],
         }
