@@ -131,3 +131,64 @@ pub struct ReqUiFnMap {
     pub discard_command: Key,
     pub force_quit: Key,
 }
+
+/// Generic color type to be used in targets, wrapper around colored's [`Color`](colored::Color)
+pub struct Color(pub Option<colored::Color>);
+
+impl From<Color> for crossterm::style::Color {
+    fn from(item: Color) -> crossterm::style::Color {
+        use crossterm::style::Color::*;
+
+        match item.0 {
+            Some(color) => match color {
+                colored::Color::Black => Black,
+                colored::Color::Red => Red,
+                colored::Color::Green => Green,
+                colored::Color::Yellow => Yellow,
+                colored::Color::Blue => Blue,
+                colored::Color::Magenta => Magenta,
+                colored::Color::Cyan => Cyan,
+                colored::Color::White => White,
+                colored::Color::BrightBlack => DarkGrey,
+                colored::Color::BrightRed => DarkRed,
+                colored::Color::BrightGreen => DarkGreen,
+                colored::Color::BrightYellow => DarkYellow,
+                colored::Color::BrightBlue => DarkBlue,
+                colored::Color::BrightMagenta => DarkMagenta,
+                colored::Color::BrightCyan => DarkCyan,
+                colored::Color::BrightWhite => Grey,
+                colored::Color::TrueColor { r, g, b } => Rgb { r, g, b },
+            },
+            None => Reset,
+        }
+    }
+}
+
+impl From<Color> for u32 {
+    fn from(item: Color) -> u32 {
+        match item.0 {
+            Some(color) => match color {
+                colored::Color::Black => 0x000000,
+                colored::Color::Red => 0xFF0000,
+                colored::Color::Green => 0x00FF00,
+                colored::Color::Yellow => 0xFFFF00,
+                colored::Color::Blue => 0x0000FF,
+                colored::Color::Magenta => 0xFF00FF,
+                colored::Color::Cyan => 0x00FFFF,
+                colored::Color::White => 0xFFFFFF,
+                colored::Color::BrightBlack => 0x808080,
+                colored::Color::BrightRed => 0x800000,
+                colored::Color::BrightGreen => 0x008000,
+                colored::Color::BrightYellow => 0x808000,
+                colored::Color::BrightBlue => 0x000080,
+                colored::Color::BrightMagenta => 0x800080,
+                colored::Color::BrightCyan => 0x008080,
+                colored::Color::BrightWhite => 0xC0C0C0,
+                colored::Color::TrueColor { r, g, b } => {
+                    u32::from(r)*256*256 + u32::from(g)*256 + u32::from(b)
+                },
+            },
+            None => 0x000000,
+        }
+    }
+}

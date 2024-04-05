@@ -1,4 +1,4 @@
-use crate::ui::{ UserInterface, Key, Rectangle, Statusline };
+use crate::ui::{ UserInterface, Key, Rectangle, Statusline, Color };
 
 use libpixylene::{ types::{ PCoord }, project::{ OPixel } };
 use pixylene_actions::{ LogType };
@@ -160,8 +160,8 @@ impl UserInterface for TargetCrossterm {
             queue!(
                 stdout,
                 SetAttribute(Attribute::Bold),
-                SetBackgroundColor(MyColor(colored_string.bgcolor()).into()),
-                SetForegroundColor(MyColor(colored_string.fgcolor()).into()),
+                SetBackgroundColor(Color(colored_string.bgcolor()).into()),
+                SetForegroundColor(Color(colored_string.fgcolor()).into()),
                 Print(colored_string),
                 SetAttribute(Attribute::Reset),
                 ResetColor,
@@ -366,32 +366,3 @@ impl UserInterface for TargetCrossterm {
     }
 }
 
-struct MyColor(Option<colored::Color>);
-impl From<MyColor> for style::Color {
-    fn from(item: MyColor) -> style::Color {
-        use style::Color::*;
-
-        match item.0 {
-            Some(color) => match color {
-                colored::Color::Black => Black,
-                colored::Color::Red => Red,
-                colored::Color::Green => Green,
-                colored::Color::Yellow => Yellow,
-                colored::Color::Blue => Blue,
-                colored::Color::Magenta => Magenta,
-                colored::Color::Cyan => Cyan,
-                colored::Color::White => White,
-                colored::Color::BrightBlack => DarkGrey,
-                colored::Color::BrightRed => DarkRed,
-                colored::Color::BrightGreen => DarkGreen,
-                colored::Color::BrightYellow => DarkYellow,
-                colored::Color::BrightBlue => DarkBlue,
-                colored::Color::BrightMagenta => DarkMagenta,
-                colored::Color::BrightCyan => DarkCyan,
-                colored::Color::BrightWhite => Grey,
-                colored::Color::TrueColor { r, g, b } => Rgb { r, g, b },
-            },
-            None => Reset,
-        }
-    }
-}
