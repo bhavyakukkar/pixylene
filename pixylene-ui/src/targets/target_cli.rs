@@ -1,13 +1,16 @@
-use crate::ui::{ UserInterface, Key, Rectangle, Statusline, Color, UiFn, KeyInfo };
+use pixylene_ui::{
+    Cli, controller::Controller,
+    ui::{ UserInterface, Key, Rectangle, Statusline, Color, UiFn, KeyInfo },
+};
 
 use libpixylene::{ types::{ PCoord }, project::{ OPixel } };
 use pixylene_actions::{ LogType };
+use std::rc::Rc;
+use std::cell::RefCell;
+use clap::Parser;
 
 
-pub struct TargetCLI;
-impl TargetCLI {
-    pub fn new() -> TargetCLI { TargetCLI }
-}
+struct TargetCLI;
 
 impl UserInterface for TargetCLI {
     fn initialize(&mut self) {}
@@ -46,4 +49,18 @@ impl UserInterface for TargetCLI {
 
     fn clear(&mut self, boundary: &Rectangle) {}
     fn clear_all(&mut self) {}
+}
+
+
+fn main() {
+    let target = TargetCLI;
+
+    match Controller::new(Rc::new(RefCell::new(target))) {
+        Ok(mut pixylene_ui) => {
+            let cli = Cli::parse();
+
+            pixylene_ui.new_session(&cli.command);
+        },
+        Err(error) => eprintln!("{}", error)
+    }
 }

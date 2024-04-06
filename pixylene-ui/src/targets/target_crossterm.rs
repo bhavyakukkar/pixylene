@@ -1,14 +1,20 @@
-use crate::ui::{ UserInterface, Key, KeyInfo, Rectangle, Statusline, Color };
+use pixylene_ui::{
+    Cli, controller::Controller,
+    ui::{ UserInterface, Key, KeyInfo, Rectangle, Statusline, Color },
+};
 
 use libpixylene::{ types::{ PCoord }, project::{ OPixel } };
 use pixylene_actions::{ LogType };
 use crossterm::{ event, cursor, terminal, style, queue, execute };
 use std::io::{ Write };
+use std::rc::Rc;
+use std::cell::RefCell;
+use clap::Parser;
 
 
 /// Pixylene UI's Target for the [`crossterm`](crossterm) terminal manipulation library
 /// [Crossterm repository](https://github.com/crossterm-rs/crossterm)
-pub struct TargetCrossterm;
+struct TargetCrossterm;
 
 impl UserInterface for TargetCrossterm {
 
@@ -372,3 +378,16 @@ impl UserInterface for TargetCrossterm {
     }
 }
 
+
+fn main() {
+    let target = TargetCrossterm;
+
+    match Controller::new(Rc::new(RefCell::new(target))) {
+        Ok(mut pixylene_ui) => {
+            let cli = Cli::parse();
+
+            pixylene_ui.new_session(&cli.command);
+        },
+        Err(error) => eprintln!("{}", error)
+    }
+}

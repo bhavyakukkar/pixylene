@@ -1,10 +1,16 @@
-use crate::ui::{ UserInterface, self, Rectangle, Statusline, Color, KeyInfo };
+use pixylene_ui::{
+    Cli, controller::Controller,
+    ui::{ UserInterface, self, Rectangle, Statusline, Color, KeyInfo },
+};
 
 use libpixylene::{ types::{ PCoord }, project::OPixel };
 use pixylene_actions::{ LogType };
 use crossterm::event::{ KeyCode, KeyModifiers };
 use minifb::{ Window, WindowOptions, KeyRepeat, Scale };
 use minifb_fonts::{ font5x8 };
+use std::rc::Rc;
+use std::cell::RefCell;
+use clap::Parser;
 
 
 const NOWIN: &str = "No Minifb Window found in Target, something is wrong.";
@@ -425,3 +431,15 @@ impl UserInterface for TargetMinifb {
 }
 
 
+fn main() {
+    let target = TargetMinifb::new();
+
+    match Controller::new(Rc::new(RefCell::new(target))) {
+        Ok(mut pixylene_ui) => {
+            let cli = Cli::parse();
+
+            pixylene_ui.new_session(&cli.command);
+        },
+        Err(error) => eprintln!("{}", error)
+    }
+}

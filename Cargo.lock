@@ -930,7 +930,6 @@ dependencies = [
 name = "pixylene-ui"
 version = "0.1.0"
 dependencies = [
- "cfg-if",
  "clap",
  "colored",
  "crossterm",
