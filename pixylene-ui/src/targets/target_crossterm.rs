@@ -26,7 +26,7 @@ impl UserInterface for TargetCrossterm {
             EnterAlternateScreen,
             Hide,
         ).unwrap();
-        _ = stdout.flush();
+        stdout.flush().unwrap();
     }
 
     fn finalize(&mut self) {
@@ -40,7 +40,7 @@ impl UserInterface for TargetCrossterm {
             Show,
             LeaveAlternateScreen,
         ).unwrap();
-        _ = stdout.flush();
+        stdout.flush().unwrap();
     }
 
     // Crossterm blocks until read and requires no extra work between frames
@@ -116,7 +116,7 @@ impl UserInterface for TargetCrossterm {
             ).unwrap();
         }
         queue!(stdout, ResetColor).unwrap();
-        _ = stdout.flush();
+        stdout.flush().unwrap();
     }
 
     fn get_key(&self) -> Option<Key> {
@@ -167,7 +167,7 @@ impl UserInterface for TargetCrossterm {
                 ResetColor,
             ).unwrap();
         }
-        _ = stdout.flush();
+        stdout.flush().unwrap();
     }
 
     /*
@@ -260,12 +260,12 @@ impl UserInterface for TargetCrossterm {
         use terminal::{ Clear, ClearType };
         use cursor::{ MoveTo, MoveLeft, Show, Hide };
         use style::{ SetForegroundColor, Color, Print, ResetColor };
-        use event::{ Event, KeyEvent, KeyCode, read };
+        use event::{ Event, KeyEvent, KeyCode, KeyEventKind, read };
         let mut stdout = std::io::stdout();
 
         let out: Option<String>;
 
-        execute!(
+        queue!(
             stdout,
             ResetColor,
             MoveTo(boundary.start.y as u16, boundary.start.x as u16),
@@ -275,32 +275,35 @@ impl UserInterface for TargetCrossterm {
             ResetColor,
             Show,
         ).unwrap();
+        stdout.flush().unwrap();
 
         let mut input = String::new();
         loop {
             let event = read().unwrap();
             if let Event::Key(key) = event {
-                if Key::from(key) == *discard_key {
-                    out = None;
-                    break;
-                }
-                let KeyEvent { code, .. } = key;
-                match code {
-                    KeyCode::Enter => {
-                        out = Some(input);
+                if key.kind == KeyEventKind::Press {
+                    if Key::from(key) == *discard_key {
+                        out = None;
                         break;
-                    },
-                    KeyCode::Backspace => {
-                        if input.len() > 0 {
-                            execute!(stdout, MoveLeft(1), Clear(ClearType::UntilNewLine)).unwrap();
-                            input.pop();
-                        }
-                    },
-                    KeyCode::Char(c) => {
-                        execute!(stdout, Print(c)).unwrap();
-                        input.push(c);
-                    },
-                    _ => {},
+                    }
+                    let KeyEvent { code, .. } = key;
+                    match code {
+                        KeyCode::Enter => {
+                            out = Some(input);
+                            break;
+                        },
+                        KeyCode::Backspace => {
+                            if input.len() > 0 {
+                                execute!(stdout, MoveLeft(1), Clear(ClearType::UntilNewLine)).unwrap();
+                                input.pop();
+                            }
+                        },
+                        KeyCode::Char(c) => {
+                            execute!(stdout, Print(c)).unwrap();
+                            input.push(c);
+                        },
+                        _ => {},
+                    }
                 }
             }
         }
@@ -313,7 +316,7 @@ impl UserInterface for TargetCrossterm {
         use style::{ SetForegroundColor, Color, Print, ResetColor };
         let mut stdout = std::io::stdout();
 
-        execute!(
+        queue!(
             stdout,
             ResetColor,
             MoveTo(boundary.start.y as u16, boundary.start.x as u16),
@@ -327,6 +330,7 @@ impl UserInterface for TargetCrossterm {
             Print(&message[0..std::cmp::min(message.len(), usize::from(boundary.size.y()))]),
             ResetColor,
         ).unwrap();
+        stdout.flush().unwrap();
     }
 
     fn draw_paragraph(&mut self, _paragraph: Vec<String>) {
@@ -354,7 +358,7 @@ impl UserInterface for TargetCrossterm {
             }
         }
 
-        _ = stdout.flush();
+        stdout.flush().unwrap();
     }
 
     fn clear_all(&mut self) {
