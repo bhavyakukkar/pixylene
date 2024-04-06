@@ -24,16 +24,16 @@ minifb = ["dep:minifb", "dep:minifb_fonts"]
 
 
 [[bin]]
-name = "crossterm"
+name = "pixylenetui"
 path = "src/targets/target_crossterm.rs"
 
 
 [[bin]]
-name = "cli"
+name = "pixylenecli"
 path = "src/targets/target_cli.rs"
 
 
 [[bin]]
-name = "minifb"
+name = "pixylenegui"
 path = "src/targets/target_minifb.rs"
 required-features = ["minifb"]
