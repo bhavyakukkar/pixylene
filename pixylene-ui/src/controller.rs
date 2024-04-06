@@ -1,5 +1,5 @@
 use crate::{
-    ui::{ UserInterface, Rectangle, Statusline, Key, KeyMap, ReqUiFnMap, UiFn },
+    ui::{ UserInterface, Rectangle, Statusline, KeyInfo, Key, KeyMap, ReqUiFnMap, UiFn },
     config::{ Config, generate_config },
     actions::{ ActionLocation, add_my_native_actions },
 };
@@ -423,12 +423,19 @@ impl Controller {
             if !self.target.borrow_mut().refresh() {
                 self.perform_ui(&ForceQuit);
             }
-            let key = self.target.borrow().get_key();
-            if let Some(key) = key {
-                self.perform_ui(&RunKey(key));
+            let key_info = self.target.borrow().get_key();
+            if let Some(key_info) = key_info {
+                match key_info {
+                    KeyInfo::Key(key) => {
+                            self.perform_ui(&RunKey(key));
 
-                for func in self.every_frame.clone() {
-                    self.perform_ui(&func);
+                            for func in self.every_frame.clone() {
+                                self.perform_ui(&func);
+                            }
+                    },
+                    KeyInfo::UiFn(ui_fn) => {
+                        self.perform_ui(&ui_fn);
+                    },
                 }
             }
         }
@@ -675,7 +682,7 @@ impl Controller {
             },
 
             RunActionSpecify => {
-                if let Some(action_name) = self.console_in("a: ") {
+                if let Some(action_name) = self.console_in("action: ") {
                     self.perform_ui(&RunAction(action_name));
                 } else {
                     self.console_clear();
@@ -702,12 +709,12 @@ impl Controller {
                     ref mut native_action_manager,
                     ref mut lua_action_manager,
                     ref mut last_action_name,
+                    ref mut modified,
                     ..
                 } = &mut sessions[*sel_session as usize - 1];
 
                 match action_map.get(&action_name.clone()) {
                     Some(action_location) => {
-                        //over here
                         match action_location {
                             ActionLocation::Lua => {
                                 match lua_action_manager.invoke(&action_name, pixylene.clone(),
@@ -717,6 +724,7 @@ impl Controller {
                                             .commit(&pixylene.borrow().project.canvas)
                                         {
                                             *last_action_name = Some(action_name.clone());
+                                            *modified = true;
                                         }
                                     },
                                     Err(err) => {
@@ -751,6 +759,7 @@ impl Controller {
                                             .commit(&pixylene.borrow().project.canvas)
                                         {
                                             *last_action_name = Some(action_name.clone());
+                                            *modified = true;
                                         }
                                     },
                                     Err(err) => {

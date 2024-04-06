@@ -31,6 +31,9 @@ fn main() {
     #[cfg(feature = "minifb")]
     let target = targets::TargetMinifb::new();
 
+    #[cfg(feature = "cli")]
+    let target = targets::TargetCLI::new();
+
     match controller::Controller::new(Rc::new(RefCell::new(target))) {
         Ok(mut pixylene_ui) => {
             let cli = Cli::parse();

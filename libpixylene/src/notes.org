@@ -6,11 +6,14 @@
 :PROPERTIES:
 :COOKIE_DATA: todo
 :END:
-*** Next [46%]
+*** Next [41%]
 **** KILL copy KeyEvent logic for ui::Key instead of using as a typedef (not needed)
 **** KILL add new Key variant that gets called every frame (PreviewFocusLayer, UpdateStatusline) so users can set UiFns to perform every frame (decided to have explicit vector of UiFn's people want to perform every frame)
+**** DONE to fix windows double-key bug, add KeyEventKind checking in console_in() of target crossterm
+**** TODO instead of having crossterm, minifb & cli as different features, maybe better to have them be different binaries instead
+**** TODO pay attention to making switching between :showlayer and :showproject easy again
+**** TODO deal with minifb returning too many useless keys
 **** TODO implement Project::resize and private Canvas::resize and make comment about how Canvas can only be resized from Project
-**** TODO recheck that its still working on minifb and windows since bumped crossterm back to 0.27
 **** DONE TOML parser for UiFn, Key & KeyFn
 **** TODO it would be good if palette's equipped color is guaranteed to always exist and is some default color if palette is empty. helps the action authors
 **** TODO actually use layer opacity & mute in Layer::merge
@@ -23,6 +26,7 @@
 **** DONE target_minibuf: convert keys [[https://docs.rs/minifb/latest/src/minifb/key.rs.html#2][minifb]] [[https://docs.rs/crossterm/latest/crossterm/event/struct.KeyEvent.html][crossterm]]
 **** TODO handle all error messages larger than console size by converting them to cmdin's that print messages in chunks of console size
 **** TODO Namespace keybinds such that modes can be created/modified from the config file
+**** TODO prelude of types required to make a new target
 
 *** Making It Enjoyable To Use [33%]
 **** TODO switch x and y syntax since game design often uses flipped

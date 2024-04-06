@@ -16,15 +16,11 @@ pub trait UserInterface {
     /// Makes the target refresh between frames, returning whether target is still alive
     fn refresh(&mut self) -> bool;
 
-    //fn set_camera_boundary(&mut self, boundary: Rectangle);
-    //fn set_statusline_boundary(&mut self, boundary: Rectangle);
-    //fn set_console_boundary(&mut self, boundary: Rectangle);
-
     /// Get the inputted key from the target
     ///
     /// Targets that block until key is received may always return Some(key), however targets that
     /// poll user-input may return None's until some key is received
-    fn get_key(&self) -> Option<Key>;
+    fn get_key(&self) -> Option<KeyInfo>;
     fn get_size(&self) -> PCoord;
 
     fn draw_camera(&mut self, dim: PCoord, buffer: Vec<OPixel>, show_cursors: bool,
@@ -38,6 +34,13 @@ pub trait UserInterface {
 
     fn clear(&mut self, boundary: &Rectangle);
     fn clear_all(&mut self);
+}
+
+pub enum KeyInfo {
+    #[allow(dead_code)]
+    Key(Key),
+    #[allow(dead_code)]
+    UiFn(UiFn),
 }
 
 /// A Real Key on a keyboard that can be mapped to execute a [`UiFn`](crate::keybinds::UiFn) or

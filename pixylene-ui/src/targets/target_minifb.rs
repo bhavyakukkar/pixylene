@@ -1,4 +1,4 @@
-use crate::ui::{ UserInterface, self, Rectangle, Statusline, Color };
+use crate::ui::{ UserInterface, self, Rectangle, Statusline, Color, KeyInfo };
 
 use libpixylene::{ types::{ PCoord }, project::OPixel };
 use pixylene_actions::{ LogType };
@@ -250,10 +250,13 @@ impl UserInterface for TargetMinifb {
         window.is_open()
     }
 
-    fn get_key(&self) -> Option<ui::Key> {
+    fn get_key(&self) -> Option<KeyInfo> {
         let window = self.0.as_ref().expect(NOWIN);
         let key = Self::key_to_crossterm(window.get_keys(), window.get_keys_pressed(KeyRepeat::Yes));
-        key.into()
+        match key {
+            Some(key) => Some(KeyInfo::Key(key)),
+            None => None,
+        }
     }
 
     fn get_size(&self) -> PCoord {

@@ -1,4 +1,4 @@
-use crate::ui::{ UserInterface, Key, Rectangle, Statusline, Color };
+use crate::ui::{ UserInterface, Key, KeyInfo, Rectangle, Statusline, Color };
 
 use libpixylene::{ types::{ PCoord }, project::{ OPixel } };
 use pixylene_actions::{ LogType };
@@ -119,7 +119,7 @@ impl UserInterface for TargetCrossterm {
         stdout.flush().unwrap();
     }
 
-    fn get_key(&self) -> Option<Key> {
+    fn get_key(&self) -> Option<KeyInfo> {
         use event::{ Event, KeyCode, KeyModifiers, KeyEventKind, read };
 
         loop {
@@ -128,10 +128,12 @@ impl UserInterface for TargetCrossterm {
                 Event::Key(key_event) => {
                     if key_event.kind == KeyEventKind::Press {
                         if let KeyCode::Char(c) = key_event.code {
-                            return Some(Key::new(KeyCode::Char(c),
-                                        Some(key_event.modifiers.difference(KeyModifiers::SHIFT))));
+                            return Some(KeyInfo::Key(Key::new(
+                                        KeyCode::Char(c),
+                                        Some(key_event.modifiers.difference(KeyModifiers::SHIFT))
+                            )));
                         } else {
-                            return Some(key_event.into());
+                            return Some(KeyInfo::Key(key_event.into()));
                         }
                     }
                 },

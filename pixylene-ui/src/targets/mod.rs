@@ -7,3 +7,8 @@ pub use target_crossterm::TargetCrossterm;
 mod target_minifb;
 #[cfg(feature = "minifb")]
 pub use target_minifb::TargetMinifb;
+
+#[cfg(feature = "cli")]
+mod target_cli;
+#[cfg(feature = "cli")]
+pub use target_cli::TargetCLI;
