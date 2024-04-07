@@ -46,7 +46,7 @@ pub enum KeyInfo {
 /// A Real Key on a keyboard that can be mapped to execute a [`UiFn`](crate::keybinds::UiFn) or
 /// [`ReqUiFn`](crate::keybinds::ReqUiFn).
 ///
-/// `Note:` This was made primarily with compatibility to [`crossterm`](crossterm) in mind and
+/// `Note`: This was made primarily with compatibility to [`crossterm`](crossterm) in mind and
 /// hence is simply a type alias to crossterm's [`KeyEvent`](crossterm::event::KeyEvent).
 ///
 /// Other target implementations require manual association.

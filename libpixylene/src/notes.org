@@ -6,11 +6,12 @@
 :PROPERTIES:
 :COOKIE_DATA: todo
 :END:
-*** Next [41%]
+*** Next [42%]
 **** KILL copy KeyEvent logic for ui::Key instead of using as a typedef (not needed)
 **** KILL add new Key variant that gets called every frame (PreviewFocusLayer, UpdateStatusline) so users can set UiFns to perform every frame (decided to have explicit vector of UiFn's people want to perform every frame)
 **** DONE to fix windows double-key bug, add KeyEventKind checking in console_in() of target crossterm
-**** TODO instead of having crossterm, minifb & cli as different features, maybe better to have them be different binaries instead
+**** DONE instead of having crossterm, minifb & cli as different features, maybe better to have them be different binaries instead
+**** DONE Canvas method that creates empty layer
 **** TODO pay attention to making switching between :showlayer and :showproject easy again
 **** TODO deal with minifb returning too many useless keys
 **** TODO implement Project::resize and private Canvas::resize and make comment about how Canvas can only be resized from Project
@@ -52,6 +53,8 @@
 **** DONE divide pixylenetui/main.rs into two fns where second function returns result and main just logs all errors to cmdout()
 
 *** Making It Pretentious/Prestigious [7%]
+**** TODO use [[https://lib.rs/crates/is-terminal][isTerminal]] in target initialize for crossterm and minifb just to be safe
+**** TODO command history
 **** TODO safe Coord (& other types) methods like add_safe, add_mut_safe, mult_safe & mult_mut_safe
 **** TODO clap initializer for Pixylene::new() that opens inquire menu when called "$ pixylenetui new". optional flag -y takes default for all settings
 **** KILL perform_action returns VecDeque of Change's (i think this is unnecessary)

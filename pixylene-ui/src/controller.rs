@@ -715,6 +715,7 @@ impl Controller {
 
                 match action_map.get(&action_name.clone()) {
                     Some(action_location) => {
+                        target.borrow_mut().clear(&b_console.unwrap());
                         match action_location {
                             ActionLocation::Lua => {
                                 match lua_action_manager.invoke(&action_name, pixylene.clone(),
@@ -839,6 +840,7 @@ impl Controller {
                     false,
                     &self.b_camera.unwrap(),
                 );
+                self.console_in("press ENTER to stop previewing project");
             },
 
             UpdateStatusline => {
