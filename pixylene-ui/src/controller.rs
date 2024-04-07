@@ -228,7 +228,7 @@ impl Controller {
             b_statusline: None,
             padding: PADDING,
 
-            started: true,
+            started: false,
         })
     }
 
@@ -379,7 +379,12 @@ impl Controller {
                 exit(1);
             }
         }
-        self.start();
+
+        //start app if this is first session
+        if !self.started {
+            self.started = true;
+            self.start();
+        }
     }
 
     fn quit_session(&mut self) {
@@ -428,15 +433,14 @@ impl Controller {
             if let Some(key_info) = key_info {
                 match key_info {
                     KeyInfo::Key(key) => {
-                            self.perform_ui(&RunKey(key));
-
-                            for func in self.every_frame.clone() {
-                                self.perform_ui(&func);
-                            }
+                        self.perform_ui(&RunKey(key));
                     },
                     KeyInfo::UiFn(ui_fn) => {
                         self.perform_ui(&ui_fn);
                     },
+                }
+                for func in self.every_frame.clone() {
+                    self.perform_ui(&func);
                 }
             }
         }

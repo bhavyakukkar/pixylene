@@ -33,7 +33,7 @@ impl Pixylene {
         }
     }
     pub fn import(path: &str, defaults: &PixyleneDefaults) -> Result<Pixylene, PixyleneError> {
-        let png_file = PngFile::read(String::from(path)).unwrap();
+        let png_file = PngFile::read(String::from(path))?;
         let scene = png_file.to_scene()?;
         let dim = scene.dim();
         let mut project = Project::new(Canvas::new(dim, defaults.palette.clone()));
