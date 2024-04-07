@@ -76,6 +76,7 @@ pub struct Controller {
     target: Rc<RefCell<dyn UserInterface>>,
 
     sessions: Vec<PixyleneSession>,
+    //this index is 1-based
     sel_session: u8,
 
     defaults: PixyleneDefaults,
@@ -480,6 +481,20 @@ impl Controller {
             },
             ForceQuit => { 
                 self.quit_session();
+            },
+            GoToSession(index) => {
+                let num_sessions = u8::try_from(self.sessions.len()).unwrap();
+                if num_sessions == 0 {
+                    self.console_out("there are no sessions open", &LogType::Error);
+                }
+                if *index < num_sessions {
+                    self.sel_session = *index;
+                } else {
+                    self.console_out(
+                        &format!("only {} sessions open", num_sessions),
+                        &LogType::Error
+                    );
+                }
             },
             GoToNextSession => {
                 match self.sel_session.checked_add(1) {

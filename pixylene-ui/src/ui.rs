@@ -103,6 +103,7 @@ pub enum UiFn {
     Quit,
     ForceQuit,
 
+    GoToSession(u8),
     GoToNextSession,
     GoToPrevSession,
 
