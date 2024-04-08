@@ -107,7 +107,26 @@ impl PngFile {
                 return Err(Unsupported(self.color_type, self.bit_depth));
             },
             Rgb => {
-                return Err(Unsupported(self.color_type, self.bit_depth));
+                match self.bit_depth {
+                    Eight => {
+                        for i in 0..scene.dim().x() {
+                            for j in 0..scene.dim().y() {
+                                scene.set_pixel(
+                                    UCoord{ x: i, y: j },
+                                    Some(Pixel {
+                                        r: self.bytes[((3*i*scene.dim().y()) + (3*j) + 0) as usize],
+                                        g: self.bytes[((3*i*scene.dim().y()) + (3*j) + 1) as usize],
+                                        b: self.bytes[((3*i*scene.dim().y()) + (3*j) + 2) as usize],
+                                        a: 255,
+                                    })
+                                ).unwrap();
+                            }
+                        }
+                    },
+                    _ => {
+                        return Err(Unsupported(self.color_type, self.bit_depth));
+                    }
+                }
             },
             Indexed => {
                 return Err(Unsupported(self.color_type, self.bit_depth));
@@ -159,7 +178,33 @@ impl PngFile {
                 return Err(Unsupported(color_type, bit_depth));
             },
             Rgb => {
-                return Err(Unsupported(color_type, bit_depth));
+                match bit_depth {
+                    Eight => {
+                        for i in 0..scene.dim().x() {
+                            for _ in 0..scale_up {
+                                for j in 0..scene.dim().y() {
+                                    let Pixel {
+                                        r: red,
+                                        g: green,
+                                        b: blue,
+                                        ..
+                                    } = scene.get_pixel(UCoord{ x: i, y: j })
+                                            .unwrap()
+                                            .unwrap_or(Pixel::empty());
+                                    for _ in 0..scale_up {
+                                        png.bytes.push(red);
+                                        png.bytes.push(green);
+                                        png.bytes.push(blue);
+                                        //png.bytes.push(alpha);
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    _ => {
+                        return Err(Unsupported(color_type, bit_depth));
+                    }
+                }
             },
             Indexed => {
                 return Err(Unsupported(color_type, bit_depth));

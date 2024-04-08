@@ -8,50 +8,47 @@
 :END:
 *** Version 0.9 [42%]
 **** TODO actually use layer opacity & mute in Layer::merge
+**** TODO use image source bit-depth/color-type or from config.toml
+**** TODO when saving session reconvert modified to false
 **** TODO Png to/fro Scene: fill more color-type/bit-depth combos
+**** TODO dirs to get actions.lua and config.toml from XDG_CONFIG_DIR/pixylene
+**** TODO dont let exported or saved files overwrite existing files
 **** TODO Namespace keybinds such that modes can be created/modified from the config file
 **** TODO deal with minifb returning too many useless keys
 **** TODO it would be good if palette's equipped color is guaranteed to always exist and is some default color if palette is empty. helps the action authors
+**** TODO switch x and y syntax since game design often uses flipped
+**** TODO defined palette contains 10 colors, foreground+background+eight defined colors. switchForeground is a wrapper that performs Palette.changeTo(1, <input>). switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
 
-*** Version 1.0 [33%]
+*** Version 1.0 [20%]
+**** TODO plaintext serialization of Canvas
 **** TODO (pixylenetui) refresh on terminal resize for both targets [[https://docs.rs/crossterm/latest/crossterm/event/enum.Event.html#variant.Resize][Resize]]
 **** TODO pay attention to making switching between :showlayer and :showproject easy again
-**** TODO Convert UiFn::GoToSession(u8) to UiFn::GoToSession(Args) so that can be called from console. do similar for others like RunAction and RunCommand
+**** TODO Convert UiFn::GoToSession(u8) to UiFn::GoToSession(Args) so that can be called from console. do similar for others like RunAction and RunCommand (consider using toml)
 **** TODO implement Project::resize and private Canvas::resize and make comment about how Canvas can only be resized from Project
-
-**** TODO Clap parses PathBuf instead of path string for project file, png file or config file [[https://www.rustadventure.dev/introducing-clap/clap-v4/accepting-file-paths-as-arguments-in-clap][Tutorial]]
+**** TODO vim-like shortening of file paths (eg: /home/bhavya/dev becomes /h/b/dev)
+**** TODO draw_paragraph similar to telescope-like neovim window
 **** TODO helper screen to show keybind <-> actions map
-**** TODO handle all error messages larger than console size by converting them to cmdin's that print messages in chunks of console size
+**** TODO Clap parses PathBuf instead of path string for project file, png file or config file [[https://www.rustadventure.dev/introducing-clap/clap-v4/accepting-file-paths-as-arguments-in-clap][Tutorial]]
+**** TODO handle all error messages larger than console size by converting them to cmdin's that print messages in chunks of console size, or by printing them in large window using draw_paragraph
 **** TODO prelude of types required to make a new target
-
-**** TODO switch x and y syntax since game design often uses flipped
 **** TODO let (x,y) parse into UCoord/Coord in lua interface
-**** TODO Flexbox (taffy) to arrange statusbar items
-**** DONE restructuring: rename common to types and put layer mod in project mod (layer, camera, scene & palette all are composed children of Project)
-**** KILL a way to let actions called by perform_action be untracked. they should be able to be set with a boolean in pixylenetui/actions.rs (doesn't apply anymore as only canvas is tracked with memento pattern)
-**** TODO copy-and-paste action that actually copies the pixels to clipboard
-**** TODO _PROJECT FILE_ [1/2]
-***** TODO plaintext serialization of Canvas
-***** DONE plaintext config for default impl of Pixylene::import & Pixylene::new that includes palette (emphasis on palette and not the other struct fields)
 **** TODO new actions 'GoTo' (to get something like vim's 'gg' and 0) and 'ClearAllCursors'
-**** DONE complex actions that perform multiple smaller actions, when one of those smaller actions fail, should take the changes of the successful and perform them to revert them back
 **** TODO downscaling of artwork while importing (1280x1280 "/10" = 128x128)
-**** TODO add_action may throw err if action-name already exists
-**** TODO fully replace crossterm::execute!() with crossterm::queue!()
-**** DONE get rid of warnings & dead code. p.s. PixyleneDisplay is not being used anywhere
-**** DONE use more iterators: impl iterator for scene, return of render_scene and return of render_layer
 **** TODO add more metamethods to Lua interface to Coord (==, <, <=, -, %, //, __tostring, etc.)
-
-*** Dont Feel Proud About Doing This Tiny Tasks [100%]
-**** KILL deprecate MoveOneCursor in favorof SetOneCursor (i dont even remember what those are)
-**** DONE divide pixylenetui/main.rs into two fns where second function returns result and main just logs all errors to cmdout()
-
-*** Making It Pretentious/Prestigious [7%]
-**** TODO use [[https://lib.rs/crates/is-terminal][isTerminal]] in target initialize for crossterm and minifb just to be safe
 **** TODO command history
+
+*** Maybe or Maybe Not [0%]
+**** TODO Flexbox (taffy) to arrange statusbar items
+**** TODO copy-and-paste action that actually copies the pixels to clipboard
+**** TODO only 1 mode for selections, and three kinds of selections allowed: block, row or column
+**** TODO some kind of global opacity control setting for pencils
+**** TODO layer mute can be modified by giving user string like 1011101 indicating layers currently showing and user can modify and submit (like dwm)
+**** HOLD Action::perform_action returns Changes::Single or Change::Multiple (we are slowly moving away from command pattern and towards memento pattern of actions)
+
+*** Later [7%]
+**** TODO use [[https://lib.rs/crates/is-terminal][isTerminal]] in target initialize for crossterm and minifb just to be safe
 **** TODO safe Coord (& other types) methods like add_safe, add_mut_safe, mult_safe & mult_mut_safe
 **** TODO clap initializer for Pixylene::new() that opens inquire menu when called "$ pixylenetui new". optional flag -y takes default for all settings
-**** KILL perform_action returns VecDeque of Change's (i think this is unnecessary)
 **** TODO Mode that lets you 'write' colors line-by-line, left-to-right
 **** TODO use Decorate::output() again & fix parameters (String vs &static 'str)
 **** TODO "Dependency Justification" for paper like done on crossterm's github
@@ -60,16 +57,6 @@
 **** TODO change-tree instead of change-stack, doesn't forget future changes after changes in undoed state
 **** TODO alternative fn ActionManager::perform_directly() directly takes dyn Action
 **** TODO remove console_in and let all input be handled by controller showing typing of input through simply console_out
-
-*** Needs Debate [50%]
-**** DONE only 1 mode for selections, and three kinds of selections allowed: block, row or column
-**** TODO some kind of global opacity control setting for pencils
-**** DONE consider moving camera out of project and directly in pixylene (i yeeted Camera entirely)
-**** KILL project is immutable, scene-locking actions receive the mutable scene but can use the immutable project for things like Project.getFocus(), similar for camera-locking actions; criticize the difference between a "scene-locking" action & a "camera-locking" action
-**** TODO layer mute can be modified by giving user string like 1011101 indicating layers currently showing and user can modify and submit (like dwm)
-**** TODO defined palette contains 10 colors, foreground+background+eight defined colors. switchForeground is a wrapper that performs Palette.changeTo(1, <input>). switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
-**** HOLD Action::perform_action returns Changes::Single or Change::Multiple (we are slowly moving away from command pattern and towards memento pattern of actions)
-**** DONE PixyleneError::NoLayersToExport
 
 * PROS & CONS
 #+description: I weigh the pros and cons for a feature or decision here
