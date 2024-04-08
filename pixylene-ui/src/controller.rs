@@ -543,6 +543,7 @@ impl Controller {
 
             //File
             Save => {
+                let mut did_save = false;
                 match &self.sessions[self.sel_session as usize - 1].project_file_path {
                     Some(path) => {
                         match self.sessions[self.sel_session as usize - 1].pixylene.borrow()
@@ -553,6 +554,7 @@ impl Controller {
                                     &format!("saved to {}", path),
                                     &LogType::Info
                                 );
+                                did_save = true;
                             },
                             Err(err) => {
                                 self.console_out(
@@ -576,6 +578,7 @@ impl Controller {
                                             &LogType::Info
                                         );
                                         new_project_file_path = Some(input);
+                                        did_save = true;
                                     },
                                     Err(err) => {
                                         self.console_out(
@@ -598,6 +601,9 @@ impl Controller {
                                 Some(path);
                         }
                     },
+                }
+                if did_save {
+                    self.sessions[self.sel_session as usize - 1].modified = false;
                 }
             },
             Export => {
