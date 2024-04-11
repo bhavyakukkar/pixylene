@@ -97,7 +97,7 @@ impl Project {
     pub fn render_layer(&self) -> Result<Vec<OPixel>, ProjectError> {
         let net_scene = Layer::merge(
             self.canvas.dim(),
-            self.canvas.get_layer(self.focus.1)?,
+            &Layer{ opacity: 255, mute: false, ..self.canvas.get_layer(self.focus.1)?.clone() },
             &Layer::new_with_solid_color(self.canvas.dim(), Some(Pixel::black())),
             BlendMode::Normal
         ).unwrap();

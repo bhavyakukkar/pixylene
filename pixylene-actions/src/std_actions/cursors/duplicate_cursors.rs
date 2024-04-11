@@ -20,7 +20,7 @@ impl DuplicateCursors {
 impl memento::Action for DuplicateCursors {
     fn perform(&mut self, project: &mut Project, _console: &dyn Console) -> memento::ActionResult {
         if self.amount == 0 {
-            return Err(ActionError::OperationError(None));
+            return Err(ActionError::ArgsError(String::from("given amount 0")));
         }
         let dim = project.canvas.dim();
         let cursors = project.cursors().map(|cursor| cursor.clone())

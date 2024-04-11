@@ -103,17 +103,19 @@ impl Canvas {
     }
 
     /// Creates a new empty layer consistent with the canvas's dimensions and of a solid color, and
-    /// appends it to the canvas
+    /// appends it to the canvas, returning its resultant index in the canvas
     ///
     /// `Note`: This method may fail with the [`MaxLayers`][ml] error variant only.
     ///
     /// [ml]: CanvasError::MaxLayers
-    pub fn new_layer(&mut self, color: Option<Pixel>) -> Result<(), CanvasError> {
+    pub fn new_layer(&mut self, color: Option<Pixel>) -> Result<u16, CanvasError> {
         use CanvasError::MaxLayers;
 
         if self.layers.len() <= usize::from(MAX_LAYERS) {
             self.layers.push(Layer::new_with_solid_color(self.dimensions, color));
-            Ok(())
+            Ok(u16::try_from(self.layers.len()).unwrap() - 1) //shouldn't fail because all sources
+                                                              //of len increasing do not let
+                                                              //self.layers exceed 256
         } else {
             Err(MaxLayers)
         }

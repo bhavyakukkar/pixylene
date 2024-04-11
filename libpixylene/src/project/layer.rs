@@ -32,8 +32,8 @@ impl Layer {
     /// Return the net merged layer as a result of merging two layers with a given blend-mode
     ///
     /// `Note`: This method does not use the respective layer's owned
-    /// [`blend-modes`](Layer::blend_mode) in order to not make assumptions, however they may still
-    /// be passed externally.
+    /// [`blend-modes`](Layer::blend_mode) in order to not make assumptions, however you may simply
+    /// pass them externally.
     ///
     /// `Note`: This method may fail with the [`MergeError`][me] or [`BlendError`][be] error
     /// variants only.
@@ -49,20 +49,28 @@ impl Layer {
         for i in 0..dimensions.x() {
             for j in 0..dimensions.y() {
                 let coord = UCoord{ x: i, y: j };
-                let top = match top.scene.get_pixel(coord) {
-                    Ok(pixel) => pixel.unwrap_or(Pixel::empty()),
-                    Err(scene_error) => {
-                        return Err(MergeError(true, coord, scene_error));
+                let top_p = if top.mute {
+                    Pixel::empty()
+                } else {
+                    match top.scene.get_pixel(coord) {
+                        Ok(pixel) => pixel.unwrap_or(Pixel::empty()).dissolve(top.opacity),
+                        Err(scene_error) => {
+                            return Err(MergeError(true, coord, scene_error));
+                        }
                     }
                 };
-                let bottom = match bottom.scene.get_pixel(coord) {
-                    Ok(pixel) => pixel.unwrap_or(Pixel::empty()),
-                    Err(scene_error) => {
-                        return Err(MergeError(false, coord, scene_error));
+                let bottom_p = if bottom.mute {
+                    Pixel::empty()
+                } else {
+                    match bottom.scene.get_pixel(coord) {
+                        Ok(pixel) => pixel.unwrap_or(Pixel::empty()).dissolve(bottom.opacity),
+                        Err(scene_error) => {
+                            return Err(MergeError(false, coord, scene_error));
+                        }
                     }
                 };
                 merged_scene_grid.push(
-                    Some(blend_mode.blend(top, bottom)
+                    Some(blend_mode.blend(top_p, bottom_p)
                         .map_err(|err| BlendError(UCoord{ x: i, y: j }, err))?)
                 );
             }

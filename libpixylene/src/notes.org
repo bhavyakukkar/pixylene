@@ -6,20 +6,23 @@
 :PROPERTIES:
 :COOKIE_DATA: todo
 :END:
-*** Version 0.9 [42%]
-**** TODO actually use layer opacity & mute in Layer::merge
+*** Version 1.0 [22%]
+**** DONE actually use layer opacity & mute in Layer::merge
+**** TODO show layer opacity & mute in statusline
+**** TODO consider including actions in same scope as commands but with first letter capital as done in neovim for built-in and user fns
 **** TODO use image source bit-depth/color-type or from config.toml
-**** TODO when saving session reconvert modified to false
+**** DONE when saving session reconvert modified to false
 **** TODO Png to/fro Scene: fill more color-type/bit-depth combos
 **** TODO dirs to get actions.lua and config.toml from XDG_CONFIG_DIR/pixylene
+**** TODO deal with minifb returning too many useless keys
+**** TODO defined palette contains 10 colors, foreground+background+eight defined colors. switchForeground is a wrapper that performs Palette.changeTo(1, <input>). switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
+**** TODO helper screen to show keybind <-> actions map
+
+*** Version 1.1 [20%]
 **** TODO dont let exported or saved files overwrite existing files
 **** TODO Namespace keybinds such that modes can be created/modified from the config file
-**** TODO deal with minifb returning too many useless keys
-**** TODO it would be good if palette's equipped color is guaranteed to always exist and is some default color if palette is empty. helps the action authors
 **** TODO switch x and y syntax since game design often uses flipped
-**** TODO defined palette contains 10 colors, foreground+background+eight defined colors. switchForeground is a wrapper that performs Palette.changeTo(1, <input>). switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
-
-*** Version 1.0 [20%]
+**** TODO it would be good if palette's equipped color is guaranteed to always exist and is some default color if palette is empty. helps the action authors
 **** TODO plaintext serialization of Canvas
 **** TODO (pixylenetui) refresh on terminal resize for both targets [[https://docs.rs/crossterm/latest/crossterm/event/enum.Event.html#variant.Resize][Resize]]
 **** TODO pay attention to making switching between :showlayer and :showproject easy again
@@ -27,7 +30,6 @@
 **** TODO implement Project::resize and private Canvas::resize and make comment about how Canvas can only be resized from Project
 **** TODO vim-like shortening of file paths (eg: /home/bhavya/dev becomes /h/b/dev)
 **** TODO draw_paragraph similar to telescope-like neovim window
-**** TODO helper screen to show keybind <-> actions map
 **** TODO Clap parses PathBuf instead of path string for project file, png file or config file [[https://www.rustadventure.dev/introducing-clap/clap-v4/accepting-file-paths-as-arguments-in-clap][Tutorial]]
 **** TODO handle all error messages larger than console size by converting them to cmdin's that print messages in chunks of console size, or by printing them in large window using draw_paragraph
 **** TODO prelude of types required to make a new target
@@ -43,7 +45,7 @@
 **** TODO only 1 mode for selections, and three kinds of selections allowed: block, row or column
 **** TODO some kind of global opacity control setting for pencils
 **** TODO layer mute can be modified by giving user string like 1011101 indicating layers currently showing and user can modify and submit (like dwm)
-**** HOLD Action::perform_action returns Changes::Single or Change::Multiple (we are slowly moving away from command pattern and towards memento pattern of actions)
+**** TODO Action::perform_action returns Changes::Single or Change::Multiple (we are slowly moving away from command pattern and towards memento pattern of actions)
 
 *** Later [7%]
 **** TODO use [[https://lib.rs/crates/is-terminal][isTerminal]] in target initialize for crossterm and minifb just to be safe
