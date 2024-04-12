@@ -1,6 +1,6 @@
 use crate::{
     ui::{ UserInterface, Rectangle, Statusline, KeyInfo, Key, KeyMap, ReqUiFnMap, UiFn },
-    config::{ Config, generate_config },
+    config::{ Config },
     actions::{ ActionLocation, add_my_native_actions },
 };
 
@@ -15,8 +15,10 @@ use std::collections::HashMap;
 use std::process::exit;
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::path::Path;
 use clap::{ Subcommand };
+
+use dirs::config_dir;
+use std::fs::read_to_string;
 
 
 const PADDING: u8 = 1;
@@ -138,15 +140,30 @@ impl Controller {
         use colored::Colorize;
         let mut is_default = false;
 
-        let config: Config = (match generate_config() {
-            Some(c) => c,
+        let config: Config = match config_dir() {
+            Some(mut path) => {
+                path.push("pixylene");
+                path.push("config");
+                path.set_extension("toml");
+                match read_to_string(path) {
+                    Ok(contents) => {
+                        Config::from(&contents).map_err(|err| {
+                            return err.to_string();
+                        })?
+                    },
+                    //config file not present
+                    Err(_) => {
+                        is_default = true;
+                        Default::default()
+                    },
+                }
+            },
+            //config dir not configured on user's OS
             None => {
                 is_default = true;
-                Ok(Default::default())
-            }
-        }).map_err(|err| {
-            return err.to_string();
-        })?;
+                Default::default()
+            },
+        };
 
         let defaults = PixyleneDefaults {
             dim: UCoord{
@@ -245,8 +262,22 @@ impl Controller {
         let native_action_manager;
 
         let lua_action_manager = LuaActionManager::setup(
-            Path::new("/home/bhavya/.config/pixylene.lua")
-        ).unwrap();
+            &match config_dir() {
+                Some(mut path) => {
+                    path.push("pixylene");
+                    path.push("actions");
+                    path.set_extension("lua");
+                    match read_to_string(path) {
+                        Ok(contents) => contents,
+                        //actions file not present
+                        Err(_) => String::new(),
+                    }
+                },
+                None => String::new(),
+            }
+        )
+            .unwrap_or_else(|err| panic!("Error in Lua Context:\n{}", err));
+
         let mut action_map: HashMap<String, ActionLocation> = HashMap::new();
         _ = lua_action_manager.list_actions().iter().map(|action_name| {
             action_map.insert(action_name.clone(), ActionLocation::Lua);

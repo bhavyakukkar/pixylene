@@ -1,8 +1,6 @@
 use tealr::mlu::mlua::{ Lua, Table, Result };
 //use std::io::Read;
 use libpixylene::{ project, types };
-use std::path::Path;
-use std::fs;
 use std::rc::Rc;
 use std::cell::RefCell;
 
@@ -32,13 +30,8 @@ impl LuaActionManager {
             .map(|pair| pair.unwrap().0).collect::<Vec<String>>()
     }
 
-    pub fn setup(lua_file_path: &Path) -> Result<LuaActionManager> {
+    pub fn setup(user_lua: &String) -> Result<LuaActionManager> {
         let lua_ctx = Lua::new();
-    
-        //let mut user_lua = String::new();
-        //let mut user_lua_file = std::fs::File::open("./src/example.lua").unwrap();
-        //user_lua_file.read_to_string(&mut user_lua).unwrap();
-        let user_lua = fs::read_to_string(lua_file_path).unwrap_or(String::from(""));
     
         let coord;
         let ucoord;
@@ -54,6 +47,7 @@ impl LuaActionManager {
         //let console;
         let log_type;
     
+        //left here when need to generate teal docs
         /*
         let file_contents = TypeWalker::new()
             //tells it that you want to include the Example type
@@ -71,7 +65,7 @@ impl LuaActionManager {
             lua_ctx.globals().set("actions", lua_ctx.create_table()?)?;
 
             //Load script containing 1 or more actions
-            lua_ctx.load(&user_lua).exec()?;
+            lua_ctx.load(user_lua).exec()?;
 
             /*
             actions_tbl.set(
