@@ -6,8 +6,8 @@
 :PROPERTIES:
 :COOKIE_DATA: todo
 :END:
-*** Version 1.0 [0%]
-**** TODO dirs to get actions.lua and config.toml from XDG_CONFIG_DIR/pixylene
+*** Version 1.0 [16%]
+**** DONE dirs to get actions.lua and config.toml from XDG_CONFIG_DIR/pixylene
 **** TODO defined palette contains 10 colors, foreground+background+eight defined colors. switchForeground is a wrapper that performs Palette.changeTo(1, <input>). switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
 **** TODO temporarily disable unrecognized key warnings
 **** TODO show layer opacity & mute in statusline
