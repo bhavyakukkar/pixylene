@@ -17,7 +17,6 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use clap::{ Subcommand };
 
-use std::path::Path;
 use dirs::config_dir;
 use std::fs::read_to_string;
 
@@ -263,8 +262,22 @@ impl Controller {
         let native_action_manager;
 
         let lua_action_manager = LuaActionManager::setup(
-            Path::new("/home/bhavya/.config/pixylene.lua")
-        ).unwrap();
+            &match config_dir() {
+                Some(mut path) => {
+                    path.push("pixylene");
+                    path.push("actions");
+                    path.set_extension("lua");
+                    match read_to_string(path) {
+                        Ok(contents) => contents,
+                        //actions file not present
+                        Err(_) => String::new(),
+                    }
+                },
+                None => String::new(),
+            }
+        )
+            .unwrap_or_else(|err| panic!("Error in Lua Context:\n{}", err));
+
         let mut action_map: HashMap<String, ActionLocation> = HashMap::new();
         _ = lua_action_manager.list_actions().iter().map(|action_name| {
             action_map.insert(action_name.clone(), ActionLocation::Lua);
