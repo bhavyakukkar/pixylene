@@ -39,49 +39,10 @@ pub struct Config {
     pub defaults: PixyleneDefaultsConfig,
 }
 
-pub fn generate_config() -> Option<Result<Config, Error>> {
-    let toml_str = r##"
-    new_keys = false
-    keys = [
-        # { k = { c = { Char = ':' }, m = "CONTROL" }, f = "RunCommandSpecify" },
-        { k = { c = { Char = 'x' }, m = "ALT" }, f = [ "RunCommandSpecify" ] },
-        { k = { c = { Char = ';' } }, f = [ "RunLastAction" ] },
-    ]
-    every_frame = [ "PreviewFocusLayer", "UpdateStatusline" ]
-
-    [required_keys]
-    # discard_command = { c = "Esc" }
-    discard_command = { c = { Char = 'g' }, m = "CONTROL" }
-    start_command = { c = { Char = 'x' }, m = "ALT" }
-    force_quit = { c = { Char = 'c' }, m = "CONTROL" }
-    
-    [defaults]
-    dimensions = { x = 32, y = 32 }
-    repeat = { x = 1, y = 2 }
-    palette = [
-        { id = 1 , c = "#140c1c" },
-        { id = 2 , c = "#442434" },
-        { id = 3 , c = "#30346d" },
-        { id = 4 , c = "#4e4a4e" },
-        { id = 5 , c = "#854c30" },
-        { id = 6 , c = "#346524" },
-        { id = 7 , c = "#d04648aa" },
-        { id = 8 , c = "#757161" },
-        { id = 9 , c = "#597dce" },
-        { id = 10, c = "#d27d2c" },
-        { id = 11, c = "#8595a1" },
-        { id = 12, c = "#6daa2c" },
-        { id = 13, c = "#d2aa99" },
-        { id = 14, c = "#6dc2ca" },
-        { id = 15, c = "#dad45e" },
-        { id = 16, c = "#deeed6" },
-    ]
-    "##;
-
-    if let Err(x) = toml::from_str::<Config>(toml_str) {
-        println!("{}", x);
+impl Config {
+    pub fn from(toml: &String) -> Result<Config, Error> {
+        from_str(toml)
     }
-    Some(from_str(toml_str))
 }
 
 impl Default for Config {
@@ -124,7 +85,7 @@ impl Default for Config {
             },
             keys: vec![
                 KUE { k: K::new(Char(':'), Some(KM::empty())), f: vec![UiFn::RunCommandSpecify] },
-                KUE { k: K::new(Esc, Some(KM::empty())), f: vec![UiFn::Quit] },
+                //KUE { k: K::new(Esc, Some(KM::empty())), f: vec![UiFn::Quit] },
 
                 KUE { k: K::new(Char('h'), Some(KM::empty())),
                       f: vec![UiFn::RunAction(String::from("cl"))] },

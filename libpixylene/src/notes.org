@@ -6,19 +6,22 @@
 :PROPERTIES:
 :COOKIE_DATA: todo
 :END:
-*** Version 1.0 [22%]
-**** DONE actually use layer opacity & mute in Layer::merge
-**** TODO show layer opacity & mute in statusline
-**** TODO consider including actions in same scope as commands but with first letter capital as done in neovim for built-in and user fns
-**** TODO use image source bit-depth/color-type or from config.toml
-**** DONE when saving session reconvert modified to false
-**** TODO Png to/fro Scene: fill more color-type/bit-depth combos
+*** Version 1.0 [0%]
 **** TODO dirs to get actions.lua and config.toml from XDG_CONFIG_DIR/pixylene
-**** TODO deal with minifb returning too many useless keys
 **** TODO defined palette contains 10 colors, foreground+background+eight defined colors. switchForeground is a wrapper that performs Palette.changeTo(1, <input>). switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
+**** TODO temporarily disable unrecognized key warnings
+**** TODO show layer opacity & mute in statusline
 **** TODO helper screen to show keybind <-> actions map
+**** TODO Png to/fro Scene: fill more color-type/bit-depth combos
 
-*** Version 1.1 [20%]
+*** Version 1.1 [0%]
+**** TODO consider including actions in same scope as commands but with first letter capital as done in neovim for built-in and user fns
+**** TODO use PathBuf for writing and exporting files
+**** TODO deal with minifb returning too many useless keys
+**** TODO use image source bit-depth/color-type or from config.toml
+**** TODO disable unrecognized key warnings from config
+**** TODO IndexedScene for use with indexed images
+**** TODO serde feature for libpixylene
 **** TODO dont let exported or saved files overwrite existing files
 **** TODO Namespace keybinds such that modes can be created/modified from the config file
 **** TODO switch x and y syntax since game design often uses flipped
