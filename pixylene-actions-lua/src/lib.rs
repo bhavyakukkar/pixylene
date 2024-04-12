@@ -7,7 +7,6 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 pub mod values;
-pub mod utils;
 
 pub struct LuaActionManager(Lua);
 
@@ -17,7 +16,6 @@ impl LuaActionManager {
         -> Result<()>
     {
         use crate::values::{ Console, project::Project };
-        use tealr::mlu::mlua::Value;
 
         let project_lua = Project(pixylene);
         self.0.globals().set("Project", project_lua).unwrap();

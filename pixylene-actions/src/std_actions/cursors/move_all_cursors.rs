@@ -1,4 +1,4 @@
-use crate::{ Console, ActionError, command, memento };
+use crate::{ Console, ActionError, memento };
 
 use libpixylene::{
     types::{ Coord, UCoord },
@@ -29,7 +29,7 @@ impl memento::Action for MoveAllCursors {
             if displaced_cursor.x < 0 || displaced_cursor.y < 0 
                 || displaced_cursor.x >= dim.x() as i32 || displaced_cursor.y >= dim.y() as i32
             {
-                return Err(ActionError::OperationError(None));
+                return Err(ActionError::OperationError(Some(String::from("reached edge"))));
             } else {
                 new_cursors.insert((UCoord {
                     x: displaced_cursor.x.try_into().unwrap(),

@@ -48,15 +48,18 @@ impl ActionManager {
     -> ActionResult {
 
         action.borrow_mut().perform(project, console)?;
-        self.commit(&project.canvas);
         Ok(())
     }
 
-    pub fn commit(&mut self, canvas: &Canvas) {
+    /// Commits the Canvas state only if it has changed, returning whether the Canvas has changed
+    pub fn commit(&mut self, canvas: &Canvas) -> bool {
         let Self { ref mut canvas_state, ref mut canvas_history } = self;
         if *canvas != *canvas_state {
             let transform = TransformCanvas(canvas_state.clone(), canvas.clone());
             canvas_history.edit(canvas_state, transform);
+            true
+        } else {
+            false
         }
     }
 

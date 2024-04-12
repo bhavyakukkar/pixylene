@@ -1,5 +1,3 @@
-use crate::utils::messages;
-
 use tealr::{
     mlu::{
         mlua::{
@@ -108,7 +106,7 @@ impl TealData for OPixel {
                         boxed_error("Addition of y coordinates of the two OPixel's has overflowed")
                     )))?;
 
-                Ok(OPixel(types::OPixel::new(x,y).expect(messages::PCOORD_NOTFAIL)))
+                Ok(OPixel(types::OPixel::new(x,y).unwrap()))
             });
         }
 

@@ -1,14 +1,15 @@
 use crate::{ command::ChangeError };
 
 use libpixylene::{
-    types::{ BlendError },
-    project::{ SceneError, PaletteError, ProjectError, CanvasError }
+    types::{ BlendError, PixelError },
+    project::{ SceneError, PaletteError, ProjectError, CanvasError },
 };
 
 
 
 #[derive(Debug)]
 pub enum ActionError {
+    PixelError(PixelError),
     SceneError(SceneError),
     PaletteError(PaletteError),
     ChangeError(ChangeError),
@@ -19,7 +20,12 @@ pub enum ActionError {
 
     // Custom Errors
     ArgsError(String),
+    InputError(String),
     OperationError(Option<String>),
+    Discarded,
+}
+impl From<PixelError> for ActionError {
+    fn from(item: PixelError) -> ActionError { ActionError::PixelError(item) }
 }
 impl From<SceneError> for ActionError {
     fn from(item: SceneError) -> ActionError { ActionError::SceneError(item) }
@@ -43,6 +49,7 @@ impl std::fmt::Display for ActionError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use ActionError::*;
         match self {
+            PixelError(pixel_error) => write!(f, "{}", pixel_error),
             SceneError(scene_error) => write!(f, "{}", scene_error),
             PaletteError(palette_error) => write!(f, "{}", palette_error),
             ChangeError(change_error) => write!(f, "{}", change_error),
@@ -56,7 +63,9 @@ impl std::fmt::Display for ActionError {
                 supplied,
             ),
             ArgsError(desc) => write!(f, "{}", desc),
+            InputError(desc) => write!(f, "{}", desc),
             OperationError(desc) => write!(f, "{}", desc.clone().unwrap_or(String::new())),
+            Discarded => write!(f, "this action was discarded by the user"),
         }
     }
 }

@@ -1,6 +1,6 @@
 use crate::{
-    ui::{ UserInterface, Mode, Rectangle, Statusline },
-    keybinds::{ KeyMap, ReverseKeyMap, KeyFn, UiFn, get_keybinds },
+    ui::{ UserInterface, Rectangle, Statusline, KeyInfo, Key, KeyMap, ReqUiFnMap, UiFn },
+    config::{ Config, generate_config },
     actions::{ ActionLocation, add_my_native_actions },
 };
 
@@ -9,15 +9,13 @@ use libpixylene::{
     project::{ OPixel, Layer, Palette },
     types::{ UCoord, PCoord, Coord, Pixel },
 };
-use pixylene_actions::{ memento::{ Action, ActionManager }, Console, LogType };
+use pixylene_actions::{ memento::{ ActionManager }, Console, LogType };
 use pixylene_actions_lua::LuaActionManager;
 use std::collections::HashMap;
 use std::process::exit;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::path::Path;
-use std::thread::{ sleep };
-use std::time::Duration;
 use clap::{ Subcommand };
 
 
@@ -41,7 +39,6 @@ pub struct PixyleneSession {
     last_action_name: Option<String>,
     project_file_path: Option<String>,
     modified: bool,
-    //mode: Mode,
 
     action_map: HashMap<String, ActionLocation>,
     native_action_manager: ActionManager,
@@ -55,13 +52,13 @@ pub struct ConsoleCell {
 
 impl ConsoleCell {
     pub fn get_console<'a>(&'a self, target: Rc<RefCell<dyn Target + 'static>>,
-                           rev_keymap: &ReverseKeyMap)
+                           rev_keymap: &ReqUiFnMap)
         -> Console
     {
         Console {
             cmdin: Box::new(|message: String| -> Option<String> {
                     target.borrow().console_in(&message,
-                                               &rev_keymap.get(&KeyFn::DiscardCommand)
+                                               &rev_keymap.get(&ReqUiFn::DiscardCommand)
                                                .unwrap().clone(),
                                                &self.b_console.unwrap())
             }),
@@ -79,15 +76,14 @@ pub struct Controller {
     target: Rc<RefCell<dyn UserInterface>>,
 
     sessions: Vec<PixyleneSession>,
+    //this index is 1-based
     sel_session: u8,
 
     defaults: PixyleneDefaults,
 
-    //console: Console,
-    actions_loader: fn(&mut ActionManager) -> (),
-
     keymap: KeyMap,
-    rev_keymap: ReverseKeyMap,
+    rev_keymap: ReqUiFnMap,
+    every_frame: Vec<UiFn>,
     cmd_map: CommandMap,
 
     //Window boundaries
@@ -121,9 +117,7 @@ impl Controller {
 
     fn console_in(&self, message: &str) -> Option<String> {
         let input = self.target.borrow_mut().console_in(message,
-                                                        self.rev_keymap
-                                                            .get(&KeyFn::DiscardCommand)
-                                                            .unwrap(),
+                                                        &self.rev_keymap.discard_command,
                                                         &self.b_console.unwrap());
         self.console_clear();
         input
@@ -139,22 +133,68 @@ impl Controller {
         self.target.borrow_mut().clear(&self.b_console.unwrap());
     }
 
-    //pub fn new(target: Rc<RefCell<T>>) -> Self {
-    pub fn new(target: Rc<RefCell<dyn UserInterface>>) -> Self {
+    pub fn new(target: Rc<RefCell<dyn UserInterface>>) -> Result<Self, String> {
         use UiFn::*;
+        use colored::Colorize;
+        let mut is_default = false;
 
-        //Go parse TOML config and get pixylene defaults
-        let defaults = get_pixylene_defaults();
+        let config: Config = (match generate_config() {
+            Some(c) => c,
+            None => {
+                is_default = true;
+                Ok(Default::default())
+            }
+        }).map_err(|err| {
+            return err.to_string();
+        })?;
 
-        //Go parse TOML config, get keybinds, go deserialize them into key-map and reverse key-map
-        let ( keymap, rev_keymap ): (KeyMap, ReverseKeyMap) = get_keybinds();
-
-        let actions_loader = |_action_manager: &mut ActionManager| {
-            ()
+        let defaults = PixyleneDefaults {
+            dim: UCoord{
+                x: config.defaults.dimensions.x,
+                y: config.defaults.dimensions.y,
+            }.try_into().map_err(|err| format!(
+                    "{}{}{}",
+                    "Config File Error: ".red().bold(),
+                    "defaults.dimensions\n".yellow().italic(),
+                    err,
+            ))?,
+            repeat: UCoord{
+                x: config.defaults.repeat.x,
+                y: config.defaults.repeat.y,
+            }.try_into().map_err(|err| format!(
+                    "{}{}{}",
+                    "Config File Error: ".red().bold(),
+                    "defaults.repeat\n".italic(),
+                    err,
+            ))?,
+            palette: Palette::from(&config.defaults.palette.iter()
+                                   .map(|entry| (entry.id, entry.c.as_str()))
+                                   .collect::<Vec<(u8, &str)>>()).map_err(|err| format!(
+                                           "{}{}{}",
+                                           "Config File Error: ".red().bold(),
+                                           "defaults.palette\n".italic(),
+                                           err,
+                                    ))?,
         };
-        //let target_clone: Rc<RefCell<dyn Target>> = Rc::clone(&target);
 
-        Self {
+        let mut keymap: KeyMap = HashMap::new();
+        if !config.new_keys {
+            _ = <Config as Default>::default().keys.into_iter().map(|entry| {
+                keymap.insert(Key::new(entry.k.code(), Some(entry.k.modifiers())), entry.f);
+            }).collect::<Vec<()>>();
+        }
+
+        if !is_default {
+            _ = config.keys.into_iter().map(|entry| {
+                keymap.insert(Key::new(entry.k.code(), Some(entry.k.modifiers())), entry.f);
+            }).collect::<Vec<()>>();
+        }
+
+        let rev_keymap = config.required_keys;
+
+        let every_frame = config.every_frame;
+
+        Ok(Self {
             target,
 
             sessions: Vec::new(),
@@ -162,8 +202,9 @@ impl Controller {
 
             defaults,
 
-            actions_loader,
-
+            keymap,
+            rev_keymap,
+            every_frame,
             cmd_map: CommandMap::from([
                 (String::from("new"), New),
                 (String::from("open"), Open),
@@ -181,16 +222,14 @@ impl Controller {
                 (String::from("showproject"), PreviewProject),
                 (String::from("showstatus"), UpdateStatusline),
             ]),
-            keymap,
-            rev_keymap,
 
             b_console: None,
             b_camera: None,
             b_statusline: None,
             padding: PADDING,
 
-            started: true,
-        }
+            started: false,
+        })
     }
 
     pub fn new_session(&mut self, start_type: &Option<StartType>) {
@@ -203,16 +242,13 @@ impl Controller {
             }
         }
 
-        //Load the UI-wide actions into the action_manager for this new session
-        //let mut action_manager = ActionManager::new(HashMap::new());
         let native_action_manager;
-        //(self.actions_loader)(&mut action_manager);
 
         let lua_action_manager = LuaActionManager::setup(
             Path::new("/home/bhavya/.config/pixylene.lua")
         ).unwrap();
         let mut action_map: HashMap<String, ActionLocation> = HashMap::new();
-        lua_action_manager.list_actions().iter().map(|action_name| {
+        _ = lua_action_manager.list_actions().iter().map(|action_name| {
             action_map.insert(action_name.clone(), ActionLocation::Lua);
         }).collect::<Vec<()>>();
 
@@ -251,7 +287,6 @@ impl Controller {
                     last_action_name: None,
                     project_file_path: None,
                     modified: false,
-                    //mode: Mode::Normal,
                     action_map,
                     native_action_manager,
                     lua_action_manager,
@@ -271,7 +306,6 @@ impl Controller {
                             last_action_name: None,
                             project_file_path: Some(path.clone()),
                             modified: false,
-                            //mode: Mode::Normal,
                             action_map,
                             native_action_manager,
                             lua_action_manager,
@@ -320,7 +354,6 @@ impl Controller {
                             last_action_name: None,
                             project_file_path: None,
                             modified: false,
-                            //mode: Mode::Normal,
                             action_map,
                             native_action_manager,
                             lua_action_manager,
@@ -346,7 +379,12 @@ impl Controller {
                 exit(1);
             }
         }
-        self.start();
+
+        //start app if this is first session
+        if !self.started {
+            self.started = true;
+            self.start();
+        }
     }
 
     fn quit_session(&mut self) {
@@ -361,14 +399,12 @@ impl Controller {
     }
 
     fn start(&mut self) {
-        use UiFn::{ PreviewFocusLayer, UpdateStatusline };
-        //let mut mode = Mode::Normal;
+        use UiFn::{ RunKey, ForceQuit };
 
         self.target.borrow_mut().initialize();
 
         let window_size = self.target.borrow().get_size();
 
-        let padding = 0;
         self.set_boundaries(self.compute_boundaries(&window_size));
 
         // case when started from new_session instead of start directly
@@ -383,68 +419,35 @@ impl Controller {
             size: current_dim,
         });
 
-        self.perform_ui(&PreviewFocusLayer);
-        self.perform_ui(&UpdateStatusline);
+        for func in self.every_frame.clone() {
+            self.perform_ui(&func);
+        }
 
         loop {
             //sleep(Duration::from_millis(1));
 
-            if !self.target.borrow_mut().refresh() { break; }
-            let key = self.target.borrow().get_key();
-            if let Some(key) = key {
-                if let Some(funcs) = self.keymap.get(&key) {
-                    for func in (*funcs).clone() {
-                        self.perform_ui(&func);
-                    }
-                } else {
-                    self.console_out(&format!("unmapped key: {:?}", key), &LogType::Warning);
-                }
-
-                let current_dim = self.target.borrow().get_size();
-                self.perform_ui(&PreviewFocusLayer);
-                self.perform_ui(&UpdateStatusline);
+            if !self.target.borrow_mut().refresh() {
+                self.perform_ui(&ForceQuit);
             }
-            /*
-            match &mode {
-                Mode::Normal => {
-                    /*
-                    
-                    C-s => emacs_mode = Mode::Shape { Some(last_shape) },
-                    C-S-s => emacs_mode = Mode::Shape { None },
-
-                    */
+            let key_info = self.target.borrow().get_key();
+            if let Some(key_info) = key_info {
+                match key_info {
+                    KeyInfo::Key(key) => {
+                        self.perform_ui(&RunKey(key));
+                    },
+                    KeyInfo::UiFn(ui_fn) => {
+                        self.perform_ui(&ui_fn);
+                    },
                 }
-                Mode::Ooze => {
-                }
-                Mode::Shape/*{ shape }*/ => {
-                }
-
-                //Modes that do not use the equipped color
-                Mode::Layer => {
-                    /*
-
-                    n => new layer
-                    d => delete layer
-                    r => rename layer
-                    c => clone layer
-                    - => go to lower layer
-                    + => go to upper layer
-
-                    */
-                }
-                Mode::Command => {
-                }
-                Mode::Cursors => {
+                for func in self.every_frame.clone() {
+                    self.perform_ui(&func);
                 }
             }
-            */
         }
     }
 
     fn perform_ui(&mut self, func: &UiFn) {
         use UiFn::*;
-        let ( cb_camera, cb_statusline, cb_console ) =
-            self.compute_boundaries(&self.target.borrow().get_size());
 
         match func {
             //Sessions
@@ -472,16 +475,8 @@ impl Controller {
             Quit => {
                 if self.sessions[self.sel_session as usize - 1].modified {
                     self.console_out(
-                        &format!(
-                            "project has been modified since last change, \
-                            force quit ({:?}) to discard modifications",
-                            self.rev_keymap.get(&KeyFn::ForceQuit), //todo: do reverse lookup on
-                                                                    //this instead of using special
-                                                                    //rev_keymap reversed for
-                                                                    //operations that require
-                                                                    //reverse mapping like
-                                                                    //discard-key
-                        ),
+                        "project has been modified since last change, force quit (:q!) to discard \
+                        modifications",
                         &LogType::Error,
                     );
                 } else {
@@ -490,6 +485,20 @@ impl Controller {
             },
             ForceQuit => { 
                 self.quit_session();
+            },
+            GoToSession(index) => {
+                let num_sessions = u8::try_from(self.sessions.len()).unwrap();
+                if num_sessions == 0 {
+                    self.console_out("there are no sessions open", &LogType::Error);
+                }
+                if *index < num_sessions {
+                    self.sel_session = *index;
+                } else {
+                    self.console_out(
+                        &format!("only {} sessions open", num_sessions),
+                        &LogType::Error
+                    );
+                }
             },
             GoToNextSession => {
                 match self.sel_session.checked_add(1) {
@@ -534,6 +543,7 @@ impl Controller {
 
             //File
             Save => {
+                let mut did_save = false;
                 match &self.sessions[self.sel_session as usize - 1].project_file_path {
                     Some(path) => {
                         match self.sessions[self.sel_session as usize - 1].pixylene.borrow()
@@ -544,6 +554,7 @@ impl Controller {
                                     &format!("saved to {}", path),
                                     &LogType::Info
                                 );
+                                did_save = true;
                             },
                             Err(err) => {
                                 self.console_out(
@@ -567,6 +578,7 @@ impl Controller {
                                             &LogType::Info
                                         );
                                         new_project_file_path = Some(input);
+                                        did_save = true;
                                     },
                                     Err(err) => {
                                         self.console_out(
@@ -589,6 +601,9 @@ impl Controller {
                                 Some(path);
                         }
                     },
+                }
+                if did_save {
+                    self.sessions[self.sel_session as usize - 1].modified = false;
                 }
             },
             Export => {
@@ -650,6 +665,27 @@ impl Controller {
                 native_action_manager.redo(&mut pixylene.borrow_mut().project.canvas);
             },
 
+            RunKey(key) => {
+                //special required keys
+                if *key == self.rev_keymap.force_quit {
+                    self.perform_ui(&ForceQuit);
+                }
+                else if *key == self.rev_keymap.start_command {
+                    self.perform_ui(&RunCommandSpecify);
+                }
+
+                //other keys
+                else {
+                    if let Some(funcs) = self.keymap.get(&key) {
+                        for func in (*funcs).clone() {
+                            self.perform_ui(&func);
+                        }
+                    } else {
+                        self.console_out(&format!("unmapped key: {:?}", key), &LogType::Warning);
+                    }
+                }
+            },
+
             RunCommandSpecify => {
                 self.console_clear();
                 if let Some(cmd) = self.console_in(":") {
@@ -657,7 +693,7 @@ impl Controller {
                 } else {
                     self.console_clear();
                 }
-            }
+            },
             RunCommand(command) => {
                 let mut func: Option<UiFn> = None;
                 if let Some(mapped_func) = self.cmd_map.get(command) {
@@ -671,7 +707,7 @@ impl Controller {
             },
 
             RunActionSpecify => {
-                if let Some(action_name) = self.console_in("a: ") {
+                if let Some(action_name) = self.console_in("action: ") {
                     self.perform_ui(&RunAction(action_name));
                 } else {
                     self.console_clear();
@@ -679,7 +715,7 @@ impl Controller {
             },
             RunAction(action_name) => {
                 //use pixylene_actions_lua::mlua;
-                let mut self_clone = Controller::new(self.target.clone());
+                let mut self_clone = Controller::new(self.target.clone()).unwrap();
                 self_clone.set_boundaries((self.b_camera.unwrap(),
                                            self.b_statusline.unwrap(),
                                            self.b_console.unwrap()));
@@ -697,59 +733,72 @@ impl Controller {
                     ref mut action_map,
                     ref mut native_action_manager,
                     ref mut lua_action_manager,
+                    ref mut last_action_name,
+                    ref mut modified,
                     ..
                 } = &mut sessions[*sel_session as usize - 1];
 
                 match action_map.get(&action_name.clone()) {
-                    Some(action_location) => match action_location {
-                        ActionLocation::Lua => {
-                            match lua_action_manager.invoke(&action_name, pixylene.clone(),
-                                                            Rc::new(self_clone)) {
-                                Ok(()) => {
-                                    _ = native_action_manager
-                                        .commit(&pixylene.borrow().project.canvas);
-                                },
-                                Err(err) => {
-                                    target.borrow_mut().console_out(
-                                        //&format!("failed to perform: {}",
-                                        &format!("{}",
-                                        //match err {
-                                        //    //print only cause, not traceback
-                                        //    mlua::Error::CallbackError{ cause, .. } => cause,
-                                        //    mlua::Error::RuntimeError(msg) => msg,
-                                        //    otherwise => otherwise,
-                                        //}),
+                    Some(action_location) => {
+                        target.borrow_mut().clear(&b_console.unwrap());
+                        match action_location {
+                            ActionLocation::Lua => {
+                                match lua_action_manager.invoke(&action_name, pixylene.clone(),
+                                                                Rc::new(self_clone)) {
+                                    Ok(()) => {
+                                        if native_action_manager
+                                            .commit(&pixylene.borrow().project.canvas)
+                                        {
+                                            *last_action_name = Some(action_name.clone());
+                                            *modified = true;
+                                        }
+                                    },
+                                    Err(err) => {
+                                        target.borrow_mut().console_out(
+                                            //&format!("failed to perform: {}",
+                                            &format!("{}",
+                                            //match err {
+                                            //    //print only cause, not traceback
+                                            //    mlua::Error::CallbackError{ cause, .. } => cause,
+                                            //    mlua::Error::RuntimeError(msg) => msg,
+                                            //    otherwise => otherwise,
+                                            //}),
 
-                                        //todo: better reporting
-                                        err.to_string().lines().map(|s| s.to_string()
-                                        .replace("\t", " ")).collect::<Vec<String>>().join(", ")),
-                                        &LogType::Error,
-                                        &b_console.unwrap()
-                                    );
+                                            //todo: better reporting
+                                            err.to_string().lines().map(|s| s.to_string()
+                                            .replace("\t", " ")).collect::<Vec<String>>().join(", ")),
+                                            &LogType::Error,
+                                            &b_console.unwrap()
+                                        );
+                                    }
                                 }
-                            }
-                        },
-                        ActionLocation::Native(action) => {
-                            let performed = native_action_manager.perform(
-                                &mut pixylene.borrow_mut().project,
-                                &self_clone,
-                                action.clone()
-                            );
-                            match performed {
-                                Ok(()) => {
-                                    _ = native_action_manager
-                                        .commit(&pixylene.borrow().project.canvas);
-                                },
-                                Err(err) => {
-                                    target.borrow_mut().console_out(
-                                        //&format!("failed to perform: {}", err.to_string()),
-                                        &format!("{}", err.to_string()),
-                                        &LogType::Error,
-                                        &b_console.unwrap()
-                                    );
+                            },
+                            ActionLocation::Native(action) => {
+                                let performed = native_action_manager.perform(
+                                    &mut pixylene.borrow_mut().project,
+                                    &self_clone,
+                                    action.clone()
+                                );
+                                match performed {
+                                    Ok(()) => {
+                                        if native_action_manager
+                                            .commit(&pixylene.borrow().project.canvas)
+                                        {
+                                            *last_action_name = Some(action_name.clone());
+                                            *modified = true;
+                                        }
+                                    },
+                                    Err(err) => {
+                                        target.borrow_mut().console_out(
+                                            //&format!("failed to perform: {}", err.to_string()),
+                                            &format!("{}", err.to_string()),
+                                            &LogType::Error,
+                                            &b_console.unwrap()
+                                        );
+                                    }
                                 }
-                            }
-                        },
+                            },
+                        }
                     },
                     None => {
                         target.borrow_mut().console_out(
@@ -779,7 +828,13 @@ impl Controller {
                 */
             },
             RunLastAction => {
-                todo!()
+                let session_index = self.sel_session as usize - 1;
+                if let Some(action_name) = &self.sessions[session_index].last_action_name {
+                    self.perform_ui(&RunAction(action_name.clone()));
+                }
+                else {
+                    self.console_out("no previous action to repeat", &LogType::Warning);
+                }
             },
 
             PreviewFocusLayer => {
@@ -810,6 +865,7 @@ impl Controller {
                     false,
                     &self.b_camera.unwrap(),
                 );
+                self.console_in("press ENTER to stop previewing project");
             },
 
             UpdateStatusline => {
@@ -892,34 +948,9 @@ impl Controller {
     }
 }
 
-fn get_pixylene_defaults(/*fallback: PixyleneFallback*/) -> PixyleneDefaults {
-    PixyleneDefaults {
-        dim: PCoord::new(64, 64).unwrap(),
-        palette: Palette::from(&[
-            (1 , "#140c1c"),
-            (2 , "#442434"),
-            (3 , "#30346d"),
-            (4 , "#4e4a4e"),
-            (5 , "#854c30"),
-            (6 , "#346524"),
-            (7 , "#d04648"),
-            (8 , "#757161"),
-            (9 , "#597dce"),
-            (10, "#d27d2c"),
-            (11, "#8595a1"),
-            (12, "#6daa2c"),
-            (13, "#d2aa99"),
-            (14, "#6dc2ca"),
-            (15, "#dad45e"),
-            (16, "#deeed6"),
-        ]).unwrap(),
-        repeat: PCoord::new(1, 2).unwrap(),
-    }
-}
-
 struct Echo;
 impl pixylene_actions::memento::Action for Echo {
-    fn perform(&mut self, project: &mut libpixylene::project::Project, console: &dyn Console)
+    fn perform(&mut self, _project: &mut libpixylene::project::Project, console: &dyn Console)
     -> pixylene_actions::memento::ActionResult {
         console.cmdout("heyyy :3 :3 :3", &LogType::Error);
         Ok(())

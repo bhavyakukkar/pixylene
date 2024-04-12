@@ -1,14 +1,20 @@
-use crate::ui::{ UserInterface, Key, Rectangle, Mode, Statusline };
+use pixylene_ui::{
+    Cli, controller::Controller,
+    ui::{ UserInterface, Key, KeyInfo, Rectangle, Statusline, Color },
+};
 
-use libpixylene::{ types::{ UCoord, PCoord }, project::{ Project, OPixel } };
-use pixylene_actions::{ memento::ActionManager, LogType };
+use libpixylene::{ types::{ PCoord }, project::{ OPixel } };
+use pixylene_actions::{ LogType };
 use crossterm::{ event, cursor, terminal, style, queue, execute };
 use std::io::{ Write };
+use std::rc::Rc;
+use std::cell::RefCell;
+use clap::Parser;
 
 
 /// Pixylene UI's Target for the [`crossterm`](crossterm) terminal manipulation library
 /// [Crossterm repository](https://github.com/crossterm-rs/crossterm)
-pub struct TargetCrossterm;
+struct TargetCrossterm;
 
 impl UserInterface for TargetCrossterm {
 
@@ -26,7 +32,7 @@ impl UserInterface for TargetCrossterm {
             EnterAlternateScreen,
             Hide,
         ).unwrap();
-        _ = stdout.flush();
+        stdout.flush().unwrap();
     }
 
     fn finalize(&mut self) {
@@ -40,7 +46,7 @@ impl UserInterface for TargetCrossterm {
             Show,
             LeaveAlternateScreen,
         ).unwrap();
-        _ = stdout.flush();
+        stdout.flush().unwrap();
     }
 
     // Crossterm blocks until read and requires no extra work between frames
@@ -116,11 +122,11 @@ impl UserInterface for TargetCrossterm {
             ).unwrap();
         }
         queue!(stdout, ResetColor).unwrap();
-        _ = stdout.flush();
+        stdout.flush().unwrap();
     }
 
-    fn get_key(&self) -> Option<Key> {
-        use event::{ Event, KeyEvent, KeyCode, KeyModifiers, KeyEventKind, read };
+    fn get_key(&self) -> Option<KeyInfo> {
+        use event::{ Event, KeyCode, KeyModifiers, KeyEventKind, read };
 
         loop {
             //blocking read
@@ -128,10 +134,12 @@ impl UserInterface for TargetCrossterm {
                 Event::Key(key_event) => {
                     if key_event.kind == KeyEventKind::Press {
                         if let KeyCode::Char(c) = key_event.code {
-                            return Some(KeyEvent::new(KeyCode::Char(c),
-                                        key_event.modifiers.difference(KeyModifiers::SHIFT)));
+                            return Some(KeyInfo::Key(Key::new(
+                                        KeyCode::Char(c),
+                                        Some(key_event.modifiers.difference(KeyModifiers::SHIFT))
+                            )));
                         } else {
-                            return Some(key_event);
+                            return Some(KeyInfo::Key(key_event.into()));
                         }
                     }
                 },
@@ -146,9 +154,8 @@ impl UserInterface for TargetCrossterm {
     }
 
     fn draw_statusline(&mut self, statusline: &Statusline, boundary: &Rectangle) {
-        use terminal::{ size, Clear, ClearType };
         use cursor::{ MoveTo };
-        use style::{ Print, SetForegroundColor, SetBackgroundColor, Color, Color::*, ResetColor,
+        use style::{ Print, SetForegroundColor, SetBackgroundColor, ResetColor,
                      SetAttribute, Attribute };
 
         let mut stdout = std::io::stdout();
@@ -161,14 +168,14 @@ impl UserInterface for TargetCrossterm {
             queue!(
                 stdout,
                 SetAttribute(Attribute::Bold),
-                SetBackgroundColor(MyColor(colored_string.bgcolor()).into()),
-                SetForegroundColor(MyColor(colored_string.fgcolor()).into()),
+                SetBackgroundColor(Color(colored_string.bgcolor()).into()),
+                SetForegroundColor(Color(colored_string.fgcolor()).into()),
                 Print(colored_string),
                 SetAttribute(Attribute::Reset),
                 ResetColor,
-            );
+            ).unwrap();
         }
-        _ = stdout.flush();
+        stdout.flush().unwrap();
     }
 
     /*
@@ -261,12 +268,12 @@ impl UserInterface for TargetCrossterm {
         use terminal::{ Clear, ClearType };
         use cursor::{ MoveTo, MoveLeft, Show, Hide };
         use style::{ SetForegroundColor, Color, Print, ResetColor };
-        use event::{ Event, KeyEvent, KeyCode, read };
+        use event::{ Event, KeyEvent, KeyCode, KeyEventKind, read };
         let mut stdout = std::io::stdout();
 
         let out: Option<String>;
 
-        execute!(
+        queue!(
             stdout,
             ResetColor,
             MoveTo(boundary.start.y as u16, boundary.start.x as u16),
@@ -276,32 +283,35 @@ impl UserInterface for TargetCrossterm {
             ResetColor,
             Show,
         ).unwrap();
+        stdout.flush().unwrap();
 
         let mut input = String::new();
         loop {
             let event = read().unwrap();
             if let Event::Key(key) = event {
-                if key == *discard_key {
-                    out = None;
-                    break;
-                }
-                let KeyEvent { code, .. } = key;
-                match code {
-                    KeyCode::Enter => {
-                        out = Some(input);
+                if key.kind == KeyEventKind::Press {
+                    if Key::from(key) == *discard_key {
+                        out = None;
                         break;
-                    },
-                    KeyCode::Backspace => {
-                        if input.len() > 0 {
-                            execute!(stdout, MoveLeft(1), Clear(ClearType::UntilNewLine)).unwrap();
-                            input.pop();
-                        }
-                    },
-                    KeyCode::Char(c) => {
-                        execute!(stdout, Print(c)).unwrap();
-                        input.push(c);
-                    },
-                    _ => {},
+                    }
+                    let KeyEvent { code, .. } = key;
+                    match code {
+                        KeyCode::Enter => {
+                            out = Some(input);
+                            break;
+                        },
+                        KeyCode::Backspace => {
+                            if input.len() > 0 {
+                                execute!(stdout, MoveLeft(1), Clear(ClearType::UntilNewLine)).unwrap();
+                                input.pop();
+                            }
+                        },
+                        KeyCode::Char(c) => {
+                            execute!(stdout, Print(c)).unwrap();
+                            input.push(c);
+                        },
+                        _ => {},
+                    }
                 }
             }
         }
@@ -310,12 +320,11 @@ impl UserInterface for TargetCrossterm {
     }
 
     fn console_out(&mut self, message: &str, log_type: &LogType, boundary: &Rectangle) {
-        use terminal::{ Clear, ClearType };
         use cursor::{ MoveTo };
         use style::{ SetForegroundColor, Color, Print, ResetColor };
         let mut stdout = std::io::stdout();
 
-        execute!(
+        queue!(
             stdout,
             ResetColor,
             MoveTo(boundary.start.y as u16, boundary.start.x as u16),
@@ -329,14 +338,14 @@ impl UserInterface for TargetCrossterm {
             Print(&message[0..std::cmp::min(message.len(), usize::from(boundary.size.y()))]),
             ResetColor,
         ).unwrap();
+        stdout.flush().unwrap();
     }
 
     fn draw_paragraph(&mut self, _paragraph: Vec<String>) {
     }
 
     fn clear(&mut self, boundary: &Rectangle) {
-        use terminal::{ Clear, ClearType };
-        use cursor::{ MoveTo, MoveRight };
+        use cursor::{ MoveTo };
         use style::{ Print };
         let mut stdout = std::io::stdout();
 
@@ -344,25 +353,20 @@ impl UserInterface for TargetCrossterm {
             stdout,
             MoveTo(boundary.start.y as u16, boundary.start.x as u16),
             //todo: dont clear past console boundary
-        );
+        ).unwrap();
         for i in 0..boundary.size.x() {
-            for j in 0..boundary.size.y() {
+            for _ in 0..boundary.size.y() {
                 queue!(
                     stdout,
                     Print(' '),
                 ).unwrap();
-                /*
-                if j < boundary.size.y() - 1 {
-                    queue!(stdout, MoveRight(1)).unwrap();
-                }
-                */
             }
             if i < boundary.size.x() - 1 {
                 queue!(stdout, MoveTo(boundary.start.y, boundary.start.x + i+1)).unwrap();
             }
         }
 
-        _ = stdout.flush();
+        stdout.flush().unwrap();
     }
 
     fn clear_all(&mut self) {
@@ -374,32 +378,16 @@ impl UserInterface for TargetCrossterm {
     }
 }
 
-struct MyColor(Option<colored::Color>);
-impl From<MyColor> for style::Color {
-    fn from(item: MyColor) -> style::Color {
-        use style::Color::*;
 
-        match item.0 {
-            Some(color) => match color {
-                colored::Color::Black => Black,
-                colored::Color::Red => Red,
-                colored::Color::Green => Green,
-                colored::Color::Yellow => Yellow,
-                colored::Color::Blue => Blue,
-                colored::Color::Magenta => Magenta,
-                colored::Color::Cyan => Cyan,
-                colored::Color::White => White,
-                colored::Color::BrightBlack => DarkGrey,
-                colored::Color::BrightRed => DarkRed,
-                colored::Color::BrightGreen => DarkGreen,
-                colored::Color::BrightYellow => DarkYellow,
-                colored::Color::BrightBlue => DarkBlue,
-                colored::Color::BrightMagenta => DarkMagenta,
-                colored::Color::BrightCyan => DarkCyan,
-                colored::Color::BrightWhite => Grey,
-                colored::Color::TrueColor { r, g, b } => Rgb { r, g, b },
-            },
-            None => Reset,
-        }
+fn main() {
+    let target = TargetCrossterm;
+
+    match Controller::new(Rc::new(RefCell::new(target))) {
+        Ok(mut pixylene_ui) => {
+            let cli = Cli::parse();
+
+            pixylene_ui.new_session(&cli.command);
+        },
+        Err(error) => eprintln!("{}", error)
     }
 }

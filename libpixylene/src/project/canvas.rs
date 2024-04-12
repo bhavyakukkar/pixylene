@@ -102,6 +102,25 @@ impl Canvas {
         }
     }
 
+    /// Creates a new empty layer consistent with the canvas's dimensions and of a solid color, and
+    /// appends it to the canvas, returning its resultant index in the canvas
+    ///
+    /// `Note`: This method may fail with the [`MaxLayers`][ml] error variant only.
+    ///
+    /// [ml]: CanvasError::MaxLayers
+    pub fn new_layer(&mut self, color: Option<Pixel>) -> Result<u16, CanvasError> {
+        use CanvasError::MaxLayers;
+
+        if self.layers.len() <= usize::from(MAX_LAYERS) {
+            self.layers.push(Layer::new_with_solid_color(self.dimensions, color));
+            Ok(u16::try_from(self.layers.len()).unwrap() - 1) //shouldn't fail because all sources
+                                                              //of len increasing do not let
+                                                              //self.layers exceed 256
+        } else {
+            Err(MaxLayers)
+        }
+    }
+
     /// Gets and returns a reference to a Layer at a particular index in the Canvas
     ///
     /// `Note`: This method may fail with the [`IndexOutOfBounds`][ioob] error variant only.
