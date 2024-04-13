@@ -2,7 +2,7 @@
 An extensible pixel art editor.
 
 **Notice:** This application is still in very early stages, lacks basic features, lacks a manual, and is generally very not-fun to use.
-Please refer to this incomprehensible [roadmap](./libpixylene/src/notes.org).
+Please refer to this incomprehensible [roadmap](./notes.org).
 
 
 # Build
@@ -36,7 +36,7 @@ cargo build -p pixylene-ui --release \
 This is preferred if you want to pipe pixylene into some other program
 
 ```sh
-cargo build -p pixylene-ui --release\ 
+cargo build -p pixylene-ui --release \ 
     --bin pixylenecli
 ```
 
@@ -44,7 +44,7 @@ All executables will be built to `target/release/`
 
 
 # Usage
-``` sh
+```sh
 # new project
 pixylenetui new
 
@@ -55,6 +55,5 @@ pixylenetui import test.png
 pixylenetui open ~/project.pi
 ```
 
-
 # Screenshots
-![screenshot](./assets/screenshots/Screenshot.from.2024-01-28.at.15_22_11.293686511.png)
+![screenshot](./assets/screenshots/Screenshot.from.2024-04-12.at.23_19_44.244886611.png)

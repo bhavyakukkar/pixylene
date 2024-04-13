@@ -15,6 +15,7 @@
 **** TODO Png to/fro Scene: fill more color-type/bit-depth combos
 
 *** Version 1.1 [0%]
+**** TODO config setting to by default display layers with black background or all layers before it or all layers
 **** TODO consider including actions in same scope as commands but with first letter capital as done in neovim for built-in and user fns
 **** TODO use PathBuf for writing and exporting files
 **** TODO deal with minifb returning too many useless keys
