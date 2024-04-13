@@ -28,8 +28,8 @@ start_command = { c = { Char = ':' }, m = "" }
 dimensions = { x = 32, y = 32 }
 
 # compatibility feature for terminals where two characters resemble a square [██]
-repeat = { x = 1, y = 2 }
-#repeat = { x = 1, y = 2 }  # uncomment if using pixylenegui
+repeat = { x = 1, y = 2 }  # uncomment is using the TUI
+#repeat = { x = 1, y = 1 }  # uncomment if using the GUI
 
 # color palette
 # id is just an identifier & doesn't have to be in order
