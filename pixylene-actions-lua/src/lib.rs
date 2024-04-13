@@ -47,18 +47,6 @@ impl LuaActionManager {
         //let console;
         let log_type;
     
-        //left here when need to generate teal docs
-        /*
-        let file_contents = TypeWalker::new()
-            //tells it that you want to include the Example type
-            //chain extra calls to include more types
-            .process_type::<Coord>()
-            //generate the file
-            .to_json()
-            .expect("serde_json failed to serialize our data");
-        println!("{}\n ", file_contents);
-        */
-    
         //Add User Actions
         {
             //Set Actions table

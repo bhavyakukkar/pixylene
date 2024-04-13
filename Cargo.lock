@@ -960,6 +960,7 @@ dependencies = [
  "libpixylene",
  "mlua",
  "pixylene-actions",
+ "serde_json",
  "tealr",
 ]
 
