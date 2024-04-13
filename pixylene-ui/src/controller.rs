@@ -148,7 +148,7 @@ impl Controller {
                 match read_to_string(path) {
                     Ok(contents) => {
                         Config::from(&contents).map_err(|err| {
-                            return err.to_string();
+                            format!("Error in config.toml:\n {}", err.to_string())
                         })?
                     },
                     //config file not present

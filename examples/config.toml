@@ -1,0 +1,47 @@
+# whether the default keys should be emptied before considering the ones defined in the config
+new_keys = false
+
+# the map of keybinds
+keys = [
+    # every keybind binds a single key 'k' to a sequence of commands 'f'
+    { k = { c = { Char = 'x' }, m = "ALT" }, f = [ "RunCommandSpecify" ] },
+    { k = { c = { Char = ';' } }, f = [ "RunLastAction" ] },
+]
+
+# sequence of commands that should run after every frame
+every_frame = [ "PreviewFocusLayer", "UpdateStatusline" ]
+
+# keys associated to function that are required to be known by pixylene
+[required_keys]
+force_quit = { c = { Char = 'c' }, m = "CONTROL" }
+
+# vim-like
+discard_command = { c = "Esc", m = "" }
+start_command = { c = { Char = ':' }, m = "" }
+
+# emacs-like
+#discard_command = { c = { Char = 'g' }, m = "CONTROL" } 
+#start_command = { c = { Char = 'x' }, m = "ALT" }
+
+# default attributes used by any new pixylene projects
+[defaults]
+dimensions = { x = 32, y = 32 }
+
+# compatibility feature for terminals where two characters resemble a square [██]
+repeat = { x = 1, y = 2 }
+#repeat = { x = 1, y = 2 }  # uncomment if using pixylenegui
+
+# color palette
+# id is just an identifier & doesn't have to be in order
+# c can be 24-bit #RRGGBB or 32-bit #RRGGBBAA
+palette = [
+    # gruvbox material
+    { id = 1 , c = "#32302f" },
+    { id = 2 , c = "#ea6962" },
+    { id = 3 , c = "#a9b665" },
+    { id = 4 , c = "#d8a657" },
+    { id = 5 , c = "#7daea3" },
+    { id = 6 , c = "#d3869b" },
+    { id = 7 , c = "#89b482" },
+    { id = 8 , c = "#d4be98" },
+]
