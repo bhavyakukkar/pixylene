@@ -14,8 +14,9 @@
 **** TODO helper screen to show keybind <-> actions map
 **** TODO Png to/fro Scene: fill more color-type/bit-depth combos
 
-*** Version 1.1 [0%]
+*** Version 1.1 [3%]
 **** TODO config setting to by default display layers with black background or all layers before it or all layers
+**** TODO UiFn is trait implementing serde instead of enum
 **** TODO consider including actions in same scope as commands but with first letter capital as done in neovim for built-in and user fns
 **** TODO use PathBuf for writing and exporting files
 **** TODO deal with minifb returning too many useless keys
@@ -24,7 +25,7 @@
 **** TODO IndexedScene for use with indexed images
 **** TODO serde feature for libpixylene
 **** TODO dont let exported or saved files overwrite existing files
-**** TODO Namespace keybinds such that modes can be created/modified from the config file
+**** DONE Namespace keybinds such that modes can be created/modified from the config file
 **** TODO switch x and y syntax since game design often uses flipped
 **** TODO it would be good if palette's equipped color is guaranteed to always exist and is some default color if palette is empty. helps the action authors
 **** TODO plaintext serialization of Canvas

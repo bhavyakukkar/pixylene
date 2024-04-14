@@ -83,6 +83,8 @@ pub struct Controller {
 
     defaults: PixyleneDefaults,
 
+    possible_namespaces: HashMap<String, ()>,
+    namespace: Option<String>,
     keymap: KeyMap,
     rev_keymap: ReqUiFnMap,
     every_frame: Vec<UiFn>,
@@ -195,16 +197,39 @@ impl Controller {
         };
 
         let mut keymap: KeyMap = HashMap::new();
+        let mut possible_namespaces = HashMap::new();
         if !config.new_keys {
-            _ = <Config as Default>::default().keys.into_iter().map(|entry| {
-                keymap.insert(Key::new(entry.k.code(), Some(entry.k.modifiers())), entry.f);
-            }).collect::<Vec<()>>();
+            _ = <Config as Default>::default().keys.into_iter()
+                .map(|group| {
+                    if let Some(ref namespace) = group.name {
+                        possible_namespaces.insert(namespace.clone(), ());
+                    }
+                    let mut map = HashMap::new();
+                    _ = group.keys.into_iter().map(|entry| {
+                        map.insert(Key::new(entry.k.code(), Some(entry.k.modifiers())), entry.f);
+                    }).collect::<Vec<()>>();
+                    keymap.insert(group.name.clone(), map);
+                })
+                .collect::<Vec<()>>();
         }
 
         if !is_default {
-            _ = config.keys.into_iter().map(|entry| {
-                keymap.insert(Key::new(entry.k.code(), Some(entry.k.modifiers())), entry.f);
-            }).collect::<Vec<()>>();
+            _ = config.keys.into_iter()
+                .map(|group| {
+                    if let Some(ref namespace) = group.name {
+                        possible_namespaces.insert(namespace.clone(), ());
+                    }
+                    let mut map = HashMap::new();
+                    _ = group.keys.into_iter().map(|entry| {
+                        map.insert(Key::new(entry.k.code(), Some(entry.k.modifiers())), entry.f);
+                    }).collect::<Vec<()>>();
+
+                    if let Some(existing_group) = keymap.get_mut(&group.name) {
+                        existing_group.extend(map);
+                    } else {
+                        keymap.insert(group.name.clone(), map);
+                    }
+                }).collect::<Vec<()>>();
         }
 
         let rev_keymap = config.required_keys;
@@ -218,6 +243,9 @@ impl Controller {
             sel_session: 0,
 
             defaults,
+
+            possible_namespaces,
+            namespace: None,
 
             keymap,
             rev_keymap,
@@ -696,6 +724,18 @@ impl Controller {
                 native_action_manager.redo(&mut pixylene.borrow_mut().project.canvas);
             },
 
+            EnterNamespace(name) => {
+                if let Some(name) = name {
+                    if let Some(_) = self.possible_namespaces.get(name) {
+                        self.namespace = Some(name.clone());
+                    } else {
+                        self.console_out(&format!("namespace {} doesn't exist", name),
+                                         &LogType::Error);
+                    }
+                } else {
+                    self.namespace = None;
+                }
+            },
             RunKey(key) => {
                 //special required keys
                 if *key == self.rev_keymap.force_quit {
@@ -707,7 +747,13 @@ impl Controller {
 
                 //other keys
                 else {
-                    if let Some(funcs) = self.keymap.get(&key) {
+                    if let Some(funcs) = self.keymap
+                        .get(&self.namespace).unwrap() //wont fail because only source of
+                                                       //modification for self.namespace is
+                                                       //EnterNamespace which sets only from
+                                                       //possible_namespaces corresponding to
+                                                       //keymap
+                        .get(&key) {
                         for func in (*funcs).clone() {
                             self.perform_ui(&func);
                         }

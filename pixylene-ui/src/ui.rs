@@ -92,8 +92,9 @@ pub struct Rectangle {
 /// The Statusline
 pub type Statusline = Vec<colored::ColoredString>;
 
-/// The map of [`Key`](super::target::Key) to the ordered [`UiFns`](UiFn) it executes when pressed
-pub type KeyMap = HashMap<Key, Vec<UiFn>>;
+/// The map of namespace-names to secondary maps of [`Keys`](super::target::Key) to the ordered
+/// sequence of [`UiFns`](UiFn) they will execute when pressed
+pub type KeyMap = HashMap<Option<String>, HashMap<Key, Vec<UiFn>>>;
 
 #[derive(Debug, Deserialize, Clone, Eq, Hash, PartialEq)]
 pub enum UiFn {
@@ -113,6 +114,7 @@ pub enum UiFn {
     Undo,
     Redo,
 
+    EnterNamespace(Option<String>),
     RunKey(Key),
 
     RunCommand(String),
