@@ -59,7 +59,7 @@ fn main() {
         Ok(mut pixylene_ui) => {
             let cli = Cli::parse();
 
-            pixylene_ui.new_session(&cli.command);
+            pixylene_ui.start(&cli.command);
         },
         Err(error) => eprintln!("{}", error)
     }

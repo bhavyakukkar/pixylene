@@ -16,6 +16,7 @@
 
 *** Version 1.1 [3%]
 **** TODO config setting to by default display layers with black background or all layers before it or all layers
+**** TODO cursor color is calculated as color most visible on corresponding pixel color
 **** TODO UiFn is trait implementing serde instead of enum
 **** TODO consider including actions in same scope as commands but with first letter capital as done in neovim for built-in and user fns
 **** TODO use PathBuf for writing and exporting files
