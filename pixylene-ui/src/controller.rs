@@ -95,10 +95,6 @@ pub struct Controller {
     b_camera: Option<Rectangle>,
     b_statusline: Option<Rectangle>,
     padding: u8,
-
-    /// Manually set this to true if the user-interface has been started and we are not still in
-    /// the CLI
-    pub started: bool,
 }
 
 impl Console for Controller {
@@ -135,6 +131,16 @@ impl Controller {
 
     fn console_clear(&self) {
         self.target.borrow_mut().clear(&self.b_console.unwrap());
+    }
+
+    fn sel_session(&self) -> Result<usize, ()> {
+        if self.sessions.len() == 0 {
+            self.console_out("start a session to use that function. start with :new or :open or \
+                             :import", &LogType::Warning);
+            Err(())
+        } else {
+            Ok(usize::from(self.sel_session) - 1)
+        }
     }
 
     pub fn new(target: Rc<RefCell<dyn UserInterface>>) -> Result<Self, String> {
@@ -272,14 +278,12 @@ impl Controller {
             b_camera: None,
             b_statusline: None,
             padding: PADDING,
-
-            started: false,
         })
     }
 
-    pub fn new_session(&mut self, start_type: &Option<StartType>) {
+    fn new_session(&mut self, start_type: &StartType, from_args: bool) {
         if self.sessions.len() > 255 {
-            if self.started {
+            if !from_args {
                 self.console_out("cannot have more than 256 sessions open", &LogType::Error);
             } else {
                 eprintln!("cannot have more than 256 sessions open");
@@ -314,11 +318,9 @@ impl Controller {
         add_my_native_actions(&mut action_map);
 
         match start_type {
-            Some(StartType::New) => {
+            StartType::New => {
                 let mut pixylene = Pixylene::new(&self.defaults);
-                if let Some(b_camera) = self.b_camera {
-                    pixylene.project.out_dim = b_camera.size;
-                }
+                pixylene.project.out_dim = self.b_camera.unwrap().size;
 
                 let dim = pixylene.project.canvas.dim();
 
@@ -352,12 +354,10 @@ impl Controller {
                 });
                 self.sel_session += 1;
             },
-            Some(StartType::Open{ path }) => {
+            StartType::Open{ path } => {
                 match Pixylene::open(&path) {
                     Ok(mut pixylene) => {
-                        if let Some(b_camera) = self.b_camera {
-                            pixylene.project.out_dim = b_camera.size;
-                        }
+                        pixylene.project.out_dim = self.b_camera.unwrap().size;
                         native_action_manager = ActionManager::new(&pixylene.project.canvas);
                         self.sessions.push(PixyleneSession {
                             name: path.clone(),
@@ -372,24 +372,23 @@ impl Controller {
                         self.sel_session += 1;
                     }
                     Err(err) => {
-                        if self.started {
+                        if !from_args {
                             self.console_out(&format!(
                                 "failed to open: {}",
                                 err.to_string()
                             ), &LogType::Error);
                         } else {
+                            self.target.borrow_mut().finalize();
                             eprintln!("failed to open: {}", err.to_string());
                             exit(1);
                         }
                     },
                 }
             },
-            Some(StartType::Import{ path }) => {
+            StartType::Import{ path } => {
                 match Pixylene::import(&path, &self.defaults) {
                     Ok(mut pixylene) => {
-                        if let Some(b_camera) = self.b_camera {
-                            pixylene.project.out_dim = b_camera.size;
-                        }
+                        pixylene.project.out_dim = self.b_camera.unwrap().size;
 
                         let dim = pixylene.project.canvas.dim();
 
@@ -420,7 +419,7 @@ impl Controller {
                         self.sel_session += 1;
                     },
                     Err(err) => {
-                        if self.started {
+                        if !from_args {
                             self.console_out(&format!(
                                 "failed to import: {}",
                                 err.to_string()
@@ -432,32 +431,22 @@ impl Controller {
                     },
                 }
             },
-            // This can never happen in case UI has already started
-            None => {
-                eprintln!("invalid command");
-                exit(1);
-            }
-        }
-
-        //start app if this is first session
-        if !self.started {
-            self.started = true;
-            self.start();
         }
     }
 
     fn quit_session(&mut self) {
-        self.sessions.remove(self.sel_session as usize - 1);
-        if self.sessions.len() == 0 {
+        if self.sessions.len() <= 1 {
             self.target.borrow_mut().finalize();
             exit(0);
-        }
-        if usize::from(self.sel_session) > self.sessions.len() {
-            self.sel_session -= 1;
+        } else {
+            self.sessions.remove(self.sel_session as usize - 1);
+            if usize::from(self.sel_session) > self.sessions.len() {
+                self.sel_session -= 1;
+            }
         }
     }
 
-    fn start(&mut self) {
+    pub fn start(&mut self, start_type: &Option<StartType>) {
         use UiFn::{ RunKey, ForceQuit };
 
         self.target.borrow_mut().initialize();
@@ -466,11 +455,6 @@ impl Controller {
 
         self.set_boundaries(self.compute_boundaries(&window_size));
 
-        // case when started from new_session instead of start directly
-        if self.sessions.len() == 1 {
-            self.sessions[0].pixylene.borrow_mut().project.out_dim = self.b_camera.unwrap().size;
-        }
-
         //clear entire screen
         let current_dim = self.target.borrow().get_size();
         self.target.borrow_mut().clear(&Rectangle{
@@ -478,46 +462,56 @@ impl Controller {
             size: current_dim,
         });
 
-        for func in self.every_frame.clone() {
-            self.perform_ui(&func);
+        if let Some(start_type) = start_type {
+            self.new_session(start_type, true);
+
+            for func in self.every_frame.clone() {
+                _ = self.perform_ui(&func);
+            }
+        }
+        else {
+            //splash screen
+            self.console_out("Welcome to Pixylene", &LogType::Info);
         }
 
         loop {
             //sleep(Duration::from_millis(1));
 
             if !self.target.borrow_mut().refresh() {
-                self.perform_ui(&ForceQuit);
+                _ = self.perform_ui(&ForceQuit);
             }
             let key_info = self.target.borrow().get_key();
             if let Some(key_info) = key_info {
                 match key_info {
                     KeyInfo::Key(key) => {
-                        self.perform_ui(&RunKey(key));
+                        _ = self.perform_ui(&RunKey(key));
                     },
                     KeyInfo::UiFn(ui_fn) => {
-                        self.perform_ui(&ui_fn);
+                        _ = self.perform_ui(&ui_fn);
                     },
                 }
-                for func in self.every_frame.clone() {
-                    self.perform_ui(&func);
+                if self.sessions.len() > 0 {
+                    for func in self.every_frame.clone() {
+                        _ = self.perform_ui(&func);
+                    }
                 }
             }
         }
     }
 
-    fn perform_ui(&mut self, func: &UiFn) {
+    fn perform_ui(&mut self, func: &UiFn) -> Result<(), ()> {
         use UiFn::*;
 
         match func {
             //Sessions
             New => {
-                self.new_session(&Some(StartType::New));
+                self.new_session(&StartType::New, false);
             },
             Open => {
                 let input = self.console_in("open: ");
                 match input {
                     Some(input) => {
-                        self.new_session(&Some(StartType::Open{path:input}));
+                        self.new_session(&StartType::Open{path:input}, false);
                     },
                     None => (),
                 }
@@ -526,13 +520,14 @@ impl Controller {
                 let input = self.console_in("import: ");
                 match input {
                     Some(input) => {
-                        self.new_session(&Some(StartType::Import{path:input}));
+                        self.new_session(&StartType::Import{path:input}, false);
                     },
                     None => (),
                 }
             },
             Quit => {
-                if self.sessions[self.sel_session as usize - 1].modified {
+                if self.sessions.len() > 0
+                    && self.sessions[self.sel_session as usize - 1].modified {
                     self.console_out(
                         "project has been modified since last change, force quit (:q!) to discard \
                         modifications",
@@ -560,10 +555,13 @@ impl Controller {
                 }
             },
             GoToNextSession => {
-                match self.sel_session.checked_add(1) {
+                let s = self.sel_session()? + 1;
+                match s.checked_add(1) {
                     Some(new) => {
                         if usize::from(new) <= self.sessions.len() {
-                            self.sel_session = new;
+                            self.sel_session = new.try_into().unwrap(); //cant fail because
+                                                                        //sel_session can never be
+                                                                        //increased past 256
                         } else {
                             self.console_out(
                                 "this is the last session",
@@ -580,32 +578,26 @@ impl Controller {
                 }
             },
             GoToPrevSession => {
-                match self.sel_session.checked_sub(1) {
-                    Some(new) => {
-                        if new > 0 {
-                            self.sel_session = new;
-                        } else {
-                            self.console_out(
-                                "this is the first session",
-                                &LogType::Warning
-                            );
-                        }
-                    },
-                    None => {
-                        self.console_out(
-                            "there are no sessions open",
-                            &LogType::Warning
-                        );
-                    },
+                let s = self.sel_session()? + 1;
+                if s - 1 > 0 {
+                    self.sel_session = (s - 1).try_into().unwrap(); //cant fail because
+                                                                //sel_session can never be
+                                                                //increased past 256
+                } else {
+                    self.console_out(
+                        "this is the first session",
+                        &LogType::Warning
+                    );
                 }
             },
 
             //File
             Save => {
+                let s = self.sel_session()?;
                 let mut did_save = false;
-                match &self.sessions[self.sel_session as usize - 1].project_file_path {
+                match &self.sessions[s].project_file_path {
                     Some(path) => {
-                        match self.sessions[self.sel_session as usize - 1].pixylene.borrow()
+                        match self.sessions[s].pixylene.borrow()
                             .save(&path)
                         {
                             Ok(()) => {
@@ -629,7 +621,7 @@ impl Controller {
                         match self.console_in("save path: ") {
                             Some(input) => {
                                 self.console_out("saving...", &LogType::Info);
-                                match self.sessions[self.sel_session as usize - 1].pixylene
+                                match self.sessions[s].pixylene
                                     .borrow().save(&input) {
                                     Ok(()) => {
                                         self.console_out(
@@ -656,23 +648,24 @@ impl Controller {
                             None => (),
                         }
                         if let Some(path) = new_project_file_path {
-                            self.sessions[self.sel_session as usize - 1].project_file_path =
+                            self.sessions[s].project_file_path =
                                 Some(path);
                         }
                     },
                 }
                 if did_save {
-                    self.sessions[self.sel_session as usize - 1].modified = false;
+                    self.sessions[s].modified = false;
                 }
             },
             Export => {
+                let s = self.sel_session()?;
                 match self.console_in("export path: ") {
                     Some(path) => match self.console_in("scaling factor: ") {
                         Some(input) => match str::parse::<u16>(&input) {
                             Ok(scale_up) => {
                                 self.console_out("exporting...",
                                                    &LogType::Info);
-                                match self.sessions[self.sel_session as usize - 1].pixylene
+                                match self.sessions[s].pixylene
                                     .borrow().export(&path,
                                                               scale_up) {
                                     Ok(()) => {
@@ -706,20 +699,22 @@ impl Controller {
 
             //Undo/Redo
             Undo => {
+                let s = self.sel_session()?;
                 let PixyleneSession {
                     ref mut native_action_manager,
                     ref mut pixylene,
                     ..
-                } = &mut self.sessions[self.sel_session as usize - 1];
+                } = &mut self.sessions[s];
 
                 native_action_manager.undo(&mut pixylene.borrow_mut().project.canvas);
             },
             Redo => {
+                let s = self.sel_session()?;
                 let PixyleneSession {
                     ref mut native_action_manager,
                     ref mut pixylene,
                     ..
-                } = &mut self.sessions[self.sel_session as usize - 1];
+                } = &mut self.sessions[s];
 
                 native_action_manager.redo(&mut pixylene.borrow_mut().project.canvas);
             },
@@ -739,10 +734,10 @@ impl Controller {
             RunKey(key) => {
                 //special required keys
                 if *key == self.rev_keymap.force_quit {
-                    self.perform_ui(&ForceQuit);
+                    _ = self.perform_ui(&ForceQuit);
                 }
                 else if *key == self.rev_keymap.start_command {
-                    self.perform_ui(&RunCommandSpecify);
+                    _ = self.perform_ui(&RunCommandSpecify);
                 }
 
                 //other keys
@@ -755,7 +750,7 @@ impl Controller {
                                                        //keymap
                         .get(&key) {
                         for func in (*funcs).clone() {
-                            self.perform_ui(&func);
+                            _ = self.perform_ui(&func);
                         }
                     } else {
                         self.console_out(&format!("unmapped key: {:?}", key), &LogType::Warning);
@@ -766,7 +761,7 @@ impl Controller {
             RunCommandSpecify => {
                 self.console_clear();
                 if let Some(cmd) = self.console_in(":") {
-                    self.perform_ui(&RunCommand(cmd));
+                    _ = self.perform_ui(&RunCommand(cmd));
                 } else {
                     self.console_clear();
                 }
@@ -777,21 +772,22 @@ impl Controller {
                     func = Some(mapped_func.clone());
                 }
                 if let Some(func) = func {
-                    self.perform_ui(&func);
+                    _ = self.perform_ui(&func);
                 } else {
                     self.console_out(&format!("command not found: '{}'", command), &LogType::Error);
                 }
             },
 
             RunActionSpecify => {
+                _ = self.sel_session()?;
                 if let Some(action_name) = self.console_in("action: ") {
-                    self.perform_ui(&RunAction(action_name));
+                    _ = self.perform_ui(&RunAction(action_name));
                 } else {
                     self.console_clear();
                 }
             },
             RunAction(action_name) => {
-                //use pixylene_actions_lua::mlua;
+                let s = self.sel_session()?;
                 let mut self_clone = Controller::new(self.target.clone()).unwrap();
                 self_clone.set_boundaries((self.b_camera.unwrap(),
                                            self.b_statusline.unwrap(),
@@ -800,7 +796,6 @@ impl Controller {
                 let Self {
                     sessions,
                     target,
-                    sel_session,
                     b_console,
                     ..
                 } = self;
@@ -813,7 +808,7 @@ impl Controller {
                     ref mut last_action_name,
                     ref mut modified,
                     ..
-                } = &mut sessions[*sel_session as usize - 1];
+                } = &mut sessions[s];
 
                 match action_map.get(&action_name.clone()) {
                     Some(action_location) => {
@@ -905,9 +900,9 @@ impl Controller {
                 */
             },
             RunLastAction => {
-                let session_index = self.sel_session as usize - 1;
-                if let Some(action_name) = &self.sessions[session_index].last_action_name {
-                    self.perform_ui(&RunAction(action_name.clone()));
+                let s = self.sel_session()?;
+                if let Some(action_name) = &self.sessions[s].last_action_name {
+                    _ = self.perform_ui(&RunAction(action_name.clone()));
                 }
                 else {
                     self.console_out("no previous action to repeat", &LogType::Warning);
@@ -915,7 +910,8 @@ impl Controller {
             },
 
             PreviewFocusLayer => {
-                let session = &mut self.sessions[self.sel_session as usize - 1];
+                let s = self.sel_session()?;
+                let session = &mut self.sessions[s];
                 self.target.borrow_mut().draw_camera(
                     session.pixylene.borrow().project.out_dim,
                     match session.pixylene.borrow().project.render_layer() {
@@ -935,7 +931,8 @@ impl Controller {
             },
 
             PreviewProject => {
-                let session = &mut self.sessions[self.sel_session as usize - 1];
+                let s = self.sel_session()?;
+                let session = &mut self.sessions[s];
                 self.target.borrow_mut().draw_camera(
                     session.pixylene.borrow().project.out_dim,
                     session.pixylene.borrow().project.render(),
@@ -947,10 +944,11 @@ impl Controller {
 
             UpdateStatusline => {
                 use colored::Colorize;
+                let s = self.sel_session()?;
 
                 self.target.borrow_mut().clear(&self.b_statusline.unwrap());
 
-                let session = &self.sessions[self.sel_session as usize - 1];
+                let session = &self.sessions[s];
                 let mut statusline: Statusline = Vec::new();
                 let padding = "     ".on_truecolor(60,60,60);
 
@@ -966,7 +964,7 @@ impl Controller {
                 statusline.push(padding.clone());
 
                 statusline.push(
-                    format!("Session {} of {}", self.sel_session, self.sessions.len())
+                    format!("Session {} of {}", s + 1, self.sessions.len())
                     .on_truecolor(60,60,60).bright_white()
                 );
                 statusline.push(padding.clone());
@@ -1001,6 +999,7 @@ impl Controller {
                                                          &self.b_statusline.unwrap());
             }
         }
+        Ok(())
     }
 
     // returns boundaries of camera, statusline and console respectively
