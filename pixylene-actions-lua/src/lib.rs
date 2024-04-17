@@ -9,12 +9,12 @@ pub mod utils;
 
 
 #[derive(Clone)]
-enum Context<T: Default, U> {
+enum Context<T, U> {
     Solo(T),
     Linked(Rc<RefCell<Pixylene>>, U),
 }
 
-impl<T: Default, U> Context<T, U> {
+impl<T, U> Context<T, U> {
 
     //Mutably do & return something with this context by passing what to do in both cases
     fn do_mut<FS, FL, S>(&mut self, f_solo: FS, f_linked: FL) -> S
@@ -40,13 +40,6 @@ impl<T: Default, U> Context<T, U> {
         }
     }
 }
-
-impl<T: Default, U> Default for Context<T, U> {
-    fn default() -> Context<T, U> {
-        Context::Solo(Default::default())
-    }
-}
-
 
 pub struct LuaActionManager(Lua);
 

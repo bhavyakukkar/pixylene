@@ -21,7 +21,7 @@ use tealr::{
 };
 
 /// Lua interface to libpixylene's [`Canvas`][project::Canvas] type
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct Canvas(pub Context<project::Canvas, ()>);
 
 impl<'lua> FromLua<'lua> for Canvas {
