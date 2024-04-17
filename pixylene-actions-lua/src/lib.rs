@@ -1,10 +1,52 @@
 use tealr::mlu::mlua::{ Lua, Table, Result };
 //use std::io::Read;
-use libpixylene::{ project, types };
+use libpixylene::{ Pixylene, project, types };
 use std::rc::Rc;
-use std::cell::RefCell;
+use std::cell::{RefCell, Ref, RefMut};
 
 pub mod values;
+pub mod utils;
+
+
+#[derive(Clone)]
+enum Context<T: Default, U> {
+    Solo(T),
+    Linked(Rc<RefCell<Pixylene>>, U),
+}
+
+impl<T: Default, U> Context<T, U> {
+
+    //Mutably do & return something with this context by passing what to do in both cases
+    fn do_mut<FS, FL, S>(&mut self, f_solo: FS, f_linked: FL) -> S
+    where
+        FS: Fn(&mut T) -> S,
+        FL: Fn(RefMut<'_, Pixylene>, &U) -> S
+    {
+        match self {
+            Context::Solo(t) => f_solo(t),
+            Context::Linked(p, data) => f_linked(p.borrow_mut(), data),
+        }
+    }
+
+    //Immutably do & return something with this context by passing what to do in both cases
+    fn do_imt<FS, FL, S>(&self, f_solo: FS, f_linked: FL) -> S
+    where
+        FS: Fn(&T) -> S,
+        FL: Fn(Ref<'_, Pixylene>, &U) -> S
+    {
+        match self {
+            Context::Solo(t) => f_solo(t),
+            Context::Linked(p, data) => f_linked(p.borrow(), data),
+        }
+    }
+}
+
+impl<T: Default, U> Default for Context<T, U> {
+    fn default() -> Context<T, U> {
+        Context::Solo(Default::default())
+    }
+}
+
 
 pub struct LuaActionManager(Lua);
 
@@ -102,10 +144,10 @@ impl LuaActionManager {
             lua_ctx.globals().set("PC", PCoord(pcoord))?;
             lua_ctx.globals().set("P", Pixel(pixel))?;
             lua_ctx.globals().set("BlendMode", BlendMode(blend_mode))?;
-            lua_ctx.globals().set("Scene", Scene(scene))?;
-            lua_ctx.globals().set("Layer", Layer(layer))?;
-            lua_ctx.globals().set("Palette", Palette(palette))?;
-            lua_ctx.globals().set("Canvas", Canvas(canvas))?;
+            lua_ctx.globals().set("Scene", Scene(Context::Solo(scene)))?;
+            lua_ctx.globals().set("Layer", Layer(Context::Solo(layer)))?;
+            lua_ctx.globals().set("Palette", Palette(Context::Solo(palette)))?;
+            lua_ctx.globals().set("Canvas", Canvas(Context::Solo(canvas)))?;
             //lua_ctx.globals().set("Project", Project(project))?;
     
             //lua_ctx.globals().set("Console", Console(Box::new(console)))?;
@@ -134,8 +176,9 @@ mod tests {
         use std::cell::RefCell;
 
         let pixylene = Rc::new(RefCell::new(libpixylene::Pixylene::new(&PixyleneDefaults {
-            dim: PCoord::new(10, 10).unwrap(),
+            dim: PCoord::new(2, 2).unwrap(),
             palette: Palette::new(),
+            repeat: PCoord::new(1, 1).unwrap(),
         })));
 
         struct ExampleConsole;
@@ -144,10 +187,10 @@ mod tests {
             fn cmdout(&self, message: &str, _log_type: &LogType) { println!("{}", message); }
         }
 
-        let mut lam = LuaActionManager::setup(Path::new("/home/bhavya/.config/pixylene.lua"))?;
-        lam.invoke("example", pixylene.clone(), Rc::new(ExampleConsole))?;
+        let path = Path::new("/home/bhavya/.config/pixylene/actions.lua");
+        let mut lam = LuaActionManager::setup(&std::fs::read_to_string(path).unwrap())?;
+        lam.invoke("test", pixylene.clone(), Rc::new(ExampleConsole))?;
 
-        println!("{}", pixylene.borrow().project.canvas.dim());
         Ok(())
     }
 }

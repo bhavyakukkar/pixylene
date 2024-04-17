@@ -1,23 +1,28 @@
-use crate::values::{ types::{ PCoord, BlendMode }, project::{ Scene } };
+use crate::{
+    Context,
+    utils::layer_gone,
+    values::{
+        project::Scene,
+        types::{BlendMode, PCoord},
+    }
+};
 
+use libpixylene::project;
+use std::sync::Arc;
 use tealr::{
     mlu::{
         mlua::{
-            self,
-            prelude::{ LuaValue },
-            FromLua, Lua, Result, UserData, UserDataFields, UserDataMethods, MetaMethod,
+            self, prelude::LuaValue, FromLua, Lua, MetaMethod, Result, UserData, UserDataFields,
+            UserDataMethods,
         },
         TealData, TealDataMethods, UserDataWrapper,
     },
-    ToTypename, TypeBody, mlua_create_named_parameters,
+    mlua_create_named_parameters, ToTypename, TypeBody,
 };
-use std::sync::Arc;
-use libpixylene::{ project };
-
 
 /// Lua interface to libpixylene's [`Layer`][project::Layer] type
 #[derive(Clone)]
-pub struct Layer(pub project::Layer);
+pub struct Layer(pub Context<project::Layer, u16>);
 
 impl<'lua> FromLua<'lua> for Layer {
     fn from_lua(value: LuaValue<'lua>, _: &'lua Lua) -> Result<Layer> {
@@ -45,16 +50,26 @@ impl TealData for Layer {
                     mute: bool,
                     blend_mode: BlendMode,
             );
-            methods.document("Create & return a new Layer by providing a Scene (which will exist \
+            methods.document(
+                "Create & return a new Layer by providing a Scene (which will exist \
                              as a clone in the Layer), an opacity (0-255), whether it is muted \
-                             (boolean), and its BlendMode");
+                             (boolean), and its BlendMode",
+            );
             methods.add_meta_method(MetaMethod::Call, |_, _, a: LayerArgs| {
-                Ok(Layer(project::Layer {
-                    scene: a.scene.0,
+                use mlua::Error::{ ExternalError };
+                let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
+
+                Ok(Layer(Context::Solo(project::Layer {
+                    scene: a.scene.0.do_imt(
+                        |scene| Ok(scene.clone()),
+                        |pixylene, index| pixylene.project.canvas
+                            .get_layer(*index)
+                            .map(|layer| layer.scene.clone())
+                    ).map_err(|_| ExternalError(Arc::from(boxed_error(layer_gone))))?,
                     opacity: a.opacity,
                     mute: a.mute,
                     blend_mode: a.blend_mode.0,
-                }))
+                })))
             });
         }
 
@@ -67,17 +82,27 @@ impl TealData for Layer {
                     bottom: Layer,
                     blend_mode: BlendMode,
             );
-            methods.document("Create & return a new Layer of given dimensions by merging the two \
-                             existing layers with the given blend_mode");
+            methods.document(
+                "Create & return a new Layer of given dimensions by merging the two \
+                             existing layers with the given blend_mode",
+            );
             methods.add_function("merge", |_, a: LayerMergeArgs| {
-                use mlua::Error::{ ExternalError };
+                use mlua::Error::ExternalError;
                 let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
 
-                match project::Layer::merge(a.dimensions.0, &a.top.0, &a.bottom.0, a.blend_mode.0){
-                    Ok(scene) => Ok(Scene(scene)),
-                    Err(err) => Err(ExternalError(Arc::from(
-                        boxed_error(&err.to_string())
-                    ))),
+                let top = a.top.0.do_imt(
+                    |layer| Ok(layer.clone()),
+                    |pixylene, index| pixylene.project.canvas.get_layer(*index).map(|layer| layer.clone()),
+                ).map_err(|_| ExternalError(Arc::from(boxed_error(layer_gone))))?;
+                
+                let bottom = a.bottom.0.do_imt(
+                    |layer| Ok(layer.clone()),
+                    |pixylene, index| pixylene.project.canvas.get_layer(*index).map(|layer| layer.clone()),
+                ).map_err(|_| ExternalError(Arc::from(boxed_error(layer_gone))))?;
+
+                match project::Layer::merge(a.dimensions.0, &top, &bottom, a.blend_mode.0) {
+                    Ok(scene) => Ok(Scene(Context::Solo(scene))),
+                    Err(err) => Err(ExternalError(Arc::from(boxed_error(&err.to_string())))),
                 }
             });
         }
@@ -89,34 +114,122 @@ impl TealData for Layer {
     }
 
     fn add_fields<'lua, F: tealr::mlu::TealDataFields<'lua, Self>>(fields: &mut F) {
+        use Context::*;
+        use mlua::Error::{ ExternalError };
 
+        //Lua interface to Layer.scene
         fields.document("the Scene being composed by this Layer");
-        fields.add_field_method_get("scene", |_, this| Ok(Scene(this.0.scene.clone())));
-        fields.add_field_method_set("scene", |_, this, value: Scene| {
-            this.0.scene = value.0;
-            Ok(())
+        fields.add_field_method_get("scene", |_, this| match &this.0 {
+            Solo(layer) => Ok(Scene(Solo(layer.scene.clone()))),
+            Linked(pixylene, index) => Ok(Scene(Linked(pixylene.clone(), *index))),
+        });
+        fields.add_field_method_set("scene", |_, this, scene: Scene| {
+            let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
+
+            match &mut this.0 {
+                Solo(ref mut layer) => match scene.0 {
+                    Solo(scene) => {
+                        layer.scene = scene.clone();
+                        Ok(())
+                    },
+                    Linked(pixylene, index) => {
+                        match pixylene.borrow().project.canvas.get_layer(index) {
+                            Ok(layer2) => {
+                                layer.scene = layer2.scene.clone();
+                                Ok(())
+                            },
+                            Err(_) => Err(ExternalError(Arc::from(boxed_error(layer_gone)))),
+                        }
+                    },
+                },
+                Linked(pixylene, index) => scene.0.do_imt(
+                    |scene| {
+                        match pixylene.borrow_mut().project.canvas.get_layer_mut(*index) {
+                            Ok(layer) => {
+                                layer.scene = scene.clone();
+                                Ok(())
+                            },
+                            Err(_) => Err(ExternalError(Arc::from(boxed_error(layer_gone)))),
+                        }
+                    },
+                    |pixylene2, index2| {
+                        match pixylene.borrow_mut().project.canvas.get_layer_mut(*index) {
+                            Ok(layer) => {
+                                match pixylene2.project.canvas.get_layer(*index2) {
+                                    Ok(layer2) => {
+                                        layer.scene = layer2.scene.clone();
+                                        Ok(())
+                                    },
+                                    Err(_) => Err(ExternalError(Arc::from(boxed_error(layer_gone)))),
+                                }
+                            },
+                            Err(_) => Err(ExternalError(Arc::from(boxed_error(layer_gone)))),
+                        }
+                    },
+                )
+            }
         });
 
+        //Lua interface to Layer.opacity
         fields.document("the opacity of this Layer");
-        fields.add_field_method_get("opacity", |_, this| Ok(this.0.opacity));
-        fields.add_field_method_set("opacity", |_, this, value| {
-            this.0.opacity = value;
-            Ok(())
-        });
+        fields.add_field_method_get("opacity", |_, this| this.0.do_imt(
+            |layer| Ok(layer.opacity),
+            |pixylene, index| pixylene.project.canvas.get_layer(*index).map(|layer| layer.opacity)
+        ).map_err(|_|
+            ExternalError(Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(layer_gone)))
+        ));
+        fields.add_field_method_set("opacity", |_, this, opacity| this.0.do_mut(
+            |layer| {
+                layer.opacity = opacity;
+                Ok(())
+            },
+            |mut pixylene, index| pixylene.project.canvas.get_layer_mut(*index).map(|layer| {
+                layer.opacity = opacity;
+            })
+        ).map_err(|_|
+            ExternalError(Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(layer_gone)))
+        ));
 
+        //Lua interface to Layer.mute
         fields.document("whether this Layer is muted");
-        fields.add_field_method_get("mute", |_, this| Ok(this.0.mute));
-        fields.add_field_method_set("mute", |_, this, value| {
-            this.0.mute = value;
-            Ok(())
-        });
+        fields.add_field_method_get("mute", |_, this| this.0.do_imt(
+            |layer| Ok(layer.mute),
+            |pixylene, index| pixylene.project.canvas.get_layer(*index).map(|layer| layer.mute)
+        ).map_err(|_|
+            ExternalError(Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(layer_gone)))
+        ));
+        fields.add_field_method_set("mute", |_, this, mute| this.0.do_mut(
+            |layer| {
+                layer.mute = mute;
+                Ok(())
+            },
+            |mut pixylene, index| pixylene.project.canvas.get_layer_mut(*index).map(|layer| {
+                layer.mute = mute;
+            })
+        ).map_err(|_|
+            ExternalError(Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(layer_gone)))
+        ));
 
-        fields.document("the blend_mode of this Layer");
-        fields.add_field_method_get("blend_mode", |_, this| Ok(BlendMode(this.0.blend_mode)));
-        fields.add_field_method_set("blend_mode", |_, this, value: BlendMode| {
-            this.0.blend_mode = value.0;
-            Ok(())
-        });
+        //Lua interface to Layer.blend_mode
+        fields.document("the blend-mode of this Layer");
+        fields.add_field_method_get("blend_mode", |_, this| this.0.do_imt(
+            |layer| Ok(BlendMode(layer.blend_mode)),
+            |pixylene, index| pixylene.project.canvas.get_layer(*index)
+            .map(|layer| BlendMode(layer.blend_mode))
+        ).map_err(|_|
+            ExternalError(Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(layer_gone)))
+        ));
+        fields.add_field_method_set("blend_mode", |_, this, blend_mode: BlendMode| this.0.do_mut(
+            |layer| {
+                layer.blend_mode = blend_mode.0;
+                Ok(())
+            },
+            |mut pixylene, index| pixylene.project.canvas.get_layer_mut(*index).map(|layer| {
+                layer.blend_mode = blend_mode.0;
+            })
+        ).map_err(|_|
+            ExternalError(Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(layer_gone)))
+        ));
     }
 }
 
