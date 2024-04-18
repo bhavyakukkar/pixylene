@@ -1,13 +1,14 @@
 use super::UCoord;
 
 use std::fmt;
+use serde::{ Serialize, Deserialize };
 
 /// A `P`ositive `Coord`inate type composed of two positive (>= 1) 16-bit unsigned integers.
 ///
 /// `This type can not be constructed directly, use `[`PCoord::new`][new]` to construct.`
 ///
 /// [new]: #method.new
-#[derive(Copy, Clone, PartialEq, Default, Debug, Savefile)]
+#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Default, Debug, Savefile)]
 pub struct PCoord { x: u16, y: u16 }
 
 impl PCoord {
