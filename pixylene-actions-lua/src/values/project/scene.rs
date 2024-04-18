@@ -1,6 +1,6 @@
 use crate::{
     Context,
-    utils::layer_gone,
+    utils::LAYER_GONE,
     values::types::{ UCoord, PCoord, Pixel }
 };
 
@@ -85,7 +85,7 @@ impl TealData for Scene {
                     |pixylene, index| pixylene.project.canvas
                         .get_layer(*index)
                         .map(|layer| layer.scene.get_pixel(a.coordinate.0))
-                ).map_err(|_| ExternalError(Arc::from(boxed_error(layer_gone))))?
+                ).map_err(|_| ExternalError(Arc::from(boxed_error(LAYER_GONE))))?
                 {
                     Ok(pixel) => Ok(Pixel(pixel.unwrap_or(types::Pixel::empty()))),
                     Err(err) => Err(ExternalError(Arc::from(
@@ -112,7 +112,7 @@ impl TealData for Scene {
                     |mut pixylene, index| pixylene.project.canvas
                         .get_layer_mut(*index)
                         .map(|layer| layer.scene.set_pixel(a.coordinate.0, Some(a.new_pixel.0)))
-                ).map_err(|_| ExternalError(Arc::from(boxed_error(layer_gone))))?
+                ).map_err(|_| ExternalError(Arc::from(boxed_error(LAYER_GONE))))?
                 {
                     Ok(()) => Ok(()),
                     Err(err) => Err(ExternalError(Arc::from(
@@ -135,7 +135,7 @@ impl TealData for Scene {
                 .get_layer(*index)
                 .map(|layer| layer.scene.dim())
         ).map_err(|_| ExternalError(Arc::from(
-            Box::<dyn std::error::Error + Send + Sync>::from(layer_gone)
+            Box::<dyn std::error::Error + Send + Sync>::from(LAYER_GONE)
         )))?)));
     }
 }

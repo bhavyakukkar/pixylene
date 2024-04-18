@@ -9,7 +9,7 @@ pub mod utils;
 
 
 #[derive(Clone)]
-enum Context<T, U> {
+pub enum Context<T, U> {
     Solo(T),
     Linked(Rc<RefCell<Pixylene>>, U),
 }

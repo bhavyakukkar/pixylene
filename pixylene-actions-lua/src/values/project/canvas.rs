@@ -1,5 +1,5 @@
 use crate::{
-    utils::layer_gone,
+    utils::LAYER_GONE,
     values::{
         project::{Layer, Palette, Scene},
         types::{PCoord, Pixel},
@@ -64,7 +64,7 @@ impl TealData for Canvas {
                         |pixylene, index| pixylene.project.canvas
                             .get_layer(*index)
                             .map(|layer| layer.clone())
-                    ).map_err(|_| ExternalError(Arc::from(boxed_error(layer_gone))))?);
+                    ).map_err(|_| ExternalError(Arc::from(boxed_error(LAYER_GONE))))?);
                 }
 
                 match project::Canvas::from_layers(
@@ -117,7 +117,7 @@ impl TealData for Canvas {
                 let layer = a.layer.0.do_imt(
                     |layer| Ok(layer.clone()),
                     |pixylene, index| pixylene.project.canvas.get_layer(*index).map(|layer| layer.clone())
-                ).map_err(|_| ExternalError(Arc::from(boxed_error(layer_gone))))?;
+                ).map_err(|_| ExternalError(Arc::from(boxed_error(LAYER_GONE))))?;
 
                 match &mut this.0 {
                     Context::Solo(ref mut canvas) => canvas.add_layer(layer),

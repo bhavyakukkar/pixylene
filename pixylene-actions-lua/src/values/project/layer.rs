@@ -1,6 +1,6 @@
 use crate::{
     Context,
-    utils::layer_gone,
+    utils::LAYER_GONE,
     values::{
         project::Scene,
         types::{BlendMode, PCoord},
@@ -65,7 +65,7 @@ impl TealData for Layer {
                         |pixylene, index| pixylene.project.canvas
                             .get_layer(*index)
                             .map(|layer| layer.scene.clone())
-                    ).map_err(|_| ExternalError(Arc::from(boxed_error(layer_gone))))?,
+                    ).map_err(|_| ExternalError(Arc::from(boxed_error(LAYER_GONE))))?,
                     opacity: a.opacity,
                     mute: a.mute,
                     blend_mode: a.blend_mode.0,
@@ -93,12 +93,12 @@ impl TealData for Layer {
                 let top = a.top.0.do_imt(
                     |layer| Ok(layer.clone()),
                     |pixylene, index| pixylene.project.canvas.get_layer(*index).map(|layer| layer.clone()),
-                ).map_err(|_| ExternalError(Arc::from(boxed_error(layer_gone))))?;
+                ).map_err(|_| ExternalError(Arc::from(boxed_error(LAYER_GONE))))?;
                 
                 let bottom = a.bottom.0.do_imt(
                     |layer| Ok(layer.clone()),
                     |pixylene, index| pixylene.project.canvas.get_layer(*index).map(|layer| layer.clone()),
-                ).map_err(|_| ExternalError(Arc::from(boxed_error(layer_gone))))?;
+                ).map_err(|_| ExternalError(Arc::from(boxed_error(LAYER_GONE))))?;
 
                 match project::Layer::merge(a.dimensions.0, &top, &bottom, a.blend_mode.0) {
                     Ok(scene) => Ok(Scene(Context::Solo(scene))),
@@ -138,7 +138,7 @@ impl TealData for Layer {
                                 layer.scene = layer2.scene.clone();
                                 Ok(())
                             },
-                            Err(_) => Err(ExternalError(Arc::from(boxed_error(layer_gone)))),
+                            Err(_) => Err(ExternalError(Arc::from(boxed_error(LAYER_GONE)))),
                         }
                     },
                 },
@@ -149,7 +149,7 @@ impl TealData for Layer {
                                 layer.scene = scene.clone();
                                 Ok(())
                             },
-                            Err(_) => Err(ExternalError(Arc::from(boxed_error(layer_gone)))),
+                            Err(_) => Err(ExternalError(Arc::from(boxed_error(LAYER_GONE)))),
                         }
                     },
                     |pixylene2, index2| {
@@ -160,10 +160,10 @@ impl TealData for Layer {
                                         layer.scene = layer2.scene.clone();
                                         Ok(())
                                     },
-                                    Err(_) => Err(ExternalError(Arc::from(boxed_error(layer_gone)))),
+                                    Err(_) => Err(ExternalError(Arc::from(boxed_error(LAYER_GONE)))),
                                 }
                             },
-                            Err(_) => Err(ExternalError(Arc::from(boxed_error(layer_gone)))),
+                            Err(_) => Err(ExternalError(Arc::from(boxed_error(LAYER_GONE)))),
                         }
                     },
                 )
@@ -176,7 +176,7 @@ impl TealData for Layer {
             |layer| Ok(layer.opacity),
             |pixylene, index| pixylene.project.canvas.get_layer(*index).map(|layer| layer.opacity)
         ).map_err(|_|
-            ExternalError(Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(layer_gone)))
+            ExternalError(Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(LAYER_GONE)))
         ));
         fields.add_field_method_set("opacity", |_, this, opacity| this.0.do_mut(
             |layer| {
@@ -187,7 +187,7 @@ impl TealData for Layer {
                 layer.opacity = opacity;
             })
         ).map_err(|_|
-            ExternalError(Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(layer_gone)))
+            ExternalError(Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(LAYER_GONE)))
         ));
 
         //Lua interface to Layer.mute
@@ -196,7 +196,7 @@ impl TealData for Layer {
             |layer| Ok(layer.mute),
             |pixylene, index| pixylene.project.canvas.get_layer(*index).map(|layer| layer.mute)
         ).map_err(|_|
-            ExternalError(Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(layer_gone)))
+            ExternalError(Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(LAYER_GONE)))
         ));
         fields.add_field_method_set("mute", |_, this, mute| this.0.do_mut(
             |layer| {
@@ -207,7 +207,7 @@ impl TealData for Layer {
                 layer.mute = mute;
             })
         ).map_err(|_|
-            ExternalError(Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(layer_gone)))
+            ExternalError(Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(LAYER_GONE)))
         ));
 
         //Lua interface to Layer.blend_mode
@@ -217,7 +217,7 @@ impl TealData for Layer {
             |pixylene, index| pixylene.project.canvas.get_layer(*index)
             .map(|layer| BlendMode(layer.blend_mode))
         ).map_err(|_|
-            ExternalError(Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(layer_gone)))
+            ExternalError(Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(LAYER_GONE)))
         ));
         fields.add_field_method_set("blend_mode", |_, this, blend_mode: BlendMode| this.0.do_mut(
             |layer| {
@@ -228,7 +228,7 @@ impl TealData for Layer {
                 layer.blend_mode = blend_mode.0;
             })
         ).map_err(|_|
-            ExternalError(Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(layer_gone)))
+            ExternalError(Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(LAYER_GONE)))
         ));
     }
 }
