@@ -1,4 +1,7 @@
-use crate::values::{ types::{ Coord, PCoord }, project::{ Canvas } };
+use crate::{
+    Context,
+    values::{ types::{ Coord, PCoord }, project::{ Canvas } }
+};
 
 use tealr::{
     mlu::{
@@ -145,10 +148,14 @@ impl TealData for Project {
         });
 
         fields.document("the Canvas contained by the Project");
-        fields.add_field_method_get("canvas", |_, this| Ok(Canvas(this.0.borrow().project.canvas
-                                                                  .clone())));
-        fields.add_field_method_set("canvas", |_, this, value: Canvas| {
-            this.0.borrow_mut().project.canvas = value.0;
+        fields.add_field_method_get("canvas", |_, this|
+            Ok(Canvas(Context::Linked(this.0.clone(), ()))));
+
+        fields.add_field_method_set("canvas", |_, this, canvas: Canvas| {
+            this.0.borrow_mut().project.canvas = canvas.0.do_imt(
+                |canvas| canvas.clone(),
+                |pixylene, _| pixylene.project.canvas.clone()
+            );
             Ok(())
         });
     }

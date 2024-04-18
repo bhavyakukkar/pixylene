@@ -10,7 +10,7 @@ use libpixylene::{
     types::{ UCoord, PCoord, Coord, Pixel },
 };
 use pixylene_actions::{ memento::{ ActionManager }, Console, LogType };
-use pixylene_actions_lua::LuaActionManager;
+use pixylene_actions_lua::{ LuaActionManager, ErrorType };
 use std::collections::HashMap;
 use std::process::exit;
 use std::cell::RefCell;
@@ -286,6 +286,7 @@ impl Controller {
             if !from_args {
                 self.console_out("cannot have more than 256 sessions open", &LogType::Error);
             } else {
+                self.target.borrow_mut().finalize();
                 eprintln!("cannot have more than 256 sessions open");
                 exit(1);
             }
@@ -307,8 +308,20 @@ impl Controller {
                 },
                 None => String::new(),
             }
-        )
-            .unwrap_or_else(|err| panic!("Error in Lua Context:\n{}", err));
+        );
+
+        if let Some(ref err) = lua_action_manager.error {
+            match err {
+                ErrorType::LuaError(err) => {
+                    self.console_out(&format!("Critical Lua error, cannot create tables: {err}"),
+                                     &LogType::Error);
+                },
+                ErrorType::ConfigError(err) => {
+                    self.console_out(&format!("Lua error in user config: {err}"),
+                                     &LogType::Error);
+                }
+            }
+        }
 
         let mut action_map: HashMap<String, ActionLocation> = HashMap::new();
         _ = lua_action_manager.list_actions().iter().map(|action_name| {
@@ -425,6 +438,7 @@ impl Controller {
                                 err.to_string()
                             ), &LogType::Error);
                         } else {
+                            self.target.borrow_mut().finalize();
                             eprintln!("failed to import: {}", err.to_string());
                             exit(1);
                         }

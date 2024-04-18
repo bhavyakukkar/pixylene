@@ -1,4 +1,7 @@
-use crate::values::{ types::{ Pixel } };
+use crate::{
+    Context,
+    values::{ types::{ Pixel } }
+};
 
 use tealr::{
     mlu::{
@@ -17,7 +20,7 @@ use libpixylene::{ project };
 
 /// Lua interface to libpixylene's [`Palette`][project::Palette] type
 #[derive(Clone)]
-pub struct Palette(pub project::Palette);
+pub struct Palette(pub Context<project::Palette, ()>);
 
 impl<'lua> FromLua<'lua> for Palette {
     fn from_lua(value: LuaValue<'lua>, _: &'lua Lua) -> Result<Palette> {
@@ -58,7 +61,7 @@ impl TealData for Palette {
                     }
                 }
 
-                Ok(Palette(palette))
+                Ok(Palette(Context::Solo(palette)))
             });
         }
 
@@ -75,14 +78,22 @@ impl TealData for Palette {
                 let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
 
                 match a.index {
-                    Some(index) => match this.0.get_color(index) {
-                        Ok(pixel) => Ok(Pixel(pixel.clone())),
+                    Some(index) => match this.0.do_imt(
+                        //todo: remove clone()'s when adding context to Pixel as well
+                        |palette| palette.get_color(index).map(|p| p.clone()),
+                        |pixylene, _| pixylene.project.canvas.palette.get_color(index).map(|p| p.clone()),
+                    ) {
+                        Ok(pixel) => Ok(Pixel(pixel)),
                         Err(err) => Err(ExternalError(Arc::from(
                             boxed_error(&err.to_string())
                         ))),
                     },
-                    None => match this.0.get_equipped() {
-                        Ok(pixel) => Ok(Pixel(pixel.clone())),
+                    None => match this.0.do_imt(
+                        //todo: remove clone()'s when adding context to Pixel as well
+                        |palette| palette.get_equipped().map(|p| p.clone()),
+                        |pixylene, _| pixylene.project.canvas.palette.get_equipped().map(|p| p.clone()),
+                    ) {
+                        Ok(pixel) => Ok(Pixel(pixel)),
                         Err(err) => Err(ExternalError(Arc::from(
                             boxed_error(&err.to_string())
                         ))),
@@ -102,7 +113,10 @@ impl TealData for Palette {
                 use mlua::Error::{ ExternalError };
                 let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
 
-                match this.0.equip(a.index) {
+                match this.0.do_mut(
+                    |palette| palette.equip(a.index),
+                    |mut pixylene, _| pixylene.project.canvas.palette.equip(a.index)
+                ) {
                     Ok(()) => Ok(()),
                     Err(err) => Err(ExternalError(Arc::from(
                         boxed_error(&err.to_string())
@@ -123,7 +137,10 @@ impl TealData for Palette {
                 use mlua::Error::{ ExternalError };
                 let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
 
-                match this.0.set_color(a.index, &a.color) {
+                match this.0.do_mut(
+                    |palette| palette.set_color(a.index, &a.color),
+                    |mut pixylene, _| pixylene.project.canvas.palette.set_color(a.index, &a.color)
+                ) {
                     Ok(()) => Ok(()),
                     Err(err) => Err(ExternalError(Arc::from(
                         boxed_error(&err.to_string())
@@ -140,7 +157,10 @@ impl TealData for Palette {
             );
             methods.document("Unset the color at a particular index of the Palette");
             methods.add_method_mut("unset_color", |_, this, a: PaletteUnsetColorArgs| {
-                Ok(this.0.unset_color(a.index))
+                Ok(this.0.do_mut(
+                    |palette| palette.unset_color(a.index),
+                    |mut pixylene, _| pixylene.project.canvas.palette.unset_color(a.index),
+                ))
             });
         }
 
