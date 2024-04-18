@@ -9,6 +9,7 @@
 *** DONE dirs to get actions.lua and config.toml from XDG_CONFIG_DIR/pixylene
 *** DONE replace project Lua value fields with Rc<RefCell<Project>>. use temp for reference
 *** TODO defined palette contains 10 colors, foreground+background+eight defined colors. switchForeground is a wrapper that performs Palette.changeTo(1, <input>). switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
+*** TODO dont let Project.focus go past present layers, make it private
 *** TODO temporarily disable unrecognized key warnings
 *** TODO show layer opacity & mute in statusline
 *** TODO helper screen to show keybind <-> actions map
