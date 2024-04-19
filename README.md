@@ -39,7 +39,7 @@ cargo build -p pixylene-ui --release \
 ```
 
 ## Build CLI [runs in any stream]
-This is preferred if you want to pipe pixylene into some other program
+This is preferred if you want to pipe pixylene into some other program like this [example](./examples/cli.py)
 
 ```sh
 cargo build -p pixylene-ui --release \ 

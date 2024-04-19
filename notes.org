@@ -17,6 +17,7 @@
 
 ** Version 1.1 [3%]
 *** TODO Method (& corresponding Lua field) layers on canvas that returns a vector of layers
+*** TODO alternative to vim's :qall
 *** TODO Colorschemes are sets of colors. have some default and custom can be defined in toml config
 *** TODO config setting to by default display layers with black background or all layers before it or all layers
 *** TODO project file includes lua actions (& maybe raw actions) for consistency. in this case --ignore-local-actions flag stops local actions from overwrite those brought by project
