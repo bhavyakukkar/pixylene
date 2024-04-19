@@ -4,13 +4,14 @@ use crate::{
 };
 
 use std::collections::HashMap;
+use serde::{ Serialize, Deserialize };
 
 
 /// A `Palette` containing a set of [`Pixels`](Pixel)
 ///
 /// The palette works by using a hashmap of u8 indexes to Pixel definitions, and the most
 /// significant color at any time can be chosen by its index and picked.
-#[derive(PartialEq, Savefile, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Savefile, Clone)]
 pub struct Palette {
     colors: HashMap<u8, Pixel>,
     equipped: Option<u8>,

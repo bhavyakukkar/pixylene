@@ -3,10 +3,12 @@ use crate::{
     utils::messages::U32TOUSIZE,
 };
 
+use serde::{ Serialize, Deserialize };
+
 /// A two-dimensional grid of pixels.
 ///
 /// `Note`: Each item of the grid is an [`Option<Pixel>`] rather than simply a [`Pixel`].
-#[derive(PartialEq, Debug, Savefile, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Savefile, Clone)]
 pub struct Scene {
     dim: PCoord,
     grid: Vec<Option<Pixel>>,

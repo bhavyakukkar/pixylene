@@ -271,6 +271,7 @@ impl Controller {
                 (String::from("a"), RunActionSpecify),
                 (String::from("showlayer"), PreviewFocusLayer),
                 (String::from("showproject"), PreviewProject),
+                (String::from("canvasjson"), PrintCanvasJson),
                 (String::from("showstatus"), UpdateStatusline),
             ]),
 
@@ -954,6 +955,14 @@ impl Controller {
                     &self.b_camera.unwrap(),
                 );
                 self.console_in("press ENTER to stop previewing project");
+            },
+
+            PrintCanvasJson => {
+                let s = self.sel_session()?;
+                let session = &mut self.sessions[s];
+                self.target.borrow_mut().draw_paragraph(
+                    vec![session.pixylene.borrow().project.canvas.to_json()]
+                );
             },
 
             UpdateStatusline => {

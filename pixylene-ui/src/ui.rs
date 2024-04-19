@@ -126,6 +126,7 @@ pub enum UiFn {
 
     PreviewFocusLayer,
     PreviewProject,
+    PrintCanvasJson,
 
     UpdateStatusline,
 }

@@ -4,9 +4,12 @@ use crate::{
     utils::messages::U32TOUSIZE,
 };
 
+use serde::{ Deserialize, Serialize };
+
+
 /// A [`Scene`](Scene) with additional information including an opacity, mute switch and a
 /// [`BlendMode`](BlendMode).
-#[derive(PartialEq, Savefile, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Savefile, Clone)]
 pub struct Layer {
     pub scene: Scene,
     pub opacity: u8,
