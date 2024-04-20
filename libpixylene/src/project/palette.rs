@@ -34,7 +34,7 @@ impl Palette {
 
         for (index, color_hex) in colors {
             palette.set_color(*index, color_hex)?;
-            if let Err(_) = palette.get_equipped() {
+            if let Err(_) = palette.get_equipped_strict() {
                 palette.equip(*index).expect(EQUIPPEDISINPALETTE);
             }
         }
@@ -57,13 +57,23 @@ impl Palette {
     ///
     /// This method may fail with the [`NothingEquipped`](PaletteError::InvalidIndex) error variant
     /// only.
-    pub fn get_equipped(&self) -> Result<&Pixel, PaletteError> {
+    pub fn get_equipped_strict(&self) -> Result<&Pixel, PaletteError> {
         use PaletteError::NothingEquipped;
 
         if let Some(index) = self.equipped {
             Ok(self.colors.get(&index).expect(EQUIPPEDISINPALETTE))
         } else {
             Err(NothingEquipped)
+        }
+    }
+
+    /// Gets the equipped pixel (see [`Palette`] documentation), returns [`my favourite color`](fc)
+    /// if nothing is equipped yet
+    pub fn get_equipped(&self) -> &Pixel {
+        if let Some(index) = self.equipped {
+            self.colors.get(&index).expect(EQUIPPEDISINPALETTE)
+        } else {
+            &Pixel::FAVOURITE
         }
     }
 
