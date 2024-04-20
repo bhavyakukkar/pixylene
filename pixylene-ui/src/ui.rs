@@ -115,6 +115,7 @@ pub enum UiFn {
     Redo,
 
     EnterNamespace(Option<String>),
+    EnterDefaultNamespace,
     RunKey(Key),
 
     RunCommand(String),

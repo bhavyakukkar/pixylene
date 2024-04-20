@@ -1,19 +1,79 @@
 # whether the default keys should be emptied before considering the ones defined in the config
 new_keys = false
 
-# the map of keybinds
-keys = [
-    # every keybind binds a single key 'k' to a sequence of commands 'f'
-    { k = { c = { Char = 'x' }, m = "ALT" }, f = [ "RunCommandSpecify" ] },
-    { k = { c = { Char = ';' } }, f = [ "RunLastAction" ] },
-]
-
 # sequence of commands that should run after every frame
 every_frame = [ "PreviewFocusLayer", "UpdateStatusline" ]
 
+# the map of keybinds
+
+# DEFAULT namespace
+[[keys]]
+keys = [
+    # every keybind binds a single key 'k' to a sequence of commands 'f'
+    { k = { c = { Char = ';' } }, f = [ "RunLastAction" ] },
+
+    { k = { c = "Left" },  f = [{ RunAction = "cursors_left" }] },
+    { k = { c = "Down" },  f = [{ RunAction = "cursors_down" }] },
+    { k = { c = "Up" },    f = [{ RunAction = "cursors_up" }] },
+    { k = { c = "Right" }, f = [{ RunAction = "cursors_right" }] },
+
+    { k = { c = { Char = 'h' } }, f = [{ RunAction = "cursors_left" }] },
+    { k = { c = { Char = 'j' } }, f = [{ RunAction = "cursors_down" }] },
+    { k = { c = { Char = 'k' } }, f = [{ RunAction = "cursors_up" }] },
+    { k = { c = { Char = 'l' } }, f = [{ RunAction = "cursors_right" }] },
+
+    { k = { c = { Char = 'i' } }, f = [{ RunAction = "zoomin" }] },
+    { k = { c = { Char = 'o' } }, f = [{ RunAction = "zoomout" }] },
+    
+    { k = { c = { Char = '1' } }, f = [{ RunAction = "pencil1" }] },
+    { k = { c = { Char = '2' } }, f = [{ RunAction = "pencil2" }] },
+    { k = { c = { Char = '3' } }, f = [{ RunAction = "pencil3" }] },
+    { k = { c = { Char = '4' } }, f = [{ RunAction = "pencil4" }] },
+    { k = { c = { Char = '5' } }, f = [{ RunAction = "pencil5" }] },
+    { k = { c = { Char = '6' } }, f = [{ RunAction = "pencil6" }] },
+    { k = { c = { Char = '7' } }, f = [{ RunAction = "pencil7" }] },
+    { k = { c = { Char = '8' } }, f = [{ RunAction = "pencil8" }] },
+
+    # go to Layer namespace
+    { k = { m = "CONTROL", c = { Char = 'l' } }, f = [{ EnterNamespace = "Layer" }] },
+    # go to Cursors namespace
+    { k = { m = "CONTROL", c = { Char = 'c' } }, f = [{ EnterNamespace = "Cursors" }] },
+]
+
+# LAYER namespace
+[[keys]]
+name = "Layer"
+keys = [
+    { k = { c = { Char = 'n' }, m = "" }, f = [{ RunAction = "layer_new" }, "EnterDefaultNamespace"] },
+    { k = { c = { Char = 'o' }, m = "" }, f = [{ RunAction = "layer_opacity" }, "EnterDefaultNamespace"] },
+    { k = { c = { Char = 'm' }, m = "" }, f = [{ RunAction = "layer_mute" }, "EnterDefaultNamespace"] },
+
+    { k = { c = "Esc" }, f = [ "EnterDefaultNamespace" ] }, # go back to default namespace
+]
+
+# CURSORS namespace
+[[keys]]
+name = "Cursors"
+keys = [
+    { k = { c = "Left" },  f = [{ RunAction = "cursors_dup_left" }] },
+    { k = { c = "Down" },  f = [{ RunAction = "cursors_dup_down" }] },
+    { k = { c = "Up" },    f = [{ RunAction = "cursors_dup_up" }] },
+    { k = { c = "Right" }, f = [{ RunAction = "cursors_dup_right" }] },
+
+    { k = { c = { Char = 'h' } }, f = [{ RunAction = "cursors_dup_left" }] },
+    { k = { c = { Char = 'j' } }, f = [{ RunAction = "cursors_dup_down" }] },
+    { k = { c = { Char = 'k' } }, f = [{ RunAction = "cursors_dup_up" }] },
+    { k = { c = { Char = 'l' } }, f = [{ RunAction = "cursors_dup_right" }] },
+
+    { k = { c = { Char = 'r' } }, f = [{ RunAction = "cursors_reset" }, "EnterDefaultNamespace"] },
+
+    { k = { c = "Esc" }, f = [ "EnterDefaultNamespace" ] }, # go back to default namespace
+]
+
+
 # keys associated to function that are required to be known by pixylene
 [required_keys]
-force_quit = { c = { Char = 'c' }, m = "CONTROL" }
+force_quit = { c = { Char = 'c' }, m = "CONTROL|SHIFT" }
 
 # vim-like
 discard_command = { c = "Esc", m = "" }
@@ -28,8 +88,8 @@ start_command = { c = { Char = ':' }, m = "" }
 dimensions = { x = 32, y = 32 }
 
 # compatibility feature for terminals where two characters resemble a square [██]
-repeat = { x = 1, y = 2 }  # uncomment if using the TUI
-#repeat = { x = 1, y = 1 }  # uncomment if using the GUI
+repeat = { x = 1, y = 2 }   # uncomment if using pixylenetui
+#repeat = { x = 1, y = 2 }  # uncomment if using pixylenegui
 
 # color palette
 # id is just an identifier & doesn't have to be in order

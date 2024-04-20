@@ -6,6 +6,7 @@
 :COOKIE_DATA: todo
 :END:
 ** Version 1.0 [28%]
+*** TODO dont let config list key that RunKey's itself. crashes the app
 *** DONE dirs to get actions.lua and config.toml from XDG_CONFIG_DIR/pixylene
 *** DONE replace project Lua value fields with Rc<RefCell<Project>>. use temp for reference
 *** TODO defined palette contains 10 colors, foreground+background+eight defined colors. switchForeground is a wrapper that performs Palette.changeTo(1, <input>). switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
@@ -15,8 +16,10 @@
 *** TODO helper screen to show keybind <-> actions map
 *** TODO Png to/fro Scene: fill more color-type/bit-depth combos
 
-** Version 1.1 [3%]
+** Version 1.1 [6%]
 *** TODO Method (& corresponding Lua field) layers on canvas that returns a vector of layers
+*** TODO shorter UiFn names or find a way to declare different serde name for them
+*** TODO cargo feature flag to load no std-actions
 *** TODO alternative to vim's :qall
 *** TODO Colorschemes are sets of colors. have some default and custom can be defined in toml config
 *** TODO config setting to by default display layers with black background or all layers before it or all layers
@@ -34,7 +37,7 @@
 *** DONE Namespace keybinds such that modes can be created/modified from the config file
 *** TODO switch x and y syntax since game design often uses flipped
 *** TODO it would be good if palette's equipped color is guaranteed to always exist and is some default color if palette is empty. helps the action authors
-*** TODO plaintext serialization of Canvas
+*** DONE plaintext serialization of Canvas
 *** TODO (pixylenetui) refresh on terminal resize for both targets [[https://docs.rs/crossterm/latest/crossterm/event/enum.Event.html#variant.Resize][Resize]]
 *** TODO pay attention to making switching between :showlayer and :showproject easy again
 *** TODO Convert UiFn::GoToSession(u8) to UiFn::GoToSession(Args) so that can be called from console. do similar for others like RunAction and RunCommand (consider using toml)
