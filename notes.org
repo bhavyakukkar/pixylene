@@ -2,94 +2,74 @@
 #+author: Bhavya Kukkar
 * TASKS
 #+description: Tasks that need to be done
-** FOCUSSED "SPRINT"
 :PROPERTIES:
 :COOKIE_DATA: todo
 :END:
-*** Version 1.0 [16%]
-**** DONE dirs to get actions.lua and config.toml from XDG_CONFIG_DIR/pixylene
-**** TODO defined palette contains 10 colors, foreground+background+eight defined colors. switchForeground is a wrapper that performs Palette.changeTo(1, <input>). switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
-**** TODO temporarily disable unrecognized key warnings
-**** TODO show layer opacity & mute in statusline
-**** TODO helper screen to show keybind <-> actions map
-**** TODO Png to/fro Scene: fill more color-type/bit-depth combos
+** Version 1.0 [28%]
+*** DONE dirs to get actions.lua and config.toml from XDG_CONFIG_DIR/pixylene
+*** DONE replace project Lua value fields with Rc<RefCell<Project>>. use temp for reference
+*** TODO defined palette contains 10 colors, foreground+background+eight defined colors. switchForeground is a wrapper that performs Palette.changeTo(1, <input>). switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
+*** TODO dont let Project.focus go past present layers, make it private
+*** TODO temporarily disable unrecognized key warnings
+*** TODO show layer opacity & mute in statusline
+*** TODO helper screen to show keybind <-> actions map
+*** TODO Png to/fro Scene: fill more color-type/bit-depth combos
 
-*** Version 1.1 [3%]
-**** TODO config setting to by default display layers with black background or all layers before it or all layers
-**** TODO UiFn is trait implementing serde instead of enum
-**** TODO consider including actions in same scope as commands but with first letter capital as done in neovim for built-in and user fns
-**** TODO use PathBuf for writing and exporting files
-**** TODO deal with minifb returning too many useless keys
-**** TODO use image source bit-depth/color-type or from config.toml
-**** TODO disable unrecognized key warnings from config
-**** TODO IndexedScene for use with indexed images
-**** TODO serde feature for libpixylene
-**** TODO dont let exported or saved files overwrite existing files
-**** DONE Namespace keybinds such that modes can be created/modified from the config file
-**** TODO switch x and y syntax since game design often uses flipped
-**** TODO it would be good if palette's equipped color is guaranteed to always exist and is some default color if palette is empty. helps the action authors
-**** TODO plaintext serialization of Canvas
-**** TODO (pixylenetui) refresh on terminal resize for both targets [[https://docs.rs/crossterm/latest/crossterm/event/enum.Event.html#variant.Resize][Resize]]
-**** TODO pay attention to making switching between :showlayer and :showproject easy again
-**** TODO Convert UiFn::GoToSession(u8) to UiFn::GoToSession(Args) so that can be called from console. do similar for others like RunAction and RunCommand (consider using toml)
-**** TODO implement Project::resize and private Canvas::resize and make comment about how Canvas can only be resized from Project
-**** TODO vim-like shortening of file paths (eg: /home/bhavya/dev becomes /h/b/dev)
-**** TODO draw_paragraph similar to telescope-like neovim window
-**** TODO Clap parses PathBuf instead of path string for project file, png file or config file [[https://www.rustadventure.dev/introducing-clap/clap-v4/accepting-file-paths-as-arguments-in-clap][Tutorial]]
-**** TODO handle all error messages larger than console size by converting them to cmdin's that print messages in chunks of console size, or by printing them in large window using draw_paragraph
-**** TODO prelude of types required to make a new target
-**** TODO let (x,y) parse into UCoord/Coord in lua interface
-**** TODO new actions 'GoTo' (to get something like vim's 'gg' and 0) and 'ClearAllCursors'
-**** TODO downscaling of artwork while importing (1280x1280 "/10" = 128x128)
-**** TODO add more metamethods to Lua interface to Coord (==, <, <=, -, %, //, __tostring, etc.)
-**** TODO command history
+** Version 1.1 [3%]
+*** TODO Method (& corresponding Lua field) layers on canvas that returns a vector of layers
+*** TODO alternative to vim's :qall
+*** TODO Colorschemes are sets of colors. have some default and custom can be defined in toml config
+*** TODO config setting to by default display layers with black background or all layers before it or all layers
+*** TODO project file includes lua actions (& maybe raw actions) for consistency. in this case --ignore-local-actions flag stops local actions from overwrite those brought by project
+*** TODO cursor color is calculated as color most visible on corresponding pixel color
+*** TODO UiFn is trait implementing serde instead of enum
+*** TODO consider including actions in same scope as commands but with first letter capital as done in neovim for built-in and user fns
+*** TODO use PathBuf for writing and exporting files
+*** TODO deal with minifb returning too many useless keys
+*** TODO use image source bit-depth/color-type or from config.toml
+*** TODO disable unrecognized key warnings from config
+*** TODO IndexedScene for use with indexed images
+*** TODO serde feature for libpixylene
+*** TODO dont let exported or saved files overwrite existing files
+*** DONE Namespace keybinds such that modes can be created/modified from the config file
+*** TODO switch x and y syntax since game design often uses flipped
+*** TODO it would be good if palette's equipped color is guaranteed to always exist and is some default color if palette is empty. helps the action authors
+*** TODO plaintext serialization of Canvas
+*** TODO (pixylenetui) refresh on terminal resize for both targets [[https://docs.rs/crossterm/latest/crossterm/event/enum.Event.html#variant.Resize][Resize]]
+*** TODO pay attention to making switching between :showlayer and :showproject easy again
+*** TODO Convert UiFn::GoToSession(u8) to UiFn::GoToSession(Args) so that can be called from console. do similar for others like RunAction and RunCommand (consider using toml)
+*** TODO implement Project::resize and private Canvas::resize and make comment about how Canvas can only be resized from Project
+*** TODO vim-like shortening of file paths (eg: /home/bhavya/dev becomes /h/b/dev)
+*** TODO draw_paragraph similar to telescope-like neovim window
+*** TODO Clap parses PathBuf instead of path string for project file, png file or config file [[https://www.rustadventure.dev/introducing-clap/clap-v4/accepting-file-paths-as-arguments-in-clap][Tutorial]]
+*** TODO handle all error messages larger than console size by converting them to cmdin's that print messages in chunks of console size, or by printing them in large window using draw_paragraph
+*** TODO prelude of types required to make a new target
+*** TODO let (x,y) parse into UCoord/Coord in lua interface
+*** TODO new actions 'GoTo' (to get something like vim's 'gg' and 0) and 'ClearAllCursors'
+*** TODO downscaling of artwork while importing (1280x1280 "/10" = 128x128)
+*** TODO add more metamethods to Lua interface to Coord (==, <, <=, -, %, //, __tostring, etc.)
+*** TODO command history
 
-*** Maybe or Maybe Not [0%]
-**** TODO Flexbox (taffy) to arrange statusbar items
-**** TODO copy-and-paste action that actually copies the pixels to clipboard
-**** TODO only 1 mode for selections, and three kinds of selections allowed: block, row or column
-**** TODO some kind of global opacity control setting for pencils
-**** TODO layer mute can be modified by giving user string like 1011101 indicating layers currently showing and user can modify and submit (like dwm)
-**** TODO Action::perform_action returns Changes::Single or Change::Multiple (we are slowly moving away from command pattern and towards memento pattern of actions)
+** Maybe or Maybe Not [0%]
+*** TODO Flexbox (taffy) to arrange statusbar items
+*** TODO copy-and-paste action that actually copies the pixels to clipboard
+*** TODO only 1 mode for selections, and three kinds of selections allowed: block, row or column
+*** TODO some kind of global opacity control setting for pencils
+*** TODO layer mute can be modified by giving user string like 1011101 indicating layers currently showing and user can modify and submit (like dwm)
+*** TODO Action::perform_action returns Changes::Single or Change::Multiple (we are slowly moving away from command pattern and towards memento pattern of actions)
 
-*** Later [7%]
-**** TODO use [[https://lib.rs/crates/is-terminal][isTerminal]] in target initialize for crossterm and minifb just to be safe
-**** TODO safe Coord (& other types) methods like add_safe, add_mut_safe, mult_safe & mult_mut_safe
-**** TODO clap initializer for Pixylene::new() that opens inquire menu when called "$ pixylenetui new". optional flag -y takes default for all settings
-**** TODO Mode that lets you 'write' colors line-by-line, left-to-right
-**** TODO use Decorate::output() again & fix parameters (String vs &static 'str)
-**** TODO "Dependency Justification" for paper like done on crossterm's github
-**** TODO metadata field on project that lets you write "tags" to pixels on a layer or directly to layer and lets you search for them later
-**** TODO layers vec and layer_order are separate and "tag-based" so that moving layers is trivial
-**** TODO change-tree instead of change-stack, doesn't forget future changes after changes in undoed state
-**** TODO alternative fn ActionManager::perform_directly() directly takes dyn Action
-**** TODO remove console_in and let all input be handled by controller showing typing of input through simply console_out
-
-* PROS & CONS
-#+description: I weigh the pros and cons for a feature or decision here
-- [X] SELECTIONS MANAGED BY AN ACTION vs CAMERA HAS VECTOR OF PIXELS CALLED SELECTION
-  1. SELECTIONS MANAGED BY AN ACTION
-     _Pros:_
-     + no extra features need to be implemented
-     _Cons:_
-     + simple tasks like copy & paste are usually native behavior
-     + performing action for each pixel in selection will be really difficult since requires selection Action to perform unknown runtime chosen per-pixel Action [ deal-breaker ]
-  2. CAMERA HAS VECTOR OF PIXELS CALLED SELECTION
-     _Pros:_
-     _Cons:_
-     + medium feature integration
-     + selections might be native, copy and paste still needs an action but smaller
-- [X] LAYER INDEX ARE 1-BASE INDEXED
-  _Pros:_
-  - index 0 can denote all layers, in Preview mode, 0 can be used to preview project
-  - dwm does it too (actually every wm)
-  _Cons:_
-  - none
-- [X] LAYER NEW/DELETE ARE PROJECT METHODS INSTEAD OF ACTIONS
-  _Pros:_
-  _Cons:_
-  - cannot be undoed
-  - more difficult to implement
+** Later [7%]
+*** TODO use [[https://lib.rs/crates/is-terminal][isTerminal]] in target initialize for crossterm and minifb just to be safe
+*** TODO safe Coord (& other types) methods like add_safe, add_mut_safe, mult_safe & mult_mut_safe
+*** TODO clap initializer for Pixylene::new() that opens inquire menu when called "$ pixylenetui new". optional flag -y takes default for all settings
+*** TODO Mode that lets you 'write' colors line-by-line, left-to-right
+*** TODO use Decorate::output() again & fix parameters (String vs &static 'str)
+*** TODO "Dependency Justification" for paper like done on crossterm's github
+*** TODO metadata field on project that lets you write "tags" to pixels on a layer or directly to layer and lets you search for them later
+*** TODO layers vec and layer_order are separate and "tag-based" so that moving layers is trivial
+*** TODO change-tree instead of change-stack, doesn't forget future changes after changes in undoed state
+*** TODO alternative fn ActionManager::perform_directly() directly takes dyn Action
+*** TODO remove console_in and let all input be handled by controller showing typing of input through simply console_out
 
 * STRUCTURE
 #+description: I document the structure of my application here
@@ -143,38 +123,3 @@ add cursors one by one by navigating and hitting Enter
   - _Ctrl+Z_: undo
   - _Ctrl+Y_: redo
   - _command<ex>_: export
-
-** STATUSLINE
-*([mode]) ([layer 1 of 5]) ([2+8 palette colors]) ([current-action] [scene-locked?] [camera-locked?]) ([3 cursors])*
-
-** STATE
-|               | NoProjectOpen | ProjectOpen                         |
-|---------------+---------------+-------------------------------------|
-| NoProjectOpen |               | open_project, open_png, new_project |
-| ProjectOpen   | close_project |                                     |
-|               |               |                                     |
-
-** OFFICIAL DOCUMENTATION
-Actions are of two types:
-    1. Primitive:
-    2. Complex:
-
-** SESSION
-- Option<last_previewed_layer>
-- Option<imported_png_path>
-- Option<opened_project_path>
-
-** COMMANDS
-| Command              | Arguments    | Session                                                           | Done |
-|----------------------+--------------+-------------------------------------------------------------------+------|
-| quit                 | -            | -                                                                 |      |
-| open                 | project-path | > project-path; > project; < project-path?                        |      |
-| save                 | -            | < project-path; < project                                         |      |
-| import               | png-path     | > project; > project-path? (store in same directory); > png-path? |      |
-| export               | png-path     | < png-path?                                                       |      |
-| perform              | action-name  | < action-manager; < project                                       |      |
-| view                 |              | < project                                                         |      |
-| layer new            |              | < project; < background-color                                     |      |
-| layer <> del         |              | < project                                                         |      |
-| layer <> set_opacity | opacity      | < project                                                         |      |
-| palette <> set       | color        | < project                                                         |      |

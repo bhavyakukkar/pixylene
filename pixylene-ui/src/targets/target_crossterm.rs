@@ -330,10 +330,10 @@ impl UserInterface for TargetCrossterm {
             MoveTo(boundary.start.y as u16, boundary.start.x as u16),
             //Clear(ClearType::UntilNewLine),
             SetForegroundColor(match log_type {
-                LogType::Info => Color::Rgb{ r: 240, g: 240, b: 240 },
-                LogType::Error => Color::Rgb{ r: 255, g: 70, b: 70 },
-                LogType::Warning => Color::Rgb{ r: 70, g: 235, b: 235 },
-                LogType::Success => Color::Rgb{ r: 70, g: 255, b: 70 },
+                LogType::Info => Color::White,
+                LogType::Error => Color::Red,
+                LogType::Warning => Color::Yellow,
+                LogType::Success => Color::Green,
             }),
             Print(&message[0..std::cmp::min(message.len(), usize::from(boundary.size.y()))]),
             ResetColor,
@@ -386,7 +386,7 @@ fn main() {
         Ok(mut pixylene_ui) => {
             let cli = Cli::parse();
 
-            pixylene_ui.new_session(&cli.command);
+            pixylene_ui.start(&cli.command);
         },
         Err(error) => eprintln!("{}", error)
     }

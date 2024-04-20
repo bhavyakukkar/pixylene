@@ -1,8 +1,9 @@
 use std::fmt;
+use serde::{ Serialize, Deserialize };
 
 
 /// An RGBA quadrant to represent a color, composed of 8-bit red, green, blue & alpha values.
-#[derive(PartialEq, Debug, Copy, Clone, Savefile)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Copy, Clone, Savefile)]
 pub struct Pixel {
     /// red level (0-255)
     pub r: u8,

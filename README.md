@@ -39,7 +39,7 @@ cargo build -p pixylene-ui --release \
 ```
 
 ## Build CLI [runs in any stream]
-This is preferred if you want to pipe pixylene into some other program
+This is preferred if you want to pipe pixylene into some other program like this [example](./examples/cli.py)
 
 ```sh
 cargo build -p pixylene-ui --release \ 
@@ -90,6 +90,6 @@ cargo install tealr_doc_gen
 
 
 ## Static Editor Configuration [TOML]
-- Static Configuration of the editor, including all keybindings, can be written in TOML.
+- Static Configuration of the editor, including all keybindings & modes, can be written in TOML.
 - The config file must be named `config.toml` and located in your [configuration directory](https://docs.rs/dirs/latest/dirs/fn.config_dir.html)
 - [Example File](./examples/config.toml)

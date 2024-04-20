@@ -4,6 +4,7 @@ use crate::{
 };
 
 use std::fmt;
+use serde::{ Serialize, Deserialize };
 
 
 /// The maximum number of Layers that a Canvas is allowed to have
@@ -15,7 +16,7 @@ pub const MAX_LAYERS: u16 = u16::MAX;
 /// and layer are the pixel art itself, and palettes are required in indexed PNGs). 
 ///
 /// `Note`: All Canvas methods to access Layers use 0-based indexes
-#[derive(PartialEq, Clone, Savefile)]
+#[derive(Serialize, Deserialize, PartialEq, Clone, Savefile)]
 pub struct Canvas {
     dimensions: PCoord,
     layers: Vec<Layer>,

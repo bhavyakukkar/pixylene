@@ -1,6 +1,6 @@
 use pixylene_ui::{
     Cli, controller::Controller,
-    ui::{ UserInterface, Key, Rectangle, Statusline, Color, UiFn, KeyInfo },
+    ui::{ UserInterface, Key, Rectangle, Statusline, UiFn, KeyInfo },
 };
 
 use libpixylene::{ types::{ PCoord }, project::{ OPixel } };
@@ -26,28 +26,28 @@ impl UserInterface for TargetCLI {
     fn get_key(&self) -> Option<KeyInfo> { Some(KeyInfo::UiFn(UiFn::RunCommandSpecify)) }
     fn get_size(&self) -> PCoord { PCoord::new(6, 6).unwrap() }
 
-    fn draw_camera(&mut self, dim: PCoord, buffer: Vec<OPixel>, show_cursors: bool,
-                   boundary: &Rectangle) {
-        println!("canvas stuff");
+    fn draw_camera(&mut self, _dim: PCoord, _buffer: Vec<OPixel>, _show_cursors: bool,
+                   _boundary: &Rectangle) {
+        //println!("canvas stuff");
     }
     fn draw_paragraph(&mut self, paragraph: Vec<String>) {
         println!("{}", paragraph.into_iter().collect::<String>());
     }
 
-    fn draw_statusline(&mut self, statusline: &Statusline, boundary: &Rectangle) {}
+    fn draw_statusline(&mut self, _statusline: &Statusline, _boundary: &Rectangle) {}
 
-    fn console_in(&mut self, message: &str, discard_key: &Key, boundary: &Rectangle) -> Option<String> {
-        println!("{}", message);
+    fn console_in(&mut self, _message: &str, _discard_key: &Key, _boundary: &Rectangle) -> Option<String> {
+        //println!("{}", message);
         let mut line = String::new();
         _ = std::io::stdin().read_line(&mut line).unwrap();
         Some(line[0..(line.len() - 1)].to_string())
     }
 
-    fn console_out(&mut self, message: &str, log_type: &LogType, boundary: &Rectangle) {
+    fn console_out(&mut self, message: &str, _log_type: &LogType, _boundary: &Rectangle) {
         println!("{}", message);
     }
 
-    fn clear(&mut self, boundary: &Rectangle) {}
+    fn clear(&mut self, _boundary: &Rectangle) {}
     fn clear_all(&mut self) {}
 }
 
@@ -59,7 +59,7 @@ fn main() {
         Ok(mut pixylene_ui) => {
             let cli = Cli::parse();
 
-            pixylene_ui.new_session(&cli.command);
+            pixylene_ui.start(&cli.command);
         },
         Err(error) => eprintln!("{}", error)
     }

@@ -1,13 +1,14 @@
 use super::Pixel;
 
 use std::fmt;
+use serde::{ Serialize, Deserialize };
 
 
 /// Enum of the different types of [blend-modes][b]
 ///
 /// [b]: https://en.wikipedia.org/wiki/Blend_modes
 #[non_exhaustive]
-#[derive(PartialEq, Debug, Copy, Clone, Savefile)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Copy, Clone, Savefile)]
 pub enum BlendMode {
     /// Composite with specified fractions of contribution by pixel `a` and pixel `b`
     /// respectively, as described by [`Porter & Duff`][pd]
