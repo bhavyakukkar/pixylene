@@ -739,12 +739,15 @@ impl Controller {
                     if let Some(_) = self.possible_namespaces.get(name) {
                         self.namespace = Some(name.clone());
                     } else {
-                        self.console_out(&format!("namespace {} doesn't exist", name),
+                        self.console_out(&format!("namespace '{}' doesn't exist", name),
                                          &LogType::Error);
                     }
                 } else {
                     self.namespace = None;
                 }
+            },
+            EnterDefaultNamespace => {
+                _ = self.perform_ui(&EnterNamespace(None));
             },
             RunKey(key) => {
                 //special required keys
@@ -974,6 +977,12 @@ impl Controller {
                 let session = &self.sessions[s];
                 let mut statusline: Statusline = Vec::new();
                 let padding = "     ".on_truecolor(60,60,60);
+
+                statusline.push(
+                    self.namespace.clone().unwrap_or(String::from("Normal"))
+                    .on_truecolor(60,60,60).bright_white()
+                );
+                statusline.push(padding.clone());
 
                 statusline.push(session.name.on_truecolor(60,60,60).bright_white());
                 statusline.push(padding.clone());
