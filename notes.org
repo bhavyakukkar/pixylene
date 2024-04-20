@@ -18,6 +18,7 @@
 
 ** Version 1.1 [6%]
 *** TODO Method (& corresponding Lua field) layers on canvas that returns a vector of layers
+*** TODO shorter UiFn names or find a way to declare different serde name for them
 *** TODO cargo feature flag to load no std-actions
 *** TODO alternative to vim's :qall
 *** TODO Colorschemes are sets of colors. have some default and custom can be defined in toml config
