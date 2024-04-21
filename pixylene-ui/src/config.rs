@@ -125,7 +125,7 @@ impl Default for Config {
                               f: vec![UiFn::RunAction(String::from("cursors_reset"))] },
 
                         KUE { k: K::new(Enter, Some(KM::empty())),
-                              f: vec![UiFn::RunAction(String::from("pencil1"))] },
+                              f: vec![UiFn::RunAction(String::from("pencil"))] },
 
                         KUE { k: K::new(Char('u'), Some(KM::empty())),
                               f: vec![UiFn::Undo] },

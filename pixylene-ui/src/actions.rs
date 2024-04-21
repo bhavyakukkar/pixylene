@@ -24,6 +24,7 @@ pub fn add_my_native_actions(am: &mut HashMap<String, ActionLocation>) {
     insert(am, "draw",
            scene::Draw::new((UCoord{ x: 0, y: 0 }, 0), Some(Pixel::BLACK), BlendMode::Overwrite));
 
+    insert(am, "pencil", scene::Pencil::new(None));
     for i in 1..9 {
         insert(am, &format!("pencil{}", i), scene::Pencil::new(Some(i)));
     }

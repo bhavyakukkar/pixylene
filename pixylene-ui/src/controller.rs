@@ -977,67 +977,116 @@ impl Controller {
                 let session = &self.sessions[s];
                 let mut statusline: Statusline = Vec::new();
                 let padding = "     ".on_truecolor(60,60,60);
+                let spacing = "  ".on_truecolor(60,60,60);
+                let divider = "｜".on_truecolor(60,60,60).truecolor(100,100,100);
 
-                //Namespace
-                statusline.push(
-                    self.namespace.clone().unwrap_or(String::from("Normal"))
-                    .on_truecolor(60,60,60).bright_white()
-                );
-                statusline.push(padding.clone());
-
-                //Session name (new|.pi|.png)
-                statusline.push(session.name.on_truecolor(60,60,60).bright_white());
-                statusline.push(padding.clone());
-
-                //Session index
-                statusline.push(
-                    format!("Session {}/{}", s + 1, self.sessions.len())
-                    .on_truecolor(60,60,60).bright_white()
-                );
-                statusline.push(padding.clone());
-
-                //Layer index
-                statusline.push(
-                    format!("Layer {}/{}",
-                            session.pixylene.borrow().project.focus.1 + 1,
-                            session.pixylene.borrow().project.canvas.num_layers())
-                    .on_truecolor(60,60,60).bright_white()
-                );
-                statusline.push(padding.clone());
-
-                //Cursors status
-                let num_cursors = session.pixylene.borrow().project.num_cursors();
-                statusline.push(
-                    format!("{}", match num_cursors {
-                        0 => String::from("0 cursors"),
-                        1 => {
-                            let cursor = session.pixylene.borrow().project.cursors()
-                                .collect::<Vec<&(UCoord, u16)>>()[0].clone();
-                            format!("Cursor: {}, {}", cursor.1, cursor.0)
-                        },
-                        _ => format!("{} cursors", num_cursors),
-                    })
-                    .on_truecolor(60,60,60).bright_white()
-                );
-                statusline.push(padding.clone());
-
-                //Palette
-                statusline.push("Palette: ".on_truecolor(60,60,60).bright_white());
-                let mut colors_summary = session.pixylene.borrow().project.canvas.palette.colors()
-                    .map(|(a,b,c)| (a.clone(), b.clone(), c))
-                    .take(16)
-                    .collect::<Vec<(u8, Pixel, bool)>>();
-                colors_summary.sort_by_key(|(index, ..)| *index);
-                for (index, color, is_equipped) in colors_summary {
+                {
+                    //Namespace
+                    statusline.push(divider.clone());
                     statusline.push(
-                        if is_equipped {
-                            format!(" {: <3}", index)
-                            .on_truecolor(color.r, color.g, color.b).white().underline()
-                        } else {
-                            format!(" {: <3}", index)
-                            .on_truecolor(color.r, color.g, color.b).white()
-                        }
+                        self.namespace.clone().unwrap_or(String::from("Normal"))
+                        .on_truecolor(60,60,60).bright_white()
                     );
+                    statusline.push(divider.clone());
+                }
+
+                statusline.push(padding.clone());
+
+                {
+                    //Session name (new|.pi|.png)
+                    statusline.push(divider.clone());
+                    statusline.push(session.name.on_truecolor(60,60,60).bright_white());
+                    statusline.push(spacing.clone());
+
+                    //Session index
+                    statusline.push(
+                        format!("Session {}/{}", s + 1, self.sessions.len())
+                        .on_truecolor(60,60,60).bright_white()
+                    );
+                    statusline.push(divider.clone());
+                }
+
+                statusline.push(padding.clone());
+
+                {
+                    //Layer index
+                    statusline.push(divider.clone());
+                    statusline.push(
+                        format!("Layer {}/{}",
+                                session.pixylene.borrow().project.focus.1 + 1,
+                                session.pixylene.borrow().project.canvas.num_layers())
+                        .on_truecolor(60,60,60).bright_white()
+                    );
+                    statusline.push(spacing.clone());
+
+                    //Layer opacity
+                    statusline.push(
+                        format!("{:.2}%",
+                            session.pixylene.borrow().project.canvas.get_layer(
+                                session.pixylene.borrow().project.focus.1
+                            )
+                            .map(|layer| (f32::from(layer.opacity)/2.55))
+                            .unwrap_or(0.0)
+                        )
+                        .on_truecolor(60,60,60).bright_white()
+                    );
+
+                    //Layer mute
+                    if session.pixylene.borrow().project.canvas.get_layer(
+                        session.pixylene.borrow().project.focus.1
+                    )
+                    .map(|layer| layer.mute)
+                    .unwrap_or(false) {
+                        statusline.push(spacing.clone());
+                        statusline.push("muted".on_truecolor(60,60,60).bright_white());
+                    }
+                    statusline.push(divider.clone());
+                }
+
+                statusline.push(padding.clone());
+
+                {
+                    //Cursors status
+                    statusline.push(divider.clone());
+                    let num_cursors = session.pixylene.borrow().project.num_cursors();
+                    statusline.push(
+                        format!("{}", match num_cursors {
+                            0 => String::from("0 cursors"),
+                            1 => {
+                                let cursor = session.pixylene.borrow().project.cursors()
+                                    .collect::<Vec<&(UCoord, u16)>>()[0].clone();
+                                format!("Cursor: {}, {}", cursor.1, cursor.0)
+                            },
+                            _ => format!("{} cursors", num_cursors),
+                        })
+                        .on_truecolor(60,60,60).bright_white()
+                    );
+                    statusline.push(divider.clone());
+                }
+
+                statusline.push(padding.clone());
+
+                {
+                    //Palette
+                    statusline.push(divider.clone());
+                    statusline.push("Palette: ".on_truecolor(60,60,60).bright_white());
+                    let mut colors_summary = session.pixylene.borrow().project.canvas.palette.colors()
+                        .map(|(a,b,c)| (a.clone(), b.clone(), c))
+                        .take(16)
+                        .collect::<Vec<(u8, Pixel, bool)>>();
+                    colors_summary.sort_by_key(|(index, ..)| *index);
+                    for (index, color, is_equipped) in colors_summary {
+                        statusline.push(
+                            if is_equipped {
+                                format!(" {: <3}", index)
+                                .on_truecolor(color.r, color.g, color.b).white().underline()
+                            } else {
+                                format!(" {: <3}", index)
+                                .on_truecolor(color.r, color.g, color.b).white()
+                            }
+                        );
+                    }
+                    statusline.push(divider.clone());
                 }
 
                 self.target.borrow_mut().draw_statusline(&statusline,
