@@ -978,29 +978,34 @@ impl Controller {
                 let mut statusline: Statusline = Vec::new();
                 let padding = "     ".on_truecolor(60,60,60);
 
+                //Namespace
                 statusline.push(
                     self.namespace.clone().unwrap_or(String::from("Normal"))
                     .on_truecolor(60,60,60).bright_white()
                 );
                 statusline.push(padding.clone());
 
+                //Session name (new|.pi|.png)
                 statusline.push(session.name.on_truecolor(60,60,60).bright_white());
                 statusline.push(padding.clone());
 
+                //Session index
                 statusline.push(
-                    format!("Layer {} of {}",
+                    format!("Session {}/{}", s + 1, self.sessions.len())
+                    .on_truecolor(60,60,60).bright_white()
+                );
+                statusline.push(padding.clone());
+
+                //Layer index
+                statusline.push(
+                    format!("Layer {}/{}",
                             session.pixylene.borrow().project.focus.1 + 1,
                             session.pixylene.borrow().project.canvas.num_layers())
                     .on_truecolor(60,60,60).bright_white()
                 );
                 statusline.push(padding.clone());
 
-                statusline.push(
-                    format!("Session {} of {}", s + 1, self.sessions.len())
-                    .on_truecolor(60,60,60).bright_white()
-                );
-                statusline.push(padding.clone());
-
+                //Cursors status
                 let num_cursors = session.pixylene.borrow().project.num_cursors();
                 statusline.push(
                     format!("{}", match num_cursors {
@@ -1016,14 +1021,22 @@ impl Controller {
                 );
                 statusline.push(padding.clone());
 
+                //Palette
                 statusline.push("Palette: ".on_truecolor(60,60,60).bright_white());
                 let mut colors_summary = session.pixylene.borrow().project.canvas.palette.colors()
-                    .map(|(a,b)| (a.clone(), b.clone())).take(16).collect::<Vec<(u8, Pixel)>>();
-                colors_summary.sort_by_key(|(index, _)| *index);
-                for (index, color) in colors_summary {
+                    .map(|(a,b,c)| (a.clone(), b.clone(), c))
+                    .take(16)
+                    .collect::<Vec<(u8, Pixel, bool)>>();
+                colors_summary.sort_by_key(|(index, ..)| *index);
+                for (index, color, is_equipped) in colors_summary {
                     statusline.push(
-                        format!(" {: <3}", index)
-                        .on_truecolor(color.r, color.g, color.b).white()
+                        if is_equipped {
+                            format!(" {: <3}", index)
+                            .on_truecolor(color.r, color.g, color.b).white().underline()
+                        } else {
+                            format!(" {: <3}", index)
+                            .on_truecolor(color.r, color.g, color.b).white()
+                        }
                     );
                 }
 

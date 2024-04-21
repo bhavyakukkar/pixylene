@@ -131,8 +131,12 @@ impl Palette {
         }
     }
 
-    pub fn colors(&self) -> impl Iterator<Item = (&u8, &Pixel)> {
-        self.colors.iter().into_iter()
+    /// Returns an iterator to the palette colors with each entry of the iterator being a tuple of
+    /// the index, the color, and whether or not it is the equipped color in the palette
+    pub fn colors(&self) -> impl Iterator<Item = (&u8, &Pixel, bool)> {
+        self.colors.iter().map(|(index, color)| {
+            return (index, color, self.equipped.is_some() && *index == self.equipped.unwrap());
+        })
     }
 }
 
