@@ -1,6 +1,6 @@
 use crate::{
     Context,
-    values::{ types::{ Coord, PCoord }, project::{ Canvas } }
+    values::{ types::{ Coord, UCoord, PCoord }, project::{ Canvas } }
 };
 
 use tealr::{
@@ -158,6 +158,30 @@ impl TealData for Project {
             );
             Ok(())
         });
+
+        fields.document("the number of cursors in the Project");
+        fields.add_field_method_get("num_cursors", |_, this|
+            Ok(this.0.borrow().project.num_cursors()));
+
+        fields.document("the cursors in the Project");
+        fields.add_field_method_get("cursors", |lua_ctx, this| {
+            let element = lua_ctx.create_table()?;
+            let mut cursors = Vec::new();
+            for (coord, layer) in this.0.borrow().project.cursors() {
+                element.set("coord", UCoord(coord.clone()))?;
+                element.set("layer", *layer)?;
+                cursors.push(element.clone());
+            }
+            Ok(cursors)
+        });
+            //Ok(this.0.borrow().project.cursors()
+            //   .map(|(coord, layer)| lua_ctx.create_table()
+            //           .map(|table| => {
+            //               table.set("coord", UCoord(coord.clone()));
+            //               table.set("layer", *layer);
+            //           })
+            //   })
+            //   .collect::<Vec<(UCoord, u16)>>()));
     }
 }
 
