@@ -38,6 +38,8 @@ keys = [
     { k = { m = "CONTROL", c = { Char = 'l' } }, f = [{ EnterNamespace = "Layer" }] },
     # go to Cursors namespace
     { k = { m = "CONTROL", c = { Char = 'c' } }, f = [{ EnterNamespace = "Cursors" }] },
+    # go to Shapes namespace
+    { k = { m = "CONTROL", c = { Char = 's' } }, f = [{ EnterNamespace = "Shapes" }] },
 ]
 
 # LAYER namespace
@@ -70,6 +72,15 @@ keys = [
     { k = { c = "Esc" }, f = [ "EnterDefaultNamespace" ] }, # go back to default namespace
 ]
 
+# SHAPES namespace
+[[keys]]
+name = "Shapes"
+keys = [
+    { k = { c = { Char = 'c' } }, f = [{ RunAction = "circularoutline" }, "EnterDefaultNamespace"] },
+
+    { k = { c = "Esc" }, f = [ "EnterDefaultNamespace" ] }, # go back to default namespace
+]
+
 
 # keys associated to function that are required to be known by pixylene
 [required_keys]
@@ -88,20 +99,20 @@ start_command = { c = { Char = ':' }, m = "" }
 dimensions = { x = 32, y = 32 }
 
 # compatibility feature for terminals where two characters resemble a square [██]
-repeat = { x = 1, y = 2 }   # uncomment if using pixylenetui
+repeat = { x = 1, y = 2 }   # uncomment is using pixylenetui
 #repeat = { x = 1, y = 2 }  # uncomment if using pixylenegui
 
 # color palette
 # id is just an identifier & doesn't have to be in order
 # c can be 24-bit #RRGGBB or 32-bit #RRGGBBAA
 palette = [
-    # gruvbox material
-    { id = 1 , c = "#32302f" },
-    { id = 2 , c = "#ea6962" },
-    { id = 3 , c = "#a9b665" },
-    { id = 4 , c = "#d8a657" },
-    { id = 5 , c = "#7daea3" },
-    { id = 6 , c = "#d3869b" },
-    { id = 7 , c = "#89b482" },
-    { id = 8 , c = "#d4be98" },
+    # gruvbox
+    { id = 1 , c = "#282828" },
+    { id = 2 , c = "#ebdbb2" },
+    { id = 3 , c = "#cc241d" },
+    { id = 4 , c = "#98971a" },
+    { id = 5 , c = "#d79921" },
+    { id = 6 , c = "#458588" },
+    { id = 7 , c = "#b16286" },
+    { id = 8 , c = "#689d6a" },
 ]

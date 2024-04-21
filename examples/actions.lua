@@ -56,3 +56,59 @@ actions['noise'] = {
         end
     end
 }
+
+actions['circularoutline'] = {
+    perform = function(self, project, console)
+        if (project.num_cursors ~= 1) then
+            --add cmdout
+            return
+        end
+
+        local rad = tonumber(console:cmdin("Radius? "))
+        if (rad == 0) then
+            --add cmdout
+            return
+        end
+
+        local col = project.canvas.palette:get()
+
+        local cen = project.cursors[1]
+        local plot = function(x, y)
+            project.canvas:layer(cen.layer).scene:set(
+                UC(x, y),
+                BlendMode.NORMAL:blend(project.canvas:layer(cen.layer).scene:get(UC(x, y)), col)
+            )
+        end
+
+        local x0 = cen.coord.x
+        local y0 = cen.coord.y
+
+        local f = 1 - rad
+        local ddf_x = 1
+        local ddf_y = -2 * rad
+        local x = 0
+        local y = rad
+        plot(x0, y0 + rad)
+        plot(x0, y0 - rad)
+        plot(x0 + rad, y0)
+        plot(x0 - rad, y0)
+        while (x < y) do
+            if (f >= 0) then
+                y = y - 1
+                ddf_y = ddf_y + 2
+                f = f + ddf_y
+            end
+            x = x + 1
+            ddf_x = ddf_x + 2
+            f = f + ddf_x
+            plot(x0 + x, y0 + y)
+            plot(x0 - x, y0 + y)
+            plot(x0 + x, y0 - y)
+            plot(x0 - x, y0 - y)
+            plot(x0 + y, y0 + x)
+            plot(x0 - y, y0 + x)
+            plot(x0 + y, y0 - x)
+            plot(x0 - y, y0 - x)
+        end
+    end
+}
