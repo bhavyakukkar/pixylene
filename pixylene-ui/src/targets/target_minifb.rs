@@ -332,7 +332,9 @@ impl UserInterface for TargetMinifb {
         }
     }
 
-    fn draw_paragraph(&mut self, paragraph: Vec<String>) { todo!() }
+    fn draw_paragraph(&mut self, paragraph: Vec<colored::ColoredString>, _boundary: &Rectangle) {
+        todo!()
+    }
 
     fn clear(&mut self, boundary: &Rectangle) { 
         /*

@@ -203,6 +203,7 @@ impl Controller {
         };
 
         let mut keymap: KeyMap = HashMap::new();
+        keymap.insert(None, HashMap::new());
         let mut possible_namespaces = HashMap::new();
         if !config.new_keys {
             _ = <Config as Default>::default().keys.into_iter()
@@ -272,6 +273,7 @@ impl Controller {
                 (String::from("showlayer"), PreviewFocusLayer),
                 (String::from("showproject"), PreviewProject),
                 (String::from("canvasjson"), PrintCanvasJson),
+                (String::from("keymap"), PrintKeybindMap),
                 (String::from("showstatus"), UpdateStatusline),
             ]),
 
@@ -964,8 +966,70 @@ impl Controller {
                 let s = self.sel_session()?;
                 let session = &mut self.sessions[s];
                 self.target.borrow_mut().draw_paragraph(
-                    vec![session.pixylene.borrow().project.canvas.to_json()]
+                    vec![session.pixylene.borrow().project.canvas.to_json().into()],
+                    &self.b_camera.unwrap()
                 );
+                self.console_in("press ENTER to stop previewing canvas JSON");
+            },
+
+            PrintKeybindMap => {
+                use colored::{ Colorize, ColoredString };
+                let mut paragraph: Vec<ColoredString> = Vec::new();
+                let half_width = self.target.borrow().get_size().y() as usize/2;
+
+                self.target.borrow_mut().clear_all();
+
+                //todo: refactor so later may be used separately in :help
+                //required keys
+                {
+                    let ReqUiFnMap {
+                        ref force_quit,
+                        ref start_command,
+                        ref discard_command } = self.rev_keymap;
+                    paragraph.push("".into());
+                    paragraph.push("Required Keys".underline().bright_yellow());
+                    paragraph.push(format!("  Force Quit      : {}", force_quit).into());
+                    paragraph.push(format!("  Start Command   : {}", start_command).into());
+                    paragraph.push(format!("  Discard Command : {}", discard_command).into());
+                }
+
+                //all namespaces & their keys
+                paragraph.extend(vec![
+                    vec![("Default Namespace".to_owned(), self.keymap.get(&None).unwrap())],
+                    self.keymap.iter().filter(|(namespace, _)| namespace.is_some())
+                        .map(|(n, k)| (format!("Namespace '{}'", n.clone().unwrap()), k)).collect()
+                ].iter().flatten()
+                .map(|(namespace, keys)| {
+                    let mut lines = vec![
+                        ColoredString::from(""),
+                        namespace.underline().bright_yellow(),
+                    ];
+                    let mut keys = keys.iter();
+                    loop {
+                        let mut line = String::new();
+                        if let Some((key, ui_fns)) = keys.next() {
+                            line.push_str(
+                                &format!("{:<half_width$}",
+                                    format!("  {:<10} : {:?}", key.to_string(), ui_fns)));
+                        } else {
+                            break;
+                        }
+                        if let Some((key, ui_fns)) = keys.next() {
+                            line.push_str(&format!("{:<10} : {:?}", key.to_string(), ui_fns));
+                            lines.push(line.into());
+                        } else {
+                            lines.push(line.into());
+                            break;
+                        }
+                    }
+                    lines
+                }).flatten().collect::<Vec<ColoredString>>());
+
+                self.target.borrow_mut().draw_paragraph(paragraph,
+                    &self.b_camera.unwrap()
+                );
+                self.console_in("press ENTER to stop previewing keybindings");
+                self.target.borrow_mut().clear_all();
             },
 
             UpdateStatusline => {
@@ -984,7 +1048,7 @@ impl Controller {
                     //Namespace
                     statusline.push(divider.clone());
                     statusline.push(
-                        self.namespace.clone().unwrap_or(String::from("Normal"))
+                        self.namespace.clone().unwrap_or(String::from("Default"))
                         .on_truecolor(60,60,60).bright_white()
                     );
                     statusline.push(divider.clone());
@@ -1091,7 +1155,7 @@ impl Controller {
 
                 self.target.borrow_mut().draw_statusline(&statusline,
                                                          &self.b_statusline.unwrap());
-            }
+            },
         }
         Ok(())
     }

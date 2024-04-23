@@ -84,7 +84,7 @@ keys = [
 
 # keys associated to function that are required to be known by pixylene
 [required_keys]
-force_quit = { c = { Char = 'c' }, m = "CONTROL|SHIFT" }
+force_quit = { c = { F = 4 }, m = "ALT" }
 
 # vim-like
 discard_command = { c = "Esc", m = "" }

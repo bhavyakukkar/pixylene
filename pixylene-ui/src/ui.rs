@@ -25,7 +25,7 @@ pub trait UserInterface {
 
     fn draw_camera(&mut self, dim: PCoord, buffer: Vec<OPixel>, show_cursors: bool,
                    boundary: &Rectangle);
-    fn draw_paragraph(&mut self, paragraph: Vec<String>);
+    fn draw_paragraph(&mut self, paragraph: Vec<colored::ColoredString>, boudnary: &Rectangle);
 
     fn draw_statusline(&mut self, statusline: &Statusline, boundary: &Rectangle);
 
@@ -83,6 +83,38 @@ impl From<KeyEvent> for Key {
     }
 }
 
+impl std::fmt::Display for Key {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        //let code = toml::to_string(&self.code).map_err(|err| panic!("{:?}", self.code)).unwrap();
+        write!(
+            f,
+            "{}{}",
+            self.modifiers.unwrap_or(KeyModifiers::empty()).iter_names()
+                .map(|x| x.0.to_owned()).reduce(|a,b| format!("{a}|{b}"))
+                .map(|s| s + " ").unwrap_or("".to_owned()),
+            if let KeyCode::Char(c) = self.code {
+                String::from(c)
+            } else if let KeyCode::F(u) = self.code {
+                format!("F{}", u)
+            } else if let KeyCode::Media(m) = self.code {
+                format!("{:?}", m)
+            } else if let KeyCode::Modifier(m) = self.code {
+                format!("{:?}", m)
+            } else {
+                format!("{:?}", self.code)
+            }
+                //    toml::to_string(&KeyEvent::new(self.code, KeyModifiers::empty()))
+                //        .unwrap()
+                //        .lines()
+                //        .take(1)
+                //        .map(|s| s.to_owned())
+                //        .fold(String::from(""), |a,b| a.to_owned() + &b)[7..]
+                //        .to_string()
+                //}
+        )
+    }
+}
+
 #[derive(Copy, Clone)]
 pub struct Rectangle {
     pub start: UCoord,
@@ -128,6 +160,7 @@ pub enum UiFn {
     PreviewFocusLayer,
     PreviewProject,
     PrintCanvasJson,
+    PrintKeybindMap,
 
     UpdateStatusline,
 }
@@ -135,9 +168,9 @@ pub enum UiFn {
 /// The mapping of [`Keys`](Key) to functions mandatorily required by the app. 
 #[derive(Debug, Deserialize)]
 pub struct ReqUiFnMap {
+    pub force_quit: Key,
     pub start_command: Key,
     pub discard_command: Key,
-    pub force_quit: Key,
 }
 
 /// Generic color type to be used in targets, wrapper around colored's [`Color`](colored::Color)
