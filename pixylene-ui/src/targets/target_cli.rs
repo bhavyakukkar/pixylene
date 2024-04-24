@@ -31,7 +31,7 @@ impl UserInterface for TargetCLI {
         //println!("canvas stuff");
     }
     fn draw_paragraph(&mut self, paragraph: Vec<colored::ColoredString>, _boundary: &Rectangle) {
-        println!("{}", paragraph.into_iter().collect::<String>());
+        println!("{}", paragraph.into_iter().map(|s| s.to_string()).collect::<String>());
     }
 
     fn draw_statusline(&mut self, _statusline: &Statusline, _boundary: &Rectangle) {}
