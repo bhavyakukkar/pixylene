@@ -30,14 +30,14 @@ impl UserInterface for TargetCLI {
                    _boundary: &Rectangle) {
         //println!("canvas stuff");
     }
-    fn draw_paragraph(&mut self, paragraph: Vec<String>) {
-        println!("{}", paragraph.into_iter().collect::<String>());
+    fn draw_paragraph(&mut self, paragraph: Vec<colored::ColoredString>, _boundary: &Rectangle) {
+        println!("{}", paragraph.into_iter().map(|s| s.to_string()).collect::<String>());
     }
 
     fn draw_statusline(&mut self, _statusline: &Statusline, _boundary: &Rectangle) {}
 
-    fn console_in(&mut self, message: &str, _discard_key: &Key, _boundary: &Rectangle) -> Option<String> {
-        println!("{}", message);
+    fn console_in(&mut self, _message: &str, _discard_key: &Key, _boundary: &Rectangle) -> Option<String> {
+        //println!("{}", message);
         let mut line = String::new();
         _ = std::io::stdin().read_line(&mut line).unwrap();
         Some(line[0..(line.len() - 1)].to_string())

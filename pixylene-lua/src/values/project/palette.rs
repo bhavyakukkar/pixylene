@@ -88,16 +88,11 @@ impl TealData for Palette {
                             boxed_error(&err.to_string())
                         ))),
                     },
-                    None => match this.0.do_imt(
+                    None => Ok(Pixel(this.0.do_imt(
                         //todo: remove clone()'s when adding context to Pixel as well
-                        |palette| palette.get_equipped().map(|p| p.clone()),
-                        |pixylene, _| pixylene.project.canvas.palette.get_equipped().map(|p| p.clone()),
-                    ) {
-                        Ok(pixel) => Ok(Pixel(pixel)),
-                        Err(err) => Err(ExternalError(Arc::from(
-                            boxed_error(&err.to_string())
-                        ))),
-                    }
+                        |palette| palette.get_equipped().clone(),
+                        |pixylene, _| pixylene.project.canvas.palette.get_equipped().clone(),
+                    ))),
                 }
             });
         }

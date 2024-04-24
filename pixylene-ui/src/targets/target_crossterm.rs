@@ -178,91 +178,29 @@ impl UserInterface for TargetCrossterm {
         stdout.flush().unwrap();
     }
 
-    /*
-    fn draw_statusline(&mut self, project: &Project, _action_manager: &ActionManager, mode: &Mode,
-                       session: &u8, boundary: &Rectangle) {
-        use terminal::{ size, Clear, ClearType };
-        use cursor::{ MoveTo };
-        use style::{ Print, SetForegroundColor, SetBackgroundColor, Color, ResetColor };
+    fn draw_paragraph(&mut self, paragraph: Vec<colored::ColoredString>, _boundary: &Rectangle) {
+        //todo: use boundary instead of full-screen
+        use cursor::{ MoveTo, MoveToNextLine };
+        use style::{ Print, SetForegroundColor, SetBackgroundColor, ResetColor,
+                     SetAttribute, Attribute };
         let mut stdout = std::io::stdout();
 
-        let padding = "     ";
         queue!(
             stdout,
-            MoveTo(0, boundary.start.x.try_into().unwrap()),
-            SetBackgroundColor(Color::Rgb{r:50,g:50,b:50,}),
+            MoveTo(0, 0),
         ).unwrap();
-        for _ in 0..size().unwrap().0 {
-            queue!(stdout, Print(" ")).unwrap();
-        }
-        queue!(
-            stdout,
-            MoveTo(
-                boundary.start.y.try_into().unwrap(),
-                boundary.start.x.try_into().unwrap()
-            ),
-            Clear(ClearType::UntilNewLine),
-            SetForegroundColor(Color::Rgb{r:255,g:255,b:255,}),
-            Print(format!(
-                "|{}|{}|layer {} of {}|{}|Session {}|{}|{}|{}|",
-                mode,
-                //match mode {
-                //    Splash => "Splash",
-                //    Command => "Command",
-                //    Normal => "Normal",
-                //    Preview => "Preview",
-                //    GridSelect => "GridSelect",
-                //    PointSelect => "PointSelect",
-                //},
-                padding,
-                project.focus.1 + 1,
-                project.canvas.num_layers(),
-                padding,
-                session,
-                padding,
-                project.focus.0,
-                padding,
-            )),
-            SetForegroundColor(Color::Rgb{r:30,g:30,b:30}),
-        ).unwrap();
-
-        /*
-        for i in 0..project.canvas.palette.colors.len() {
-            if let Some(color) = project.canvas.palette.get_color(i+1).unwrap() {
-                queue!(
-                    stdout,
-                    SetBackgroundColor(Color::Rgb{r: color.r, g: color.g, b: color.b}),
-                ).unwrap();
-            }
+        for line in paragraph.iter() {
             queue!(
                 stdout,
-                Print(format!(" {} ", i+1)),
+                SetBackgroundColor(Color(line.bgcolor()).into()),
+                SetForegroundColor(Color(line.fgcolor()).into()),
+                Print(line),
+                SetAttribute(Attribute::Reset),
+                ResetColor,
+                MoveToNextLine(1),
             ).unwrap();
         }
-        */
-
-        queue!(
-            stdout,
-            ResetColor,
-            SetBackgroundColor(Color::Rgb{r:50,g:50,b:50}),
-            SetForegroundColor(Color::Rgb{r:255,g:255,b:255}),
-            Print(format!(
-                //"|{}(S:'{}' C:'{}'){}|",
-                "|{}{}|",
-                padding,
-                //&action_manager.scene_lock.clone().unwrap_or(String::from("-")),
-                //&action_manager.camera_lock.clone().unwrap_or(String::from("-")),
-                padding,
-                //match pixylene.project.cursors.len() {
-                //    0 => String::from("No cursors"),
-                //    1 => format!("1 cursor: {}", pixylene.project.cursors[0].coord),
-                //    _ => format!("{} cursors", pixylene.project.cursors.len()).to_string(),
-                //},
-            )),
-        ).unwrap();
-        _ = stdout.flush();
     }
-*/
 
     fn console_in(&mut self, message: &str, discard_key: &Key, boundary: &Rectangle) -> Option<String> {
         use terminal::{ Clear, ClearType };
@@ -339,9 +277,6 @@ impl UserInterface for TargetCrossterm {
             ResetColor,
         ).unwrap();
         stdout.flush().unwrap();
-    }
-
-    fn draw_paragraph(&mut self, _paragraph: Vec<String>) {
     }
 
     fn clear(&mut self, boundary: &Rectangle) {

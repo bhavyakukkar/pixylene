@@ -1,6 +1,6 @@
 use crate::{
     Context,
-    values::{ types::{ Coord, PCoord }, project::{ Canvas } }
+    values::{ types::{ Coord, UCoord, PCoord }, project::{ Canvas } }
 };
 
 use tealr::{
@@ -98,30 +98,6 @@ impl TealData for Project {
             });
         }
 
-
-        //Flexible Lua interface to get or set Project's focus field
-        {
-            mlua_create_named_parameters!(
-                ProjectFocusArgs with
-                    coord: Option<Coord>,
-                    layer: Option<u16>,
-            );
-            methods.document("Gets the output focus as a table of fields 'coord' and 'layer' for \
-                             this given Project if nothing is passed, sets it if the coordinate \
-                             and layer are passed");
-            methods.add_method_mut("focus", |lua, this, a: ProjectFocusArgs| {
-                if a.coord.is_some() && a.layer.is_some() {
-                    this.0.borrow_mut().project.focus = (a.coord.unwrap().0, a.layer.unwrap());
-                    Ok(None)
-                } else {
-                    let focus = lua.create_table()?;
-                    focus.set("coord", Coord(this.0.borrow().project.focus.0))?;
-                    focus.set("layer", this.0.borrow().project.focus.1)?;
-                    Ok(Some(focus))
-                }
-            });
-        }
-
         //todo: add more methods
 
         methods.generate_help();
@@ -158,6 +134,44 @@ impl TealData for Project {
             );
             Ok(())
         });
+
+        fields.document("the number of cursors in the Project");
+        fields.add_field_method_get("num_cursors", |_, this|
+            Ok(this.0.borrow().project.num_cursors()));
+
+        fields.document("the cursors in the Project");
+        fields.add_field_method_get("cursors", |lua_ctx, this| {
+            let element = lua_ctx.create_table()?;
+            let mut cursors = Vec::new();
+            for (coord, layer) in this.0.borrow().project.cursors() {
+                element.set("coord", UCoord(coord.clone()))?;
+                element.set("layer", *layer)?;
+                cursors.push(element.clone());
+            }
+            Ok(cursors)
+        });
+
+        fields.document("table containing the focussed Layer ('layer') & focussed coordinate on \
+                        the Layer ('coord') of the Project");
+        fields.add_field_method_get("focus", |lua_ctx, this| {
+            let focus = lua_ctx.create_table()?;
+            focus.set("coord", Coord(this.0.borrow().project.focus.0))?;
+            focus.set("layer", this.0.borrow().project.focus.1)?;
+            Ok(focus)
+        });
+        fields.add_field_method_set("focus", |_, this, value: mlua::Table| {
+            let coord: Coord = value.get("coord")?;
+            this.0.borrow_mut().project.focus = (coord.0, value.get("layer")?);
+            Ok(())
+        });
+            //Ok(this.0.borrow().project.cursors()
+            //   .map(|(coord, layer)| lua_ctx.create_table()
+            //           .map(|table| => {
+            //               table.set("coord", UCoord(coord.clone()));
+            //               table.set("layer", *layer);
+            //           })
+            //   })
+            //   .collect::<Vec<(UCoord, u16)>>()));
     }
 }
 

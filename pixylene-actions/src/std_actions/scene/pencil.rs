@@ -32,7 +32,7 @@ impl command::Action for Pencil {
                 cursor,
                 Some(match (&self).palette_index {
                     Some(index) => *project.canvas.palette.get_color(index)?,
-                    None => *project.canvas.palette.get_equipped()?,
+                    None => *project.canvas.palette.get_equipped(),
                 }),
                 //Some(*project.canvas.palette.get_color((&self).palette_index)?),
                 BlendMode::Normal,
@@ -56,7 +56,7 @@ impl memento::Action for Pencil {
                 cursor,
                 Some(match (&self).palette_index {
                     Some(index) => *project.canvas.palette.get_color(index)?,
-                    None => *project.canvas.palette.get_equipped()?,
+                    None => *project.canvas.palette.get_equipped(),
                 }),
                 //Some(*project.canvas.palette.get_color((&self).palette_index)?),
                 BlendMode::Normal,

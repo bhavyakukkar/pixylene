@@ -44,11 +44,14 @@ impl TealData for Console {
             mlua_create_named_parameters!(
                 ConsoleCmdoutArgs with
                     message: String,
-                    log_type: LogType,
+                    log_type: Option<LogType>,
             );
-            methods.document("Sends a message to the user.");
+            methods.document("Sends a message to the user, with an optional LogType.");
             methods.add_method("cmdout", |_, this, a: ConsoleCmdoutArgs| {
-                Ok((*this.0).cmdout(&a.message, &a.log_type.0))
+                Ok((*this.0).cmdout(
+                    &a.message,
+                    &a.log_type.map(|l| l.0).unwrap_or(pixylene_actions::LogType::Info)
+                ))
             });
         }
 

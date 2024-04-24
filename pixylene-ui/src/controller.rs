@@ -10,7 +10,7 @@ use libpixylene::{
     types::{ UCoord, PCoord, Coord, Pixel },
 };
 use pixylene_actions::{ memento::{ ActionManager }, Console, LogType };
-use pixylene_actions_lua::{ LuaActionManager, ErrorType };
+use pixylene_lua::{ LuaActionManager, ErrorType };
 use std::collections::HashMap;
 use std::process::exit;
 use std::cell::RefCell;
@@ -203,6 +203,7 @@ impl Controller {
         };
 
         let mut keymap: KeyMap = HashMap::new();
+        keymap.insert(None, HashMap::new());
         let mut possible_namespaces = HashMap::new();
         if !config.new_keys {
             _ = <Config as Default>::default().keys.into_iter()
@@ -272,6 +273,7 @@ impl Controller {
                 (String::from("showlayer"), PreviewFocusLayer),
                 (String::from("showproject"), PreviewProject),
                 (String::from("canvasjson"), PrintCanvasJson),
+                (String::from("keymap"), PrintKeybindMap),
                 (String::from("showstatus"), UpdateStatusline),
             ]),
 
@@ -739,12 +741,15 @@ impl Controller {
                     if let Some(_) = self.possible_namespaces.get(name) {
                         self.namespace = Some(name.clone());
                     } else {
-                        self.console_out(&format!("namespace {} doesn't exist", name),
+                        self.console_out(&format!("namespace '{}' doesn't exist", name),
                                          &LogType::Error);
                     }
                 } else {
                     self.namespace = None;
                 }
+            },
+            EnterDefaultNamespace => {
+                _ = self.perform_ui(&EnterNamespace(None));
             },
             RunKey(key) => {
                 //special required keys
@@ -812,6 +817,7 @@ impl Controller {
                     sessions,
                     target,
                     b_console,
+                    b_camera,
                     ..
                 } = self;
 
@@ -841,22 +847,27 @@ impl Controller {
                                         }
                                     },
                                     Err(err) => {
-                                        target.borrow_mut().console_out(
-                                            //&format!("failed to perform: {}",
-                                            &format!("{}",
-                                            //match err {
-                                            //    //print only cause, not traceback
-                                            //    mlua::Error::CallbackError{ cause, .. } => cause,
-                                            //    mlua::Error::RuntimeError(msg) => msg,
-                                            //    otherwise => otherwise,
-                                            //}),
+                                        use colored::Colorize;
 
-                                            //todo: better reporting
-                                            err.to_string().lines().map(|s| s.to_string()
-                                            .replace("\t", " ")).collect::<Vec<String>>().join(", ")),
-                                            &LogType::Error,
-                                            &b_console.unwrap()
+                                        let error = format!(
+                                            "{}",
+                                            err.to_string().lines()
+                                                .map(|s| s.to_string().replace("\t", " "))
+                                                .collect::<Vec<String>>().join(", ")
                                         );
+                                        if error.len() <= b_console.unwrap().size.y().into() {
+                                            target.borrow_mut().console_out(
+                                                &error,
+                                                &LogType::Error,
+                                                &b_console.unwrap()
+                                            );
+                                        } else {
+                                            target.borrow_mut().draw_paragraph(
+                                                vec![error.red()],
+                                                &b_camera.unwrap()
+                                            );
+                                            self.console_in("press ENTER to close error");
+                                        }
                                     }
                                 }
                             },
@@ -961,8 +972,70 @@ impl Controller {
                 let s = self.sel_session()?;
                 let session = &mut self.sessions[s];
                 self.target.borrow_mut().draw_paragraph(
-                    vec![session.pixylene.borrow().project.canvas.to_json()]
+                    vec![session.pixylene.borrow().project.canvas.to_json().into()],
+                    &self.b_camera.unwrap()
                 );
+                self.console_in("press ENTER to stop previewing canvas JSON");
+            },
+
+            PrintKeybindMap => {
+                use colored::{ Colorize, ColoredString };
+                let mut paragraph: Vec<ColoredString> = Vec::new();
+                let half_width = self.target.borrow().get_size().y() as usize/2;
+
+                self.target.borrow_mut().clear_all();
+
+                //todo: refactor so later may be used separately in :help
+                //required keys
+                {
+                    let ReqUiFnMap {
+                        ref force_quit,
+                        ref start_command,
+                        ref discard_command } = self.rev_keymap;
+                    paragraph.push("".into());
+                    paragraph.push("Required Keys".underline().bright_yellow());
+                    paragraph.push(format!("  Force Quit      : {}", force_quit).into());
+                    paragraph.push(format!("  Start Command   : {}", start_command).into());
+                    paragraph.push(format!("  Discard Command : {}", discard_command).into());
+                }
+
+                //all namespaces & their keys
+                paragraph.extend(vec![
+                    vec![("Default Namespace".to_owned(), self.keymap.get(&None).unwrap())],
+                    self.keymap.iter().filter(|(namespace, _)| namespace.is_some())
+                        .map(|(n, k)| (format!("Namespace '{}'", n.clone().unwrap()), k)).collect()
+                ].iter().flatten()
+                .map(|(namespace, keys)| {
+                    let mut lines = vec![
+                        ColoredString::from(""),
+                        namespace.underline().bright_yellow(),
+                    ];
+                    let mut keys = keys.iter();
+                    loop {
+                        let mut line = String::new();
+                        if let Some((key, ui_fns)) = keys.next() {
+                            line.push_str(
+                                &format!("{:<half_width$}",
+                                    format!("  {:<10} : {:?}", key.to_string(), ui_fns)));
+                        } else {
+                            break;
+                        }
+                        if let Some((key, ui_fns)) = keys.next() {
+                            line.push_str(&format!("{:<10} : {:?}", key.to_string(), ui_fns));
+                            lines.push(line.into());
+                        } else {
+                            lines.push(line.into());
+                            break;
+                        }
+                    }
+                    lines
+                }).flatten().collect::<Vec<ColoredString>>());
+
+                self.target.borrow_mut().draw_paragraph(paragraph,
+                    &self.b_camera.unwrap()
+                );
+                self.console_in("press ENTER to stop previewing keybindings");
+                self.target.borrow_mut().clear_all();
             },
 
             UpdateStatusline => {
@@ -974,53 +1047,121 @@ impl Controller {
                 let session = &self.sessions[s];
                 let mut statusline: Statusline = Vec::new();
                 let padding = "     ".on_truecolor(60,60,60);
+                let spacing = "  ".on_truecolor(60,60,60);
+                let divider = "｜".on_truecolor(60,60,60).truecolor(100,100,100);
 
-                statusline.push(session.name.on_truecolor(60,60,60).bright_white());
-                statusline.push(padding.clone());
-
-                statusline.push(
-                    format!("Layer {} of {}",
-                            session.pixylene.borrow().project.focus.1 + 1,
-                            session.pixylene.borrow().project.canvas.num_layers())
-                    .on_truecolor(60,60,60).bright_white()
-                );
-                statusline.push(padding.clone());
-
-                statusline.push(
-                    format!("Session {} of {}", s + 1, self.sessions.len())
-                    .on_truecolor(60,60,60).bright_white()
-                );
-                statusline.push(padding.clone());
-
-                let num_cursors = session.pixylene.borrow().project.num_cursors();
-                statusline.push(
-                    format!("{}", match num_cursors {
-                        0 => String::from("0 cursors"),
-                        1 => {
-                            let cursor = session.pixylene.borrow().project.cursors()
-                                .collect::<Vec<&(UCoord, u16)>>()[0].clone();
-                            format!("Cursor: {}, {}", cursor.1, cursor.0)
-                        },
-                        _ => format!("{} cursors", num_cursors),
-                    })
-                    .on_truecolor(60,60,60).bright_white()
-                );
-                statusline.push(padding.clone());
-
-                statusline.push("Palette: ".on_truecolor(60,60,60).bright_white());
-                let mut colors_summary = session.pixylene.borrow().project.canvas.palette.colors()
-                    .map(|(a,b)| (a.clone(), b.clone())).take(16).collect::<Vec<(u8, Pixel)>>();
-                colors_summary.sort_by_key(|(index, _)| *index);
-                for (index, color) in colors_summary {
+                {
+                    //Namespace
+                    statusline.push(divider.clone());
                     statusline.push(
-                        format!(" {: <3}", index)
-                        .on_truecolor(color.r, color.g, color.b).white()
+                        self.namespace.clone().unwrap_or(String::from("Default"))
+                        .on_truecolor(60,60,60).bright_white()
                     );
+                    statusline.push(divider.clone());
+                }
+
+                statusline.push(padding.clone());
+
+                {
+                    //Session name (new|.pi|.png)
+                    statusline.push(divider.clone());
+                    statusline.push(session.name.on_truecolor(60,60,60).bright_white());
+                    statusline.push(spacing.clone());
+
+                    //Session index
+                    statusline.push(
+                        format!("Session {}/{}", s + 1, self.sessions.len())
+                        .on_truecolor(60,60,60).bright_white()
+                    );
+                    statusline.push(divider.clone());
+                }
+
+                statusline.push(padding.clone());
+
+                {
+                    //Layer index
+                    statusline.push(divider.clone());
+                    statusline.push(
+                        format!("Layer {}/{}",
+                                session.pixylene.borrow().project.focus.1 + 1,
+                                session.pixylene.borrow().project.canvas.num_layers())
+                        .on_truecolor(60,60,60).bright_white()
+                    );
+                    statusline.push(spacing.clone());
+
+                    //Layer opacity
+                    statusline.push(
+                        format!("{:.2}%",
+                            session.pixylene.borrow().project.canvas.get_layer(
+                                session.pixylene.borrow().project.focus.1
+                            )
+                            .map(|layer| (f32::from(layer.opacity)/2.55))
+                            .unwrap_or(0.0)
+                        )
+                        .on_truecolor(60,60,60).bright_white()
+                    );
+
+                    //Layer mute
+                    if session.pixylene.borrow().project.canvas.get_layer(
+                        session.pixylene.borrow().project.focus.1
+                    )
+                    .map(|layer| layer.mute)
+                    .unwrap_or(false) {
+                        statusline.push(spacing.clone());
+                        statusline.push("muted".on_truecolor(60,60,60).bright_white());
+                    }
+                    statusline.push(divider.clone());
+                }
+
+                statusline.push(padding.clone());
+
+                {
+                    //Cursors status
+                    statusline.push(divider.clone());
+                    let num_cursors = session.pixylene.borrow().project.num_cursors();
+                    statusline.push(
+                        format!("{}", match num_cursors {
+                            0 => String::from("0 cursors"),
+                            1 => {
+                                let cursor = session.pixylene.borrow().project.cursors()
+                                    .collect::<Vec<&(UCoord, u16)>>()[0].clone();
+                                format!("Cursor: {}, {}", cursor.1, cursor.0)
+                            },
+                            _ => format!("{} cursors", num_cursors),
+                        })
+                        .on_truecolor(60,60,60).bright_white()
+                    );
+                    statusline.push(divider.clone());
+                }
+
+                statusline.push(padding.clone());
+
+                {
+                    //Palette
+                    statusline.push(divider.clone());
+                    statusline.push("Palette: ".on_truecolor(60,60,60).bright_white());
+                    let mut colors_summary = session.pixylene.borrow().project.canvas.palette.colors()
+                        .map(|(a,b,c)| (a.clone(), b.clone(), c))
+                        .take(16)
+                        .collect::<Vec<(u8, Pixel, bool)>>();
+                    colors_summary.sort_by_key(|(index, ..)| *index);
+                    for (index, color, is_equipped) in colors_summary {
+                        statusline.push(
+                            if is_equipped {
+                                format!(" {: <3}", index)
+                                .on_truecolor(color.r, color.g, color.b).white().underline()
+                            } else {
+                                format!(" {: <3}", index)
+                                .on_truecolor(color.r, color.g, color.b).white()
+                            }
+                        );
+                    }
+                    statusline.push(divider.clone());
                 }
 
                 self.target.borrow_mut().draw_statusline(&statusline,
                                                          &self.b_statusline.unwrap());
-            }
+            },
         }
         Ok(())
     }
