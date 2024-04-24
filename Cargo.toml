@@ -2,7 +2,7 @@
 resolver = "2"
 members = [
     "libpixylene",
-    "pixylene-ui",
     "pixylene-actions",
-    "pixylene-actions-lua"
+    "pixylene-lua",
+    "pixylene-ui"
 ]

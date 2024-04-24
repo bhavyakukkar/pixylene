@@ -15,10 +15,10 @@
 *** DONE show layer opacity & mute in statusline
 *** DONE helper screen to show keybind <-> actions map
 
-** Version 1.1 [6%]
+** Version 1.1 [5%]
 *** TODO IndexedScene for use with indexed images
 *** TODO Png to/fro Scene: fill more color-type/bit-depth combos
-*** TODO dont let Project.focus go past present layers, make it private
+*** HOLD dont let Project.focus go past present layers, make it private ABDF
 *** TODO dont let config list key that RunKey's itself. crashes the app
 *** TODO Method (& corresponding Lua field) layers on canvas that returns a vector of layers
 *** TODO shorter UiFn names or find a way to declare different serde name for them

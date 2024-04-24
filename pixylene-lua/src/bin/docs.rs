@@ -1,4 +1,4 @@
-use pixylene_actions_lua::values::{ types, project };
+use pixylene_lua::values::{ types, project };
 use tealr::TypeWalker;
 use std::env;
 use std::process::exit;

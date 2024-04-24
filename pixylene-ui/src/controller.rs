@@ -10,7 +10,7 @@ use libpixylene::{
     types::{ UCoord, PCoord, Coord, Pixel },
 };
 use pixylene_actions::{ memento::{ ActionManager }, Console, LogType };
-use pixylene_actions_lua::{ LuaActionManager, ErrorType };
+use pixylene_lua::{ LuaActionManager, ErrorType };
 use std::collections::HashMap;
 use std::process::exit;
 use std::cell::RefCell;

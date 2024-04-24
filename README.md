@@ -75,7 +75,7 @@ Pixylene is configured in 2 different ways:
 - The Lua API documentation can be created using [tealr_doc_gen](https://github.com/lenscas/tealr_doc_gen):
 ```sh
 # generate pixylene-lua API json into assets/docs/pixylene-lua
-cargo run -p pixylene-actions-lua -F docs -- ./assets/docs/pixylene-lua/pixylene-lua.json
+cargo run -p pixylene-lua -F docs -- ./assets/docs/pixylene-lua/pixylene-lua.json
 
 # navigate to doc root
 cd ./assets/docs/pixylene-lua

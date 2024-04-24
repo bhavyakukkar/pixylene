@@ -1,5 +1,5 @@
 [package]
-name = "pixylene-actions-lua"
+name = "pixylene-lua"
 version = "0.1.0"
 edition = "2021"
 
