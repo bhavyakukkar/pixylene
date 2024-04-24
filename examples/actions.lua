@@ -7,31 +7,55 @@ actions['greet'] = {
             if (name == nil or name == '') then
                 name = "there"
             end
-            console:cmdout("Hello, " .. name .. ".", LogType.INFO)
+            console:cmdout("Hello, " .. name .. ".")
             self.count = self.count + 1
         else
-            console:cmdout("I only greet once.", LogType.WARNING)
+            console:cmdout("I only greet once.")
         end
     end
 }
 
--- Zooms in, i.e., increments the project multiplier by 1
+-- go to the next layer
+actions['layernext'] = {
+    perform = function(self, project, console)
+        if (project.focus.layer < project.canvas.num_layers - 1) then
+            project.focus = { ['layer'] = project.focus.layer + 1, ['coord'] = project.focus.coord }
+        else
+            console:cmdout("this is the last layer", LogType.WARNING)
+        end
+    end
+}
+
+-- go to the previous layer
+actions['layerprev'] = {
+    perform = function(self, project, console)
+        if (project.focus.layer > 0) then
+            project.focus = { ['layer'] = project.focus.layer - 1, ['coord'] = project.focus.coord }
+        else
+            console:cmdout("this is the first layer", LogType.WARNING)
+        end
+    end
+}
+
+-- zooms in, i.e., increments the project multiplier by 1
 actions['zoomin'] = {
     perform = function(self, project, console)
         project:set_mul(project.mul + 1)
-        console:cmdout("zoomed in", LogType.INFO)
+        console:cmdout("zoomed in")
     end
 }
 
--- Zooms out, i.e., decrements the project multiplier by 1
+-- zooms out, i.e., decrements the project multiplier by 1
 actions['zoomout'] = {
     perform = function(self, project, console)
-        project:set_mul(project.mul - 1)
-        console:cmdout("zoomed out", LogType.INFO)
+        if (project.mul > 1) then
+            project:set_mul(project.mul - 1)
+            console:cmdout("zoomed out")
+        end
     end
 }
 
--- Duplicates the Current Layer & moves focus to it
+-- duplicates the Current Layer & moves focus to it
 actions['dupcurlayer'] = {
     perform = function(self, project, console)
         project.canvas:add(project.canvas:layer(project:focus().layer))
@@ -60,13 +84,13 @@ actions['noise'] = {
 actions['circularoutline'] = {
     perform = function(self, project, console)
         if (project.num_cursors ~= 1) then
-            --add cmdout
+            console:cmdout("need exactly one cursor at center of circle", LogType.ERROR)
             return
         end
 
         local rad = tonumber(console:cmdin("Radius? "))
         if (rad == 0) then
-            --add cmdout
+            console:cmdout("radius cannot be 0", LogType.ERROR)
             return
         end
 

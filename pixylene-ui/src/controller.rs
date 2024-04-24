@@ -817,6 +817,7 @@ impl Controller {
                     sessions,
                     target,
                     b_console,
+                    b_camera,
                     ..
                 } = self;
 
@@ -846,22 +847,27 @@ impl Controller {
                                         }
                                     },
                                     Err(err) => {
-                                        target.borrow_mut().console_out(
-                                            //&format!("failed to perform: {}",
-                                            &format!("{}",
-                                            //match err {
-                                            //    //print only cause, not traceback
-                                            //    mlua::Error::CallbackError{ cause, .. } => cause,
-                                            //    mlua::Error::RuntimeError(msg) => msg,
-                                            //    otherwise => otherwise,
-                                            //}),
+                                        use colored::Colorize;
 
-                                            //todo: better reporting
-                                            err.to_string().lines().map(|s| s.to_string()
-                                            .replace("\t", " ")).collect::<Vec<String>>().join(", ")),
-                                            &LogType::Error,
-                                            &b_console.unwrap()
+                                        let error = format!(
+                                            "{}",
+                                            err.to_string().lines()
+                                                .map(|s| s.to_string().replace("\t", " "))
+                                                .collect::<Vec<String>>().join(", ")
                                         );
+                                        if error.len() <= b_console.unwrap().size.y().into() {
+                                            target.borrow_mut().console_out(
+                                                &error,
+                                                &LogType::Error,
+                                                &b_console.unwrap()
+                                            );
+                                        } else {
+                                            target.borrow_mut().draw_paragraph(
+                                                vec![error.red()],
+                                                &b_camera.unwrap()
+                                            );
+                                            self.console_in("press ENTER to close error");
+                                        }
                                     }
                                 }
                             },
