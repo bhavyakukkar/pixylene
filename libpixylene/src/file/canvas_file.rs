@@ -1,5 +1,6 @@
 use crate::project::Canvas;
-use std::{ fs, io, fmt, path::Path };
+
+use std::{ fs, io, fmt, path::{ Path, PathBuf } };
 use serde_json::{ to_string, from_str };
 
 
@@ -14,30 +15,30 @@ impl Canvas {
 pub struct CanvasFile;
 
 impl CanvasFile {
-    pub fn read(path: String) -> Result<Canvas, CanvasFileError> {
+    pub fn read(path: &PathBuf) -> Result<Canvas, CanvasFileError> {
         use CanvasFileError::{ ReadError, DeserializeError };
 
         Ok(from_str(
             &fs::read_to_string(&path).map_err(|err| ReadError(path.clone(), err))?
-        ).map_err(|err| DeserializeError(path, err))?)
+        ).map_err(|err| DeserializeError(path.clone(), err))?)
     }
 
-    pub fn write(path: String, canvas: &Canvas) -> Result<(), CanvasFileError> {
+    pub fn write(path: &PathBuf, canvas: &Canvas) -> Result<(), CanvasFileError> {
         use CanvasFileError::{ WriteError, SerializeError };
         use std::io::Write;
 
         Ok(fs::File::create(Path::new(&path)).map_err(|err| WriteError(path.clone(), err))?
             .write_all(to_string(canvas).map_err(|err| SerializeError(path.clone(), err))?
-                .as_bytes()).map_err(|err| WriteError(path, err))?)
+                .as_bytes()).map_err(|err| WriteError(path.clone(), err))?)
     }
 }
 
 #[derive(Debug)]
 pub enum CanvasFileError {
-    ReadError(String, io::Error),
-    WriteError(String, io::Error),
-    DeserializeError(String, serde_json::Error),
-    SerializeError(String, serde_json::Error),
+    ReadError(PathBuf, io::Error),
+    WriteError(PathBuf, io::Error),
+    DeserializeError(PathBuf, serde_json::Error),
+    SerializeError(PathBuf, serde_json::Error),
 }
 
 impl fmt::Display for CanvasFileError {
@@ -47,25 +48,25 @@ impl fmt::Display for CanvasFileError {
             ReadError(path, io_error) => write!(
                 f,
                 "file error reading from '{}':\n{}",
-                path,
+                path.display(),
                 io_error,
             ),
             WriteError(path, io_error) => write!(
                 f,
                 "file error writing to '{}':\n{}",
-                path,
+                path.display(),
                 io_error,
             ),
             DeserializeError(path, err) => write!(
                 f,
                 "deserialization error reading from '{}':\n{}",
-                path,
+                path.display(),
                 err,
             ),
             SerializeError(path, err) => write!(
                 f,
                 "serialization error writing to '{}':\n{}",
-                path,
+                path.display(),
                 err,
             ),
         }

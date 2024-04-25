@@ -3,6 +3,8 @@ use crate::{
     project::{Canvas, Layer, Palette, Project, SceneError},
     types::{BlendMode, PCoord},
 };
+use std::path::PathBuf;
+
 
 pub struct PixyleneDefaults {
     pub dim: PCoord,
@@ -24,13 +26,13 @@ impl Pixylene {
     }
 
     //To/Fro Canvas File
-    pub fn open_canvas(path: &str, defaults: &PixyleneDefaults) -> Result<Pixylene, PixyleneError> {
-        CanvasFile::read(path.to_string())
+    pub fn open_canvas(path: &PathBuf, defaults: &PixyleneDefaults) -> Result<Pixylene, PixyleneError> {
+        CanvasFile::read(path)
             .map(|canvas| Pixylene { project: Project::new(canvas, defaults.repeat) })
             .map_err(|error| PixyleneError::CanvasFileError(error))
     }
-    pub fn save_canvas(&self, path: &str) -> Result<(), PixyleneError> {
-        CanvasFile::write(path.to_string(), &self.project.canvas)
+    pub fn save_canvas(&self, path: &PathBuf) -> Result<(), PixyleneError> {
+        CanvasFile::write(path, &self.project.canvas)
             .map_err(|err| PixyleneError::CanvasFileError(err))
     }
 
