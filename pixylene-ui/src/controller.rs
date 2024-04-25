@@ -35,7 +35,7 @@ pub enum StartType {
     //Import { path: String, palette: Option<Palette> },
     New,
     Canvas{ path: PathBuf },
-    Project{ path: String },
+    Project{ path: PathBuf },
     Import{ path: String },
 }
 
@@ -43,8 +43,10 @@ pub struct PixyleneSession {
     name: String,
     pixylene: Rc<RefCell<Pixylene>>,
     last_action_name: Option<String>,
+
     canvas_file_path: Option<PathBuf>,
-    project_file_path: Option<String>,
+    project_file_path: Option<PathBuf>,
+
     modified: bool,
 
     action_map: HashMap<String, ActionLocation>,
@@ -344,25 +346,9 @@ impl Controller {
             StartType::New => {
                 let mut pixylene = Pixylene::new(&self.defaults);
                 pixylene.project.out_dim = self.b_camera.unwrap().size;
-
                 let dim = pixylene.project.canvas.dim();
-
-                //cant fail because this is 1st layer not 257th, and because dimensions of layer
-                //directly copied from canvas
                 pixylene.project.canvas.add_layer(Layer::new_with_solid_color(dim, None)).unwrap();
-
-                //move focus to center
-                pixylene.project.focus.0 = Coord {
-                    x: i32::from(dim.x()).checked_div(2).unwrap(),
-                    y: i32::from(dim.y()).checked_div(2).unwrap(),
-                };
-
-                //toggle 1 cursor at center
-                pixylene.project.toggle_cursor_at(&(UCoord {
-                    x: u16::from(dim.x()).checked_div(2).unwrap(),
-                    y: u16::from(dim.y()).checked_div(2).unwrap(),
-                }, 0)).unwrap(); //cant fail because x,y less than dim and we know there is at
-                                 //least 1 layer because we created it
+                initialize_project(&mut pixylene);
 
                 native_action_manager = ActionManager::new(&pixylene.project.canvas);
                 self.sessions.push(PixyleneSession {
@@ -417,7 +403,7 @@ impl Controller {
                         pixylene.project.out_dim = self.b_camera.unwrap().size;
                         native_action_manager = ActionManager::new(&pixylene.project.canvas);
                         self.sessions.push(PixyleneSession {
-                            name: path.clone(),
+                            name: path.display().to_string(),
                             pixylene: Rc::new(RefCell::new(pixylene)),
                             last_action_name: None,
                             canvas_file_path: None,
@@ -565,7 +551,7 @@ impl Controller {
                 let input = self.console_in("open project file: ");
                 match input {
                     Some(input) => {
-                        self.new_session(&StartType::Project{path: input}, false);
+                        self.new_session(&StartType::Project{path: PathBuf::from(input)}, false);
                     },
                     None => (),
                 }
@@ -663,8 +649,7 @@ impl Controller {
                             },
                             Err(err) => {
                                 self.console_out(
-                                    &format!("failed to save: {}",
-                                             err),
+                                    &format!("failed to save: {}", err),
                                     &LogType::Error
                                 );
                             }
@@ -717,39 +702,39 @@ impl Controller {
                         {
                             Ok(()) => {
                                 self.console_out(
-                                    &format!("saved to {}", path),
+                                    &format!("saved to {}", path.display()),
                                     &LogType::Info
                                 );
                                 did_save = true;
                             },
                             Err(err) => {
                                 self.console_out(
-                                    &format!("failed to save: {}",
-                                             err),
+                                    &format!("failed to save: {}", err),
                                     &LogType::Error
                                 );
                             }
                         }
                     },
                     None => {
-                        let mut new_project_file_path: Option<String> = None;
+                        let mut new_project_file_path: Option<PathBuf> = None;
                         match self.console_in("save path (.pixylene): ") {
                             Some(input) => {
                                 self.console_out("saving...", &LogType::Info);
+                                let mut path = PathBuf::from(input.clone());
+                                path.set_extension("pixylene");
                                 match self.sessions[s].pixylene
-                                    .borrow().save_project(&input) {
+                                    .borrow().save_project(&path) {
                                     Ok(()) => {
                                         self.console_out(
-                                            &format!("saved to {}", input),
+                                            &format!("saved to {}", path.display()),
                                             &LogType::Info
                                         );
-                                        new_project_file_path = Some(input);
+                                        new_project_file_path = Some(path);
                                         did_save = true;
                                     },
                                     Err(err) => {
                                         self.console_out(
-                                            &format!("failed to save: {}",
-                                                     err),
+                                            &format!("failed to save: {}", err),
                                             &LogType::Error
                                         );
                                     }

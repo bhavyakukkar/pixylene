@@ -37,14 +37,14 @@ impl Pixylene {
     }
 
     //To/Fro Project File
-    pub fn open_project(path: &str) -> Result<Pixylene, PixyleneError> {
-        match (ProjectFile { version: 0 }).read(path.to_string()) {
+    pub fn open_project(path: &PathBuf) -> Result<Pixylene, PixyleneError> {
+        match (ProjectFile { version: 0 }).read(path) {
             Ok(project) => Ok(Pixylene { project }),
             Err(error) => Err(PixyleneError::ProjectFileError(error)),
         }
     }
-    pub fn save_project(&self, path: &str) -> Result<(), PixyleneError> {
-        (ProjectFile { version: 0 }).write(path.to_string(), &self.project)
+    pub fn save_project(&self, path: &PathBuf) -> Result<(), PixyleneError> {
+        (ProjectFile { version: 0 }).write(path, &self.project)
             .map_err(|err| PixyleneError::ProjectFileError(err))
     }
 
