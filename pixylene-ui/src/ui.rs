@@ -3,6 +3,7 @@ use pixylene_actions::{ LogType };
 use serde::{ Deserialize };
 use std::collections::HashMap;
 use crossterm::event::{ KeyCode, KeyEvent, KeyModifiers };
+use std::path::PathBuf;
 
 
 /// Trait needed for any User Interface Target to implement so that it can be controlled by
@@ -130,14 +131,26 @@ pub type KeyMap = HashMap<Option<String>, HashMap<Key, Vec<UiFn>>>;
 
 #[derive(Debug, Deserialize, Clone, Eq, Hash, PartialEq)]
 pub enum UiFn {
-    New,
-    OpenCanvas,
-    OpenProject,
-    Import,
+    New{
+        #[serde(rename = "w")]
+        width: Option<u16>,
+        #[serde(rename = "h")]
+        height: Option<u16>
+    },
+    OpenCanvas{ path: PathBuf },
+    OpenCanvasSpecify,
+    OpenProject{ path: PathBuf },
+    OpenProjectSpecify,
+    Import{ path: String },
+    ImportSpecify,
+
+    #[serde(rename = "q")]
     Quit,
+
+    #[serde(rename = "q!")]
     ForceQuit,
 
-    GoToSession(u8),
+    GoToSession{ index: u8 },
     GoToNextSession,
     GoToPrevSession,
 
@@ -148,14 +161,21 @@ pub enum UiFn {
     Undo,
     Redo,
 
-    EnterNamespace(Option<String>),
+    EnterNamespace{
+        #[serde(rename = "n")]
+        name: Option<String>
+    },
     EnterDefaultNamespace,
-    RunKey(Key),
+    RunKey{ key: Key },
 
-    RunCommand(String),
+    RunCommand{ cmd: String },
     RunCommandSpecify,
 
-    RunAction(String),
+    #[serde(rename = "a")]
+    RunAction{
+        #[serde(rename = "n")]
+        name: String
+    },
     RunActionSpecify,
     RunLastAction,
 

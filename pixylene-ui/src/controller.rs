@@ -18,7 +18,8 @@ use std::{
     rc::Rc,
     path::PathBuf,
 };
-use clap::{ Subcommand };
+use serde::Deserialize;
+use clap::Subcommand;
 
 use dirs::config_dir;
 use std::fs::read_to_string;
@@ -26,17 +27,45 @@ use std::fs::read_to_string;
 
 const PADDING: u8 = 1;
 
-type CommandMap = HashMap<String, UiFn>;
+#[derive(Deserialize)]
+struct UiFnContainer {
+    u: UiFn,
+}
+
+fn parse(string: &str) -> Result<UiFn, toml::de::Error> {
+    let mut string = String::from(string);
+    if string.find("{").is_none() {
+        string.insert(0, '"');
+        string.push('"');
+    } else {
+        string.insert(0, '{');
+        string.push('}');
+    }
+
+    toml::from_str(&format!("u = {}", string))
+        .map(|container: UiFnContainer| container.u)
+}
 
 #[derive(Subcommand)]
 pub enum StartType {
     //New { dimensions: Option<Coord>, palette: Option<Palette> },
     //Open { path: String },
     //Import { path: String, palette: Option<Palette> },
-    New,
-    Canvas{ path: PathBuf },
-    Project{ path: PathBuf },
-    Import{ path: String },
+    New {
+        width: Option<u16>,
+        height: Option<u16>,
+        /*/*todo*/colorscheme: Option<Colorscheme>,*/
+    },
+    Canvas{
+        path: PathBuf
+    },
+    Project{
+        path: PathBuf
+    },
+    Import{
+        path: String
+        /*/*todo*/colorscheme: Option<Colorscheme>,*/
+    },
 }
 
 pub struct PixyleneSession {
@@ -95,7 +124,6 @@ pub struct Controller {
     keymap: KeyMap,
     rev_keymap: ReqUiFnMap,
     every_frame: Vec<UiFn>,
-    cmd_map: CommandMap,
 
     //Window boundaries
     b_console: Option<Rectangle>,
@@ -151,7 +179,6 @@ impl Controller {
     }
 
     pub fn new(target: Rc<RefCell<dyn UserInterface>>) -> Result<Self, String> {
-        use UiFn::*;
         use colored::Colorize;
         let mut is_default = false;
 
@@ -264,27 +291,6 @@ impl Controller {
             keymap,
             rev_keymap,
             every_frame,
-            cmd_map: CommandMap::from([
-                (String::from("new"), New),
-                (String::from("oc"), OpenCanvas),
-                (String::from("op"), OpenProject),
-                (String::from("import"), Import),
-                (String::from("q"), Quit),
-                (String::from("q!"), ForceQuit),
-                (String::from("ns"), GoToNextSession),
-                (String::from("ps"), GoToPrevSession),
-                (String::from("w"), SaveCanvas),
-                (String::from("wp"), SaveProject),
-                (String::from("export"), Export),
-                (String::from("undo"), Undo),
-                (String::from("redo"), Redo),
-                (String::from("a"), RunActionSpecify),
-                (String::from("showlayer"), PreviewFocusLayer),
-                (String::from("showproject"), PreviewProject),
-                (String::from("canvasjson"), PrintCanvasJson),
-                (String::from("keymap"), PrintKeybindMap),
-                (String::from("showstatus"), UpdateStatusline),
-            ]),
 
             b_console: None,
             b_camera: None,
@@ -343,8 +349,26 @@ impl Controller {
         add_my_native_actions(&mut action_map);
 
         match start_type {
-            StartType::New => {
-                let mut pixylene = Pixylene::new(&self.defaults);
+            StartType::New { width, height } => {
+                let mut defaults = self.defaults.clone();
+                if let Some(width) = width {
+                    if let Some(height) = height {
+                        if let Ok(dim) = PCoord::new(*height, *width) {
+                            defaults.dim = dim;
+                        } else {
+                            if !from_args {
+                                self.console_out("invalid dimensions, cannot have 0", 
+                                                 &LogType::Error);
+                                return;
+                            } else {
+                                self.target.borrow_mut().finalize();
+                                eprintln!("invalid dimensions, cannot have 0");
+                                exit(1);
+                            }
+                        }
+                    }
+                }
+                let mut pixylene = Pixylene::new(&defaults);
                 pixylene.project.out_dim = self.b_camera.unwrap().size;
                 let dim = pixylene.project.canvas.dim();
                 pixylene.project.canvas.add_layer(Layer::new_with_solid_color(dim, None)).unwrap();
@@ -515,7 +539,7 @@ impl Controller {
             if let Some(key_info) = key_info {
                 match key_info {
                     KeyInfo::Key(key) => {
-                        _ = self.perform_ui(&RunKey(key));
+                        _ = self.perform_ui(&RunKey{ key });
                     },
                     KeyInfo::UiFn(ui_fn) => {
                         _ = self.perform_ui(&ui_fn);
@@ -535,10 +559,13 @@ impl Controller {
 
         match func {
             //Sessions
-            New => {
-                self.new_session(&StartType::New, false);
+            New{ width, height } => {
+                self.new_session(&StartType::New{ width: *width, height: *height }, false);
             },
-            OpenCanvas => {
+            OpenCanvas{ path } => {
+                self.new_session(&StartType::Canvas{ path: path.clone() }, false);
+            },
+            OpenCanvasSpecify => {
                 let input = self.console_in("open canvas file: ");
                 match input {
                     Some(input) => {
@@ -547,7 +574,10 @@ impl Controller {
                     None => (),
                 }
             },
-            OpenProject => {
+            OpenProject{ path } => {
+                self.new_session(&StartType::Project{ path: path.clone() }, false);
+            },
+            OpenProjectSpecify => {
                 let input = self.console_in("open project file: ");
                 match input {
                     Some(input) => {
@@ -556,7 +586,7 @@ impl Controller {
                     None => (),
                 }
             },
-            Import => {
+            ImportSpecify => {
                 let input = self.console_in("import: ");
                 match input {
                     Some(input) => {
@@ -565,6 +595,10 @@ impl Controller {
                     None => (),
                 }
             },
+            Import{ path } => {
+                self.new_session(&StartType::Import{ path: path.clone() }, false);
+            },
+
             Quit => {
                 if self.sessions.len() > 0
                     && self.sessions[self.sel_session as usize - 1].modified {
@@ -580,7 +614,7 @@ impl Controller {
             ForceQuit => { 
                 self.quit_session();
             },
-            GoToSession(index) => {
+            GoToSession{ index } => {
                 let num_sessions = u8::try_from(self.sessions.len()).unwrap();
                 if num_sessions == 0 {
                     self.console_out("there are no sessions open", &LogType::Error);
@@ -814,7 +848,7 @@ impl Controller {
                 native_action_manager.redo(&mut pixylene.borrow_mut().project.canvas);
             },
 
-            EnterNamespace(name) => {
+            EnterNamespace{ name } => {
                 if let Some(name) = name {
                     if let Some(_) = self.possible_namespaces.get(name) {
                         self.namespace = Some(name.clone());
@@ -827,9 +861,9 @@ impl Controller {
                 }
             },
             EnterDefaultNamespace => {
-                _ = self.perform_ui(&EnterNamespace(None));
+                _ = self.perform_ui(&EnterNamespace{ name: None });
             },
-            RunKey(key) => {
+            RunKey{ key } => {
                 //special required keys
                 if *key == self.rev_keymap.force_quit {
                     _ = self.perform_ui(&ForceQuit);
@@ -859,32 +893,31 @@ impl Controller {
             RunCommandSpecify => {
                 self.console_clear();
                 if let Some(cmd) = self.console_in(":") {
-                    _ = self.perform_ui(&RunCommand(cmd));
+                    _ = self.perform_ui(&RunCommand{ cmd });
                 } else {
                     self.console_clear();
                 }
             },
-            RunCommand(command) => {
-                let mut func: Option<UiFn> = None;
-                if let Some(mapped_func) = self.cmd_map.get(command) {
-                    func = Some(mapped_func.clone());
-                }
-                if let Some(func) = func {
-                    _ = self.perform_ui(&func);
-                } else {
-                    self.console_out(&format!("command not found: '{}'", command), &LogType::Error);
-                }
+            RunCommand{ cmd } => {
+                parse(cmd)
+                    .map(|uifn| {
+                        _ = self.perform_ui(&uifn);
+                    })
+                    .unwrap_or_else(|err| {
+                        self.console_out(&format!("{}", err.message()),
+                                         &LogType::Error);
+                    });
             },
 
             RunActionSpecify => {
                 _ = self.sel_session()?;
                 if let Some(action_name) = self.console_in("action: ") {
-                    _ = self.perform_ui(&RunAction(action_name));
+                    _ = self.perform_ui(&RunAction{ name: action_name });
                 } else {
                     self.console_clear();
                 }
             },
-            RunAction(action_name) => {
+            RunAction{ name } => {
                 let s = self.sel_session()?;
                 let mut self_clone = Controller::new(self.target.clone()).unwrap();
                 self_clone.set_boundaries((self.b_camera.unwrap(),
@@ -909,18 +942,18 @@ impl Controller {
                     ..
                 } = &mut sessions[s];
 
-                match action_map.get(&action_name.clone()) {
+                match action_map.get(&name.clone()) {
                     Some(action_location) => {
                         target.borrow_mut().clear(&b_console.unwrap());
                         match action_location {
                             ActionLocation::Lua => {
-                                match lua_action_manager.invoke(&action_name, pixylene.clone(),
+                                match lua_action_manager.invoke(&name, pixylene.clone(),
                                                                 Rc::new(self_clone)) {
                                     Ok(()) => {
                                         if native_action_manager
                                             .commit(&pixylene.borrow().project.canvas)
                                         {
-                                            *last_action_name = Some(action_name.clone());
+                                            *last_action_name = Some(name.clone());
                                             *modified = true;
                                         }
                                     },
@@ -960,7 +993,7 @@ impl Controller {
                                         if native_action_manager
                                             .commit(&pixylene.borrow().project.canvas)
                                         {
-                                            *last_action_name = Some(action_name.clone());
+                                            *last_action_name = Some(name.clone());
                                             *modified = true;
                                         }
                                     },
@@ -979,7 +1012,7 @@ impl Controller {
                     None => {
                         target.borrow_mut().console_out(
                             &format!("action '{}' was not found in actions inserted into the \
-                                     action-manager", action_name),
+                                     action-manager", name),
                             &LogType::Error,
                             &b_console.unwrap()
                         );
@@ -1006,7 +1039,7 @@ impl Controller {
             RunLastAction => {
                 let s = self.sel_session()?;
                 if let Some(action_name) = &self.sessions[s].last_action_name {
-                    _ = self.perform_ui(&RunAction(action_name.clone()));
+                    _ = self.perform_ui(&RunAction{ name: action_name.clone() });
                 }
                 else {
                     self.console_out("no previous action to repeat", &LogType::Warning);

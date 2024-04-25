@@ -15,7 +15,10 @@
 *** DONE show layer opacity & mute in statusline
 *** DONE helper screen to show keybind <-> actions map
 
-** Version 1.1 [5%]
+** Version 1.1 [9%]
+*** TODO cli option in pixyleneui to disable Lua VM entirely
+*** TODO command parsing: if user enters New and it fails, retry with New {} (which succeeds). do for all
+*** TODO PrintCommandList to print possible commands
 *** TODO IndexedScene for use with indexed images
 *** TODO maybe better to make CanvasFile, ProjectFile traits impl'd by Canvas & Project respectively. then you can do Canvas.read, Canvas.write
 *** TODO remove Pixylene as a type from libpixylene, only Project is required. After this, PixyleneDefaults will split into ProjectDefaults & CanvasDefaults
@@ -33,7 +36,7 @@
 *** TODO cursor color is calculated as color most visible on corresponding pixel color
 *** TODO UiFn is trait implementing serde instead of enum
 *** TODO consider including actions in same scope as commands but with first letter capital as done in neovim for built-in and user fns
-*** TODO use PathBuf for writing and exporting files
+*** DONE use PathBuf for writing and exporting files
 *** TODO deal with minifb returning too many useless keys
 *** TODO use image source bit-depth/color-type or from config.toml
 *** TODO disable unrecognized key warnings from config
@@ -44,7 +47,7 @@
 *** TODO it would be good if palette's equipped color is guaranteed to always exist and is some default color if palette is empty. helps the action authors
 *** DONE plaintext serialization of Canvas
 *** TODO pay attention to making switching between :showlayer and :showproject easy again
-*** TODO Convert UiFn::GoToSession(u8) to UiFn::GoToSession(Args) so that can be called from console. do similar for others like RunAction and RunCommand (consider using toml)
+*** DONE Convert UiFn::GoToSession(u8) to UiFn::GoToSession(Args) so that can be called from console. do similar for others like RunAction and RunCommand (consider using toml)
 *** TODO implement Project::resize and private Canvas::resize and make comment about how Canvas can only be resized from Project
 *** TODO vim-like shortening of file paths (eg: /home/bhavya/dev becomes /h/b/dev)
 *** TODO draw_paragraph similar to telescope-like neovim window

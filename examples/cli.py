@@ -6,26 +6,31 @@ import json
 import numpy
 from subprocess import Popen, PIPE
 from truecolor2palette256 import rgb2short, rgb2short_legacy
+import traceback
+
+def action(name):
+    return f'a = {{ n = "{name}" }}'
+def canvas():
+    return f'PrintCanvasJson'
+def quit():
+    return f'q!'
 
 commands = [
-    "a",            #move cursors up by 1
-    "cu",
+    action("cursors_up"),           #move cursors up by 1
 
-    *["a","cdu"],   #increase number of cursors
-    *["a","cdl"],
-    *["a","cdd"],
-    *["a","cdr"],
+    action("cursors_dup_up"),       #increase number of cursors
+    action("cursors_dup_left"),
+    action("cursors_dup_down"),
+    action("cursors_dup_right"),
 
-    "a",
-    "pencil1",      #draw with pencil1 at focus
+    action("pencil1"),              #draw with pencil1 at focus
 
-    #"a",
-    #"noise",        #draw noise with a factor of 0.3 (requires noise action present in example/actions.lua)
+    #action("noise"),               #draw noise with a factor of 0.3 (requires lua action 'noise' present in examples/actions.lua)
     #"0.3",
 
-    "canvasjson",   #print canvas json
+    canvas(),                       #print canvas json
 
-    "q!",           #quit pixylene session
+    quit(),                         #quit pixylene session
 ]
 
 def draw(canvas):

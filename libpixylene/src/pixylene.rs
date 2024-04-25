@@ -6,6 +6,7 @@ use crate::{
 use std::path::PathBuf;
 
 
+#[derive(Clone)]
 pub struct PixyleneDefaults {
     pub dim: PCoord,
     pub palette: Palette,

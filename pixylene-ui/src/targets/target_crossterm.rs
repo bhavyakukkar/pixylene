@@ -187,7 +187,7 @@ impl UserInterface for TargetCrossterm {
 
         queue!(
             stdout,
-            MoveTo(0, 0),
+            MoveTo(1, 1),
         ).unwrap();
         for line in paragraph.iter() {
             queue!(

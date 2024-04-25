@@ -12,43 +12,43 @@ keys = [
     # every keybind binds a single key 'k' to a sequence of commands 'f'
     { k = { c = { Char = ';' } }, f = [ "RunLastAction" ] },
 
-    { k = { c = "Left" },  f = [{ RunAction = "cursors_left" }] },
-    { k = { c = "Down" },  f = [{ RunAction = "cursors_down" }] },
-    { k = { c = "Up" },    f = [{ RunAction = "cursors_up" }] },
-    { k = { c = "Right" }, f = [{ RunAction = "cursors_right" }] },
+    { k = { c = "Left" },  f = [{ a = { n = "cursors_left" } }] },
+    { k = { c = "Down" },  f = [{ a = { n = "cursors_down" } }] },
+    { k = { c = "Up" },    f = [{ a = { n = "cursors_up" } }] },
+    { k = { c = "Right" }, f = [{ a = { n = "cursors_right" } }] },
 
-    { k = { c = { Char = 'h' } }, f = [{ RunAction = "cursors_left" }] },
-    { k = { c = { Char = 'j' } }, f = [{ RunAction = "cursors_down" }] },
-    { k = { c = { Char = 'k' } }, f = [{ RunAction = "cursors_up" }] },
-    { k = { c = { Char = 'l' } }, f = [{ RunAction = "cursors_right" }] },
+    { k = { c = { Char = 'h' } }, f = [{ a = { n = "cursors_left" } }] },
+    { k = { c = { Char = 'j' } }, f = [{ a = { n = "cursors_down" } }] },
+    { k = { c = { Char = 'k' } }, f = [{ a = { n = "cursors_up" } }] },
+    { k = { c = { Char = 'l' } }, f = [{ a = { n = "cursors_right" } }] },
 
-    { k = { c = { Char = 'i' } }, f = [{ RunAction = "zoomin" }] },
-    { k = { c = { Char = 'o' } }, f = [{ RunAction = "zoomout" }] },
+    { k = { c = { Char = 'i' } }, f = [{ a = { n = "zoomin" } }] },
+    { k = { c = { Char = 'o' } }, f = [{ a = { n = "zoomout" } }] },
     
-    { k = { c = { Char = '1' } }, f = [{ RunAction = "pencil1" }] },
-    { k = { c = { Char = '2' } }, f = [{ RunAction = "pencil2" }] },
-    { k = { c = { Char = '3' } }, f = [{ RunAction = "pencil3" }] },
-    { k = { c = { Char = '4' } }, f = [{ RunAction = "pencil4" }] },
-    { k = { c = { Char = '5' } }, f = [{ RunAction = "pencil5" }] },
-    { k = { c = { Char = '6' } }, f = [{ RunAction = "pencil6" }] },
-    { k = { c = { Char = '7' } }, f = [{ RunAction = "pencil7" }] },
-    { k = { c = { Char = '8' } }, f = [{ RunAction = "pencil8" }] },
+    { k = { c = { Char = '1' } }, f = [{ a = { n = "pencil1" } }] },
+    { k = { c = { Char = '2' } }, f = [{ a = { n = "pencil2" } }] },
+    { k = { c = { Char = '3' } }, f = [{ a = { n = "pencil3" } }] },
+    { k = { c = { Char = '4' } }, f = [{ a = { n = "pencil4" } }] },
+    { k = { c = { Char = '5' } }, f = [{ a = { n = "pencil5" } }] },
+    { k = { c = { Char = '6' } }, f = [{ a = { n = "pencil6" } }] },
+    { k = { c = { Char = '7' } }, f = [{ a = { n = "pencil7" } }] },
+    { k = { c = { Char = '8' } }, f = [{ a = { n = "pencil8" } }] },
 
     # go to Layer namespace
-    { k = { m = "CONTROL", c = { Char = 'l' } }, f = [{ EnterNamespace = "Layer" }] },
+    { k = { m = "CONTROL", c = { Char = 'l' } }, f = [{ EnterNamespace = { n = "Layer" } }] },
     # go to Cursors namespace
-    { k = { m = "CONTROL", c = { Char = 'c' } }, f = [{ EnterNamespace = "Cursors" }] },
+    { k = { m = "CONTROL", c = { Char = 'c' } }, f = [{ EnterNamespace = { n = "Cursors" } }] },
     # go to Shapes namespace
-    { k = { m = "CONTROL", c = { Char = 's' } }, f = [{ EnterNamespace = "Shapes" }] },
+    { k = { m = "CONTROL", c = { Char = 's' } }, f = [{ EnterNamespace = { n = "Shapes" } }] },
 ]
 
 # LAYER namespace
 [[keys]]
 name = "Layer"
 keys = [
-    { k = { c = { Char = 'n' }, m = "" }, f = [{ RunAction = "layer_new" }, "EnterDefaultNamespace"] },
-    { k = { c = { Char = 'o' }, m = "" }, f = [{ RunAction = "layer_opacity" }, "EnterDefaultNamespace"] },
-    { k = { c = { Char = 'm' }, m = "" }, f = [{ RunAction = "layer_mute" }, "EnterDefaultNamespace"] },
+    { k = { c = { Char = 'n' }, m = "" }, f = [{ a = { n = "layer_new" } }, "EnterDefaultNamespace"] },
+    { k = { c = { Char = 'o' }, m = "" }, f = [{ a = { n = "layer_opacity" } }, "EnterDefaultNamespace"] },
+    { k = { c = { Char = 'm' }, m = "" }, f = [{ a = { n = "layer_mute" } }, "EnterDefaultNamespace"] },
 
     { k = { c = "Esc" }, f = [ "EnterDefaultNamespace" ] }, # go back to default namespace
 ]
@@ -57,17 +57,17 @@ keys = [
 [[keys]]
 name = "Cursors"
 keys = [
-    { k = { c = "Left" },  f = [{ RunAction = "cursors_dup_left" }] },
-    { k = { c = "Down" },  f = [{ RunAction = "cursors_dup_down" }] },
-    { k = { c = "Up" },    f = [{ RunAction = "cursors_dup_up" }] },
-    { k = { c = "Right" }, f = [{ RunAction = "cursors_dup_right" }] },
+    { k = { c = "Left" },  f = [{ a = { n = "cursors_dup_left" } }] },
+    { k = { c = "Down" },  f = [{ a = { n = "cursors_dup_down" } }] },
+    { k = { c = "Up" },    f = [{ a = { n = "cursors_dup_up" } }] },
+    { k = { c = "Right" }, f = [{ a = { n = "cursors_dup_right" } }] },
 
-    { k = { c = { Char = 'h' } }, f = [{ RunAction = "cursors_dup_left" }] },
-    { k = { c = { Char = 'j' } }, f = [{ RunAction = "cursors_dup_down" }] },
-    { k = { c = { Char = 'k' } }, f = [{ RunAction = "cursors_dup_up" }] },
-    { k = { c = { Char = 'l' } }, f = [{ RunAction = "cursors_dup_right" }] },
+    { k = { c = { Char = 'h' } }, f = [{ a = { n = "cursors_dup_left" } }] },
+    { k = { c = { Char = 'j' } }, f = [{ a = { n = "cursors_dup_down" } }] },
+    { k = { c = { Char = 'k' } }, f = [{ a = { n = "cursors_dup_up" } }] },
+    { k = { c = { Char = 'l' } }, f = [{ a = { n = "cursors_dup_right" } }] },
 
-    { k = { c = { Char = 'r' } }, f = [{ RunAction = "cursors_reset" }, "EnterDefaultNamespace"] },
+    { k = { c = { Char = 'r' } }, f = [{ a = { n = "cursors_reset" } }, "EnterDefaultNamespace"] },
 
     { k = { c = "Esc" }, f = [ "EnterDefaultNamespace" ] }, # go back to default namespace
 ]
@@ -76,7 +76,7 @@ keys = [
 [[keys]]
 name = "Shapes"
 keys = [
-    { k = { c = { Char = 'c' } }, f = [{ RunAction = "circularoutline" }, "EnterDefaultNamespace"] },
+    { k = { c = { Char = 'c' } }, f = [{ a = { n = "circularoutline" } }, "EnterDefaultNamespace"] },
 
     { k = { c = "Esc" }, f = [ "EnterDefaultNamespace" ] }, # go back to default namespace
 ]

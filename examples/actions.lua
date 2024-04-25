@@ -58,8 +58,8 @@ actions['zoomout'] = {
 -- duplicates the Current Layer & moves focus to it
 actions['dupcurlayer'] = {
     perform = function(self, project, console)
-        project.canvas:add(project.canvas:layer(project:focus().layer))
-        project:focus(project:focus().coord, project:focus().layer + 1)
+        project.canvas:add(project.canvas:layer(project.focus.layer))
+        project.focus = { ['coord'] = project.focus.coord, ['layer'] = project.focus.layer + 1 }
     end
 }
 
@@ -70,8 +70,8 @@ actions['noise'] = {
         for i=0, (d.x - 1) do
             for j=0, (d.y - 1) do
                 if (math.random() < f) then
-                    local c = project.canvas:layer(project:focus().layer).scene:get(UC(i, j))
-                    project.canvas:layer(project:focus().layer).scene:set(
+                    local c = project.canvas:layer(project.focus.layer).scene:get(UC(i, j))
+                    project.canvas:layer(project.focus.layer).scene:set(
                         UC(i, j), 
                         BlendMode.NORMAL:blend(P.hex("#ffffff66"), c)
                     )
