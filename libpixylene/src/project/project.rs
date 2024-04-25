@@ -47,13 +47,14 @@ impl Project {
     /// Creates a new empty Project containing the provided [`Canvas`]
     pub fn new(
         canvas: Canvas,
+        out_repeat: PCoord,
     ) -> Project {
         Project {
             canvas,
             focus: (Coord{x: 0, y: 0}, 0),
             out_dim: PCoord::new(10, 10).unwrap(), //shouldn't fail
             out_mul: 1,
-            out_repeat: PCoord::new(1, 2).unwrap(), //shouldn't fail
+            out_repeat,
             cursors: HashMap::new(),
             num_cursors: 0,
             sel_cursor: None,

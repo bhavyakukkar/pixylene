@@ -371,7 +371,7 @@ impl Controller {
                 self.sel_session += 1;
             },
             StartType::Open{ path } => {
-                match Pixylene::open(&path) {
+                match Pixylene::open_project(&path) {
                     Ok(mut pixylene) => {
                         pixylene.project.out_dim = self.b_camera.unwrap().size;
                         native_action_manager = ActionManager::new(&pixylene.project.canvas);
@@ -615,7 +615,7 @@ impl Controller {
                 match &self.sessions[s].project_file_path {
                     Some(path) => {
                         match self.sessions[s].pixylene.borrow()
-                            .save(&path)
+                            .save_project(&path)
                         {
                             Ok(()) => {
                                 self.console_out(
@@ -639,7 +639,7 @@ impl Controller {
                             Some(input) => {
                                 self.console_out("saving...", &LogType::Info);
                                 match self.sessions[s].pixylene
-                                    .borrow().save(&input) {
+                                    .borrow().save_project(&input) {
                                     Ok(()) => {
                                         self.console_out(
                                             &format!("saved to {}", input),
@@ -656,11 +656,6 @@ impl Controller {
                                         );
                                     }
                                 }
-                                //self.console_out(
-                                //    &format!("saved to {}", input),
-                                //    &LogType::Info,
-                                //);
-
                             },
                             None => (),
                         }
@@ -972,7 +967,8 @@ impl Controller {
                 let s = self.sel_session()?;
                 let session = &mut self.sessions[s];
                 self.target.borrow_mut().draw_paragraph(
-                    vec![session.pixylene.borrow().project.canvas.to_json().into()],
+                    vec![session.pixylene.borrow().project.canvas.to_json()
+                        .unwrap_or_else(|err| err.to_string()).into()],
                     &self.b_camera.unwrap()
                 );
                 self.console_in("press ENTER to stop previewing canvas JSON");
