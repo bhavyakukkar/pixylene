@@ -194,12 +194,22 @@ impl UserInterface for TargetCrossterm {
                 stdout,
                 SetBackgroundColor(Color(line.bgcolor()).into()),
                 SetForegroundColor(Color(line.fgcolor()).into()),
-                Print(line),
+            ).unwrap();
+            for char in line.to_string().chars() {
+                if char == '\n' {
+                    queue!(stdout, MoveToNextLine(1)).unwrap();
+                } else {
+                    queue!(stdout, Print(char)).unwrap();
+                }
+            }
+            queue!(
+                stdout,
                 SetAttribute(Attribute::Reset),
                 ResetColor,
                 MoveToNextLine(1),
             ).unwrap();
         }
+        stdout.flush().unwrap();
     }
 
     fn console_in(&mut self, message: &str, discard_key: &Key, boundary: &Rectangle) -> Option<String> {

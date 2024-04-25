@@ -54,9 +54,9 @@ pub enum KeyInfo {
 //pub type Key = crossterm::event::KeyEvent;
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 pub struct Key {
-    #[serde(rename = "c")]
+    #[serde(alias = "c")]
     code: KeyCode,
-    #[serde(rename = "m")]
+    #[serde(alias = "m")]
     modifiers: Option<KeyModifiers>,
 }
 
@@ -131,26 +131,43 @@ pub type KeyMap = HashMap<Option<String>, HashMap<Key, Vec<UiFn>>>;
 
 #[derive(Debug, Deserialize, Clone, Eq, Hash, PartialEq)]
 pub enum UiFn {
+    #[serde(alias = "new")]
     New{
-        #[serde(rename = "w")]
+        #[serde(alias = "w")]
         width: Option<u16>,
-        #[serde(rename = "h")]
+        #[serde(alias = "h")]
         height: Option<u16>
     },
-    OpenCanvas{ path: PathBuf },
+
+    #[serde(alias = "e")]
+    OpenCanvas{
+        path: PathBuf
+    },
+    #[serde(alias = "E")]
     OpenCanvasSpecify,
-    OpenProject{ path: PathBuf },
+
+    #[serde(alias = "ep")]
+    OpenProject{
+        path: PathBuf
+    },
+    #[serde(alias = "Ep")]
     OpenProjectSpecify,
-    Import{ path: String },
+
+    #[serde(alias = "import")]
+    Import{
+        path: String
+    },
     ImportSpecify,
 
-    #[serde(rename = "q")]
+    #[serde(alias = "q")]
     Quit,
 
-    #[serde(rename = "q!")]
+    #[serde(alias = "q!")]
     ForceQuit,
 
-    GoToSession{ index: u8 },
+    GoToSession{
+        index: u8
+    },
     GoToNextSession,
     GoToPrevSession,
 
@@ -162,19 +179,23 @@ pub enum UiFn {
     Redo,
 
     EnterNamespace{
-        #[serde(rename = "n")]
+        #[serde(alias = "n")]
         name: Option<String>
     },
     EnterDefaultNamespace,
-    RunKey{ key: Key },
+    RunKey{
+        key: Key
+    },
 
-    RunCommand{ cmd: String },
+    RunCommand{
+        cmd: String
+    },
     RunCommandSpecify,
 
-    #[serde(rename = "a")]
+    #[serde(alias = "a")]
     RunAction{
-        #[serde(rename = "n")]
-        name: String
+        #[serde(alias = "n")]
+        name: String,
     },
     RunActionSpecify,
     RunLastAction,
@@ -182,6 +203,8 @@ pub enum UiFn {
     PreviewFocusLayer,
     PreviewProject,
     PrintCanvasJson,
+
+    #[serde(alias = "keymap")]
     PrintKeybindMap,
 
     UpdateStatusline,

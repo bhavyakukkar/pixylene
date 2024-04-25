@@ -26,6 +26,24 @@ use std::fs::read_to_string;
 
 
 const PADDING: u8 = 1;
+const SPLASH_LOGO: &str = r#"
+ |~~\  '            |                 
+ |__/  |  \/  \  /  |  /~/  |/~\   /~/
+ |     |  /\   \/   |  \/_  |   |  \/_
+             _/
+
+ Welcome to
+ Pixylene, the extensible Pixel Art Editor
+
+
+ type  :keymap        - to see all keybindings
+ type  :q             - to quit
+"#;
+// type  :help          - if you are new!
+// type  :new = { w=16, h=16 }      - to create a new 16x16 canvas 
+// type  :import foo.png            - to start editing 'foo.png'
+// type  :e foo.json                - to edit a previously saved canvas file 'foo.json'
+// type  :ep foo.pixylene           - to edit a previously saved project file 'foo.pixylene'
 
 #[derive(Deserialize)]
 struct UiFnContainer {
@@ -170,8 +188,8 @@ impl Controller {
 
     fn sel_session(&self) -> Result<usize, ()> {
         if self.sessions.len() == 0 {
-            self.console_out("start a session to use that function. start with :new or :open or \
-                             :import", &LogType::Warning);
+            self.console_out("start a session to use that function. start with :new or :o or :op \
+                             or :import", &LogType::Warning);
             Err(())
         } else {
             Ok(usize::from(self.sel_session) - 1)
@@ -526,7 +544,8 @@ impl Controller {
         }
         else {
             //splash screen
-            self.console_out("Welcome to Pixylene", &LogType::Info);
+            self.target.borrow_mut().draw_paragraph(vec![String::from(SPLASH_LOGO).into()], &self.b_console.unwrap());
+            //self.console_out("", &LogType::Info);
         }
 
         loop {
@@ -549,6 +568,8 @@ impl Controller {
                     for func in self.every_frame.clone() {
                         _ = self.perform_ui(&func);
                     }
+                } else {
+                    self.target.borrow_mut().draw_paragraph(vec![String::from(SPLASH_LOGO).into()], &self.b_console.unwrap());
                 }
             }
         }
