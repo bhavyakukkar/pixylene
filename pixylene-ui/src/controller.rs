@@ -11,10 +11,13 @@ use libpixylene::{
 };
 use pixylene_actions::{ memento::{ ActionManager }, Console, LogType };
 use pixylene_lua::{ LuaActionManager, ErrorType };
-use std::collections::HashMap;
-use std::process::exit;
-use std::cell::RefCell;
-use std::rc::Rc;
+use std::{
+    collections::HashMap,
+    process::exit,
+    cell::RefCell,
+    rc::Rc,
+    path::PathBuf,
+};
 use clap::{ Subcommand };
 
 use dirs::config_dir;
@@ -31,7 +34,8 @@ pub enum StartType {
     //Open { path: String },
     //Import { path: String, palette: Option<Palette> },
     New,
-    Open{ path: String },
+    Canvas{ path: PathBuf },
+    Project{ path: String },
     Import{ path: String },
 }
 
@@ -39,6 +43,7 @@ pub struct PixyleneSession {
     name: String,
     pixylene: Rc<RefCell<Pixylene>>,
     last_action_name: Option<String>,
+    canvas_file_path: Option<PathBuf>,
     project_file_path: Option<String>,
     modified: bool,
 
@@ -259,13 +264,15 @@ impl Controller {
             every_frame,
             cmd_map: CommandMap::from([
                 (String::from("new"), New),
-                (String::from("open"), Open),
+                (String::from("oc"), OpenCanvas),
+                (String::from("op"), OpenProject),
                 (String::from("import"), Import),
                 (String::from("q"), Quit),
                 (String::from("q!"), ForceQuit),
                 (String::from("ns"), GoToNextSession),
                 (String::from("ps"), GoToPrevSession),
-                (String::from("w"), Save),
+                (String::from("w"), SaveCanvas),
+                (String::from("wp"), SaveProject),
                 (String::from("export"), Export),
                 (String::from("undo"), Undo),
                 (String::from("redo"), Redo),
@@ -362,6 +369,7 @@ impl Controller {
                     name: String::from("new"),
                     pixylene: Rc::new(RefCell::new(pixylene)),
                     last_action_name: None,
+                    canvas_file_path: None,
                     project_file_path: None,
                     modified: false,
                     action_map,
@@ -370,8 +378,41 @@ impl Controller {
                 });
                 self.sel_session += 1;
             },
-            StartType::Open{ path } => {
-                match Pixylene::open(&path) {
+            StartType::Canvas{ path } => {
+                match Pixylene::open_canvas(&path, &self.defaults) {
+                    Ok(mut pixylene) => {
+                        pixylene.project.out_dim = self.b_camera.unwrap().size;
+                        initialize_project(&mut pixylene);
+                        native_action_manager = ActionManager::new(&pixylene.project.canvas);
+                        self.sessions.push(PixyleneSession {
+                            name: path.display().to_string(),
+                            pixylene: Rc::new(RefCell::new(pixylene)),
+                            last_action_name: None,
+                            canvas_file_path: Some(path.clone()),
+                            project_file_path: None,
+                            modified: false,
+                            action_map,
+                            native_action_manager,
+                            lua_action_manager,
+                        });
+                        self.sel_session += 1;
+                    }
+                    Err(err) => {
+                        if !from_args {
+                            self.console_out(&format!(
+                                "failed to open: {}",
+                                err.to_string()
+                            ), &LogType::Error);
+                        } else {
+                            self.target.borrow_mut().finalize();
+                            eprintln!("failed to open: {}", err.to_string());
+                            exit(1);
+                        }
+                    },
+                }
+            },
+            StartType::Project{ path } => {
+                match Pixylene::open_project(&path) {
                     Ok(mut pixylene) => {
                         pixylene.project.out_dim = self.b_camera.unwrap().size;
                         native_action_manager = ActionManager::new(&pixylene.project.canvas);
@@ -379,6 +420,7 @@ impl Controller {
                             name: path.clone(),
                             pixylene: Rc::new(RefCell::new(pixylene)),
                             last_action_name: None,
+                            canvas_file_path: None,
                             project_file_path: Some(path.clone()),
                             modified: false,
                             action_map,
@@ -405,27 +447,13 @@ impl Controller {
                 match Pixylene::import(&path, &self.defaults) {
                     Ok(mut pixylene) => {
                         pixylene.project.out_dim = self.b_camera.unwrap().size;
-
-                        let dim = pixylene.project.canvas.dim();
-
-                        //move focus to center
-                        pixylene.project.focus.0 = Coord {
-                            x: i32::from(dim.x()).checked_div(2).unwrap(),
-                            y: i32::from(dim.y()).checked_div(2).unwrap(),
-                        };
-
-                        //toggle 1 cursor at center
-                        pixylene.project.toggle_cursor_at(&(UCoord {
-                            x: u16::from(dim.x()).checked_div(2).unwrap(),
-                            y: u16::from(dim.y()).checked_div(2).unwrap(),
-                        }, 0)).unwrap(); //cant fail because x,y less than dim and we know there is at
-                                         //least 1 layer because we created it
-
+                        initialize_project(&mut pixylene);
                         native_action_manager = ActionManager::new(&pixylene.project.canvas);
                         self.sessions.push(PixyleneSession {
                             name: path.clone(),
                             pixylene: Rc::new(RefCell::new(pixylene)),
                             last_action_name: None,
+                            canvas_file_path: None,
                             project_file_path: None,
                             modified: false,
                             action_map,
@@ -524,11 +552,20 @@ impl Controller {
             New => {
                 self.new_session(&StartType::New, false);
             },
-            Open => {
-                let input = self.console_in("open: ");
+            OpenCanvas => {
+                let input = self.console_in("open canvas file: ");
                 match input {
                     Some(input) => {
-                        self.new_session(&StartType::Open{path:input}, false);
+                        self.new_session(&StartType::Canvas{path: PathBuf::from(input)}, false);
+                    },
+                    None => (),
+                }
+            },
+            OpenProject => {
+                let input = self.console_in("open project file: ");
+                match input {
+                    Some(input) => {
+                        self.new_session(&StartType::Project{path: input}, false);
                     },
                     None => (),
                 }
@@ -537,7 +574,7 @@ impl Controller {
                 let input = self.console_in("import: ");
                 match input {
                     Some(input) => {
-                        self.new_session(&StartType::Import{path:input}, false);
+                        self.new_session(&StartType::Import{path: input}, false);
                     },
                     None => (),
                 }
@@ -609,13 +646,74 @@ impl Controller {
             },
 
             //File
-            Save => {
+            SaveCanvas => {
+                let s = self.sel_session()?;
+                let mut did_save = false;
+                match &self.sessions[s].canvas_file_path {
+                    Some(path) => {
+                        match self.sessions[s].pixylene.borrow()
+                            .save_canvas(&path)
+                        {
+                            Ok(()) => {
+                                self.console_out(
+                                    &format!("saved to {}", path.display()),
+                                    &LogType::Info
+                                );
+                                did_save = true;
+                            },
+                            Err(err) => {
+                                self.console_out(
+                                    &format!("failed to save: {}",
+                                             err),
+                                    &LogType::Error
+                                );
+                            }
+                        }
+                    },
+                    None => {
+                        let mut new_canvas_file_path: Option<PathBuf> = None;
+                        match self.console_in("save path (.json): ") {
+                            Some(input) => {
+                                self.console_out("saving...", &LogType::Info);
+                                let mut path = PathBuf::from(input.clone());
+                                path.set_extension("json");
+                                match self.sessions[s].pixylene
+                                    .borrow().save_canvas(&path) {
+                                    Ok(()) => {
+                                        self.console_out(
+                                            &format!("saved to {}", path.display()),
+                                            &LogType::Info
+                                        );
+                                        new_canvas_file_path = Some(path);
+                                        did_save = true;
+                                    },
+                                    Err(err) => {
+                                        self.console_out(
+                                            &format!("failed to save: {}", err),
+                                            &LogType::Error
+                                        );
+                                    }
+                                }
+                            },
+                            None => (),
+                        }
+                        if let Some(path) = new_canvas_file_path {
+                            self.sessions[s].canvas_file_path =
+                                Some(path);
+                        }
+                    },
+                }
+                if did_save {
+                    self.sessions[s].modified = false;
+                }
+            },
+            SaveProject => {
                 let s = self.sel_session()?;
                 let mut did_save = false;
                 match &self.sessions[s].project_file_path {
                     Some(path) => {
                         match self.sessions[s].pixylene.borrow()
-                            .save(&path)
+                            .save_project(&path)
                         {
                             Ok(()) => {
                                 self.console_out(
@@ -635,11 +733,11 @@ impl Controller {
                     },
                     None => {
                         let mut new_project_file_path: Option<String> = None;
-                        match self.console_in("save path: ") {
+                        match self.console_in("save path (.pixylene): ") {
                             Some(input) => {
                                 self.console_out("saving...", &LogType::Info);
                                 match self.sessions[s].pixylene
-                                    .borrow().save(&input) {
+                                    .borrow().save_project(&input) {
                                     Ok(()) => {
                                         self.console_out(
                                             &format!("saved to {}", input),
@@ -656,11 +754,6 @@ impl Controller {
                                         );
                                     }
                                 }
-                                //self.console_out(
-                                //    &format!("saved to {}", input),
-                                //    &LogType::Info,
-                                //);
-
                             },
                             None => (),
                         }
@@ -972,7 +1065,8 @@ impl Controller {
                 let s = self.sel_session()?;
                 let session = &mut self.sessions[s];
                 self.target.borrow_mut().draw_paragraph(
-                    vec![session.pixylene.borrow().project.canvas.to_json().into()],
+                    vec![session.pixylene.borrow().project.canvas.to_json()
+                        .unwrap_or_else(|err| err.to_string()).into()],
                     &self.b_camera.unwrap()
                 );
                 self.console_in("press ENTER to stop previewing canvas JSON");
@@ -1198,4 +1292,21 @@ impl pixylene_actions::memento::Action for Echo {
     fn has_ended(&self) -> bool {
         true
     }
+}
+
+fn initialize_project(pixylene: &mut Pixylene) {
+    let dim = pixylene.project.canvas.dim();
+
+    //move focus to center
+    pixylene.project.focus.0 = Coord {
+        x: i32::from(dim.x()).checked_div(2).unwrap(),
+        y: i32::from(dim.y()).checked_div(2).unwrap(),
+    };
+
+    //toggle 1 cursor at center
+    pixylene.project.toggle_cursor_at(&(UCoord {
+        x: u16::from(dim.x()).checked_div(2).unwrap(),
+        y: u16::from(dim.y()).checked_div(2).unwrap(),
+    }, 0)).unwrap(); //cant fail because x,y less than dim and we know there is at
+                     //least 1 layer because we created it
 }

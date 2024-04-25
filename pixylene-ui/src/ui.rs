@@ -131,7 +131,8 @@ pub type KeyMap = HashMap<Option<String>, HashMap<Key, Vec<UiFn>>>;
 #[derive(Debug, Deserialize, Clone, Eq, Hash, PartialEq)]
 pub enum UiFn {
     New,
-    Open,
+    OpenCanvas,
+    OpenProject,
     Import,
     Quit,
     ForceQuit,
@@ -140,7 +141,8 @@ pub enum UiFn {
     GoToNextSession,
     GoToPrevSession,
 
-    Save,
+    SaveCanvas,
+    SaveProject,
     Export,
 
     Undo,

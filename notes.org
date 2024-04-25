@@ -17,6 +17,9 @@
 
 ** Version 1.1 [5%]
 *** TODO IndexedScene for use with indexed images
+*** TODO maybe better to make CanvasFile, ProjectFile traits impl'd by Canvas & Project respectively. then you can do Canvas.read, Canvas.write
+*** TODO remove Pixylene as a type from libpixylene, only Project is required. After this, PixyleneDefaults will split into ProjectDefaults & CanvasDefaults
+*** TODO make Pixylene::open_project/open_canvas/import take strings and return serialized & vice versa. let pixylene-ui handle all filing
 *** TODO Png to/fro Scene: fill more color-type/bit-depth combos
 *** HOLD dont let Project.focus go past present layers, make it private ABDF
 *** TODO dont let config list key that RunKey's itself. crashes the app
