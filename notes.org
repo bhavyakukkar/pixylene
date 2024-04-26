@@ -7,6 +7,7 @@
 :END:
 ** Version 1.0 [50%]
 *** TODO defined palette contains 10 colors, foreground+background+eight defined colors. switchForeground is a wrapper that performs Palette.changeTo(1, <input>). switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
+*** TODO check if good practice to use globals Project and Console in lua rather than passing same to perform
 *** TODO refactor all error handling so draws as paragraph if too big (use lua action invocation as reference)
 *** TODO temporarily disable unrecognized key warnings
 *** TODO (pixylenetui) refresh on terminal resize for both targets [[https://docs.rs/crossterm/latest/crossterm/event/enum.Event.html#variant.Resize][Resize]]. b_console/b_camera/b_statusline should then be loaded from a fn rather than attributes on Controller
@@ -17,6 +18,7 @@
 
 ** Version 1.1 [9%]
 *** TODO cli option in pixyleneui to disable Lua VM entirely
+*** TODO replace crossterm's keys with keymap-rs's keymap
 *** TODO command parsing: if user enters New and it fails, retry with New {} (which succeeds). do for all
 *** TODO PrintCommandList to print possible commands
 *** TODO IndexedScene for use with indexed images

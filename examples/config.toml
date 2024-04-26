@@ -10,6 +10,7 @@ every_frame = [ "PreviewFocusLayer", "UpdateStatusline" ]
 [[keys]]
 keys = [
     # every keybind binds a single key 'k' to a sequence of commands 'f'
+    { k = { m = "ALT", c = { Char = 'x' } }, f = [ "RunActionSpecify" ] },
     { k = { c = { Char = ';' } }, f = [ "RunLastAction" ] },
 
     { k = { c = "Left" },  f = [{ a = { n = "cursors_left" } }] },
@@ -33,6 +34,8 @@ keys = [
     { k = { c = { Char = '6' } }, f = [{ a = { n = "pencil6" } }] },
     { k = { c = { Char = '7' } }, f = [{ a = { n = "pencil7" } }] },
     { k = { c = { Char = '8' } }, f = [{ a = { n = "pencil8" } }] },
+
+    { k = { c = { Char = 'e' } }, f = [{ a = { n = "equip" } }] },
 
     # go to Layer namespace
     { k = { m = "CONTROL", c = { Char = 'l' } }, f = [{ EnterNamespace = { n = "Layer" } }] },
@@ -77,6 +80,7 @@ keys = [
 name = "Shapes"
 keys = [
     { k = { c = { Char = 'c' } }, f = [{ a = { n = "circularoutline" } }, "EnterDefaultNamespace"] },
+    { k = { c = { Char = 'f' } }, f = [{ a = { n = "fill" } }, "EnterDefaultNamespace"] },
 
     { k = { c = "Esc" }, f = [ "EnterDefaultNamespace" ] }, # go back to default namespace
 ]

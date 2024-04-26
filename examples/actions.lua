@@ -82,6 +82,7 @@ actions['noise'] = {
 }
 
 actions['circularoutline'] = {
+    -- https://rosettacode.org/wiki/Bitmap/Midpoint_circle_algorithm?oldid=358330
     perform = function(self, project, console)
         if (project.num_cursors ~= 1) then
             console:cmdout("need exactly one cursor at center of circle", LogType.ERROR)
@@ -134,5 +135,59 @@ actions['circularoutline'] = {
             plot(x0 + y, y0 - x)
             plot(x0 - y, y0 - x)
         end
+    end
+}
+
+actions['equip'] = {
+    perform = function(self, project, console)
+        local input = console:cmdin("id: ")
+        if (input == "" or input == nil) then
+            return
+        end
+        project.canvas.palette:equip(tonumber(input))
+    end
+}
+
+actions['fill'] = {
+    -- https://www.geeksforgeeks.org/flood-fill-algorithm-implement-fill-paint
+    floodFillUtil = function(self, scene, point, prevC, newC)
+        local x = point.x
+        local y = point.y
+        --Console:cmdin("x: " .. x .. ", y: " .. y .. ", dx: " .. scene.dim.x .. ", dy: " .. scene.dim.y)
+        if (x < 0 or x >= scene.dim.x or y < 0 or y >= scene.dim.y) then
+            return nil
+        end
+        local color = scene:get(point)
+        if (color.red ~= prevC.red or color.green ~= prevC.green or color.blue ~= prevC.blue or color.alpha ~= prevC.alpha) then
+            return nil
+        end
+        if (color.red == newC.red and color.green == newC.green and color.blue == newC.blue and color.alpha == newC.alpha) then
+            return nil
+        end
+        scene:set(point, newC)
+
+        self:floodFillUtil(scene, UC(x+1, y), prevC, newC)
+        if (x > 0) then
+            self:floodFillUtil(scene, UC(x-1, y), prevC, newC)
+        end
+        self:floodFillUtil(scene, UC(x, y+1), prevC, newC)
+        if (y > 0) then
+            self:floodFillUtil(scene, UC(x, y-1), prevC, newC)
+        end
+    end,
+
+    floodFill = function(self, scene, point, newC)
+        local prevC = scene:get(point)
+        if (prevC == newC) then return end
+        self:floodFillUtil(scene, point, prevC, newC)
+    end,
+
+    perform = function(self, project, console)
+        local start = project.cursors[1]
+        self:floodFill(
+            project.canvas:layer(start.layer).scene,
+            start.coord,
+            project.canvas.palette:get()
+        )
     end
 }
