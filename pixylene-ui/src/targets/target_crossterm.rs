@@ -126,7 +126,7 @@ impl UserInterface for TargetCrossterm {
     }
 
     fn get_key(&self) -> Option<KeyInfo> {
-        use event::{ Event, KeyCode, KeyModifiers, KeyEventKind, read };
+        use event::{ Event, KeyEvent, KeyCode, KeyModifiers, KeyEventKind, read };
 
         loop {
             //blocking read
@@ -134,9 +134,9 @@ impl UserInterface for TargetCrossterm {
                 Event::Key(key_event) => {
                     if key_event.kind == KeyEventKind::Press {
                         if let KeyCode::Char(c) = key_event.code {
-                            return Some(KeyInfo::Key(Key::new(
-                                        KeyCode::Char(c),
-                                        Some(key_event.modifiers.difference(KeyModifiers::SHIFT))
+                            return Some(KeyInfo::Key(KeyEvent::new(
+                                KeyCode::Char(c),
+                                key_event.modifiers.difference(KeyModifiers::SHIFT)
                             )));
                         } else {
                             return Some(KeyInfo::Key(key_event.into()));
@@ -212,7 +212,9 @@ impl UserInterface for TargetCrossterm {
         stdout.flush().unwrap();
     }
 
-    fn console_in(&mut self, message: &str, discard_key: &Key, boundary: &Rectangle) -> Option<String> {
+    fn console_in(&mut self, message: &str, discard_key: &Key, boundary: &Rectangle)
+        -> Option<String>
+    {
         use terminal::{ Clear, ClearType };
         use cursor::{ MoveTo, MoveLeft, Show, Hide };
         use style::{ SetForegroundColor, Color, Print, ResetColor };
@@ -238,7 +240,7 @@ impl UserInterface for TargetCrossterm {
             let event = read().unwrap();
             if let Event::Key(key) = event {
                 if key.kind == KeyEventKind::Press {
-                    if Key::from(key) == *discard_key {
+                    if Key::from(key.clone()) == *discard_key {
                         out = None;
                         break;
                     }

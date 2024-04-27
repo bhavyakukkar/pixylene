@@ -99,10 +99,12 @@ actions['circularoutline'] = {
 
         local cen = project.cursors[1]
         local plot = function(x, y)
-            project.canvas:layer(cen.layer).scene:set(
-                UC(x, y),
-                BlendMode.NORMAL:blend(project.canvas:layer(cen.layer).scene:get(UC(x, y)), col)
-            )
+            if (x >= 0 and x < project.canvas.dim.x and y >= 0 and y < project.canvas.dim.y) then
+                project.canvas:layer(cen.layer).scene:set(
+                    UC(x, y),
+                    BlendMode.NORMAL:blend(col, project.canvas:layer(cen.layer).scene:get(UC(x, y)))
+                )
+            end
         end
 
         local x0 = cen.coord.x

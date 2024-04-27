@@ -11,7 +11,7 @@ import traceback
 def action(name):
     return f'a = {{ n = "{name}" }}'
 def canvas():
-    return f'PrintCanvasJson'
+    return f'pc'
 def quit():
     return f'q!'
 
