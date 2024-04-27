@@ -1236,6 +1236,13 @@ impl Controller {
                     statusline.push(session.name.on_truecolor(60,60,60).bright_white());
                     statusline.push(spacing.clone());
 
+                    //Session dimensions
+                    statusline.push(
+                        format!("{}", session.pixylene.borrow().project.canvas.dim())
+                        .on_truecolor(60,60,60).bright_white()
+                    );
+                    statusline.push(spacing.clone());
+
                     //Session index
                     statusline.push(
                         format!("Session {}/{}", s + 1, self.sessions.len())

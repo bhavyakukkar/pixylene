@@ -2,6 +2,7 @@
 #+author: Bhavya Kukkar
 * TASKS
 ** Next
+*** TODO Makefile
 *** TODO you are now ready to serialize commands with clap instead of toml
 *** TODO dimensions should show on statusline
 *** TODO defined palette contains 10 colors, foreground+background+eight defined colors. switchForeground is a wrapper that performs Palette.changeTo(1, <input>). switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
