@@ -2,7 +2,14 @@
 new_keys = false
 
 # sequence of commands that should run after every frame
-every_frame = [ "PreviewFocusLayer", "UpdateStatusline" ]
+every_frame = [
+    "sl", #show layer
+    "ss", #show statusline
+]
+
+# whether the map of keys should show full command names instead of command identifiers used when
+# configuring keys
+keymap_show_command_names = false
 
 # the map of keybinds
 
@@ -10,8 +17,8 @@ every_frame = [ "PreviewFocusLayer", "UpdateStatusline" ]
 [[keys]]
 keys = [
     # every keybind binds a single key 'k' to a sequence of commands 'f'
-    { k = { m = "ALT", c = { Char = 'x' } }, f = [ "RunActionSpecify" ] },
-    { k = { c = { Char = ';' } }, f = [ "RunLastAction" ] },
+    { k = { m = "ALT", c = { Char = 'x' } }, f = [ "A" ] },
+    { k = { c = { Char = ';' } }, f = [ "la" ] },
 
     { k = { c = "Left" },  f = [{ a = { n = "cursors_left" } }] },
     { k = { c = "Down" },  f = [{ a = { n = "cursors_down" } }] },
@@ -36,24 +43,26 @@ keys = [
     { k = { c = { Char = '8' } }, f = [{ a = { n = "pencil8" } }] },
 
     { k = { c = { Char = 'e' } }, f = [{ a = { n = "equip" } }] },
+    { k = { c = { Char = '?' } }, f = [ "pk" ] },
 
     # go to Layer namespace
-    { k = { m = "CONTROL", c = { Char = 'l' } }, f = [{ EnterNamespace = { n = "Layer" } }] },
+    { k = { m = "SHIFT", c = { Char = 'l' } }, f = [{ ns = { n = "Layer" } }] },
     # go to Cursors namespace
-    { k = { m = "CONTROL", c = { Char = 'c' } }, f = [{ EnterNamespace = { n = "Cursors" } }] },
+    { k = { m = "SHIFT", c = { Char = 'c' } }, f = [{ ns = { n = "Cursors" } }] },
     # go to Shapes namespace
-    { k = { m = "CONTROL", c = { Char = 's' } }, f = [{ EnterNamespace = { n = "Shapes" } }] },
+    { k = { m = "SHIFT", c = { Char = 's' } }, f = [{ ns = { n = "Shapes" } }] },
 ]
 
 # LAYER namespace
 [[keys]]
 name = "Layer"
 keys = [
-    { k = { c = { Char = 'n' }, m = "" }, f = [{ a = { n = "layer_new" } }, "EnterDefaultNamespace"] },
-    { k = { c = { Char = 'o' }, m = "" }, f = [{ a = { n = "layer_opacity" } }, "EnterDefaultNamespace"] },
-    { k = { c = { Char = 'm' }, m = "" }, f = [{ a = { n = "layer_mute" } }, "EnterDefaultNamespace"] },
+    # all 3 of these keys perform an action then return to the default namespace
+    { k = { c = { Char = 'n' }, m = "" }, f = [{ a = { n = "layer_new" } }, "dns"] },
+    { k = { c = { Char = 'o' }, m = "" }, f = [{ a = { n = "layer_opacity" } }, "dns"] },
+    { k = { c = { Char = 'm' }, m = "" }, f = [{ a = { n = "layer_mute" } }, "dns"] },
 
-    { k = { c = "Esc" }, f = [ "EnterDefaultNamespace" ] }, # go back to default namespace
+    { k = { c = "Esc" }, f = [ "dns" ] }, # go back to default namespace
 ]
 
 # CURSORS namespace
@@ -70,19 +79,19 @@ keys = [
     { k = { c = { Char = 'k' } }, f = [{ a = { n = "cursors_dup_up" } }] },
     { k = { c = { Char = 'l' } }, f = [{ a = { n = "cursors_dup_right" } }] },
 
-    { k = { c = { Char = 'r' } }, f = [{ a = { n = "cursors_reset" } }, "EnterDefaultNamespace"] },
+    { k = { c = { Char = 'r' } }, f = [{ a = { n = "cursors_reset" } }, "dns"] },
 
-    { k = { c = "Esc" }, f = [ "EnterDefaultNamespace" ] }, # go back to default namespace
+    { k = { c = "Esc" }, f = [ "dns" ] }, # go back to default namespace
 ]
 
 # SHAPES namespace
 [[keys]]
 name = "Shapes"
 keys = [
-    { k = { c = { Char = 'c' } }, f = [{ a = { n = "circularoutline" } }, "EnterDefaultNamespace"] },
-    { k = { c = { Char = 'f' } }, f = [{ a = { n = "fill" } }, "EnterDefaultNamespace"] },
+    { k = { c = { Char = 'c' } }, f = [{ a = { n = "circularoutline" } }, "dns"] },
+    { k = { c = { Char = 'f' } }, f = [{ a = { n = "fill" } }, "dns"] },
 
-    { k = { c = "Esc" }, f = [ "EnterDefaultNamespace" ] }, # go back to default namespace
+    { k = { c = "Esc" }, f = [ "dns" ] }, # go back to default namespace
 ]
 
 
@@ -120,3 +129,4 @@ palette = [
     { id = 7 , c = "#b16286" },
     { id = 8 , c = "#689d6a" },
 ]
+

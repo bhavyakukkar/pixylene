@@ -43,6 +43,7 @@ pub struct Config {
     pub new_keys: bool,
     pub every_frame: Vec<UiFn>,
     pub defaults: PixyleneDefaultsConfig,
+    pub keymap_show_command_names: bool,
 }
 
 impl Config {
@@ -137,6 +138,7 @@ impl Default for Config {
                     ]
                 },
             ],
+            keymap_show_command_names: true,
         }
     }
 }

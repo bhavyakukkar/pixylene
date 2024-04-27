@@ -1,6 +1,6 @@
 use libpixylene::{ types::{ UCoord, PCoord }, project::{ OPixel } };
 use pixylene_actions::{ LogType };
-use serde::{ Deserialize };
+use serde::{ Deserialize, Serialize };
 use std::collections::HashMap;
 use crossterm::event::{ KeyCode, KeyEvent, KeyModifiers };
 use std::path::PathBuf;
@@ -52,11 +52,11 @@ pub enum KeyInfo {
 ///
 /// Other target implementations require manual association.
 //pub type Key = crossterm::event::KeyEvent;
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize, Serialize)]
 pub struct Key {
-    #[serde(alias = "c")]
+    #[serde(rename = "c")]
     code: KeyCode,
-    #[serde(alias = "m")]
+    #[serde(rename = "m")]
     modifiers: Option<KeyModifiers>,
 }
 
@@ -129,85 +129,104 @@ pub type Statusline = Vec<colored::ColoredString>;
 /// sequence of [`UiFns`](UiFn) they will execute when pressed
 pub type KeyMap = HashMap<Option<String>, HashMap<Key, Vec<UiFn>>>;
 
-#[derive(Debug, Deserialize, Clone, Eq, Hash, PartialEq)]
+#[derive(Debug, Clone, Eq, Hash, PartialEq, Deserialize, Serialize)]
 pub enum UiFn {
-    #[serde(alias = "new")]
+    #[serde(rename = "new")]
     New{
-        #[serde(alias = "w")]
+        #[serde(rename = "w")]
         width: Option<u16>,
-        #[serde(alias = "h")]
+        #[serde(rename = "h")]
         height: Option<u16>
     },
 
-    #[serde(alias = "e")]
+    #[serde(rename = "e")]
     OpenCanvas{
         path: PathBuf
     },
-    #[serde(alias = "E")]
+    #[serde(rename = "E")]
     OpenCanvasSpecify,
 
-    #[serde(alias = "ep")]
+    #[serde(rename = "ep")]
     OpenProject{
         path: PathBuf
     },
-    #[serde(alias = "Ep")]
+    #[serde(rename = "Ep")]
     OpenProjectSpecify,
 
-    #[serde(alias = "import")]
+    #[serde(rename = "import")]
     Import{
         path: String
     },
+    #[serde(rename = "Import")]
     ImportSpecify,
 
-    #[serde(alias = "q")]
+    #[serde(rename = "q")]
     Quit,
 
-    #[serde(alias = "q!")]
+    #[serde(rename = "q!")]
     ForceQuit,
 
+    #[serde(rename = "ses")]
     GoToSession{
         index: u8
     },
+    #[serde(rename = "nses")]
     GoToNextSession,
+    #[serde(rename = "pses")]
     GoToPrevSession,
 
+    #[serde(rename = "w")]
     SaveCanvas,
+    #[serde(rename = "wp")]
     SaveProject,
+    #[serde(rename = "export")]
     Export,
 
+    #[serde(rename = "undo")]
     Undo,
+    #[serde(rename = "redo")]
     Redo,
 
+    #[serde(rename = "ns")]
     EnterNamespace{
-        #[serde(alias = "n")]
+        #[serde(rename = "n")]
         name: Option<String>
     },
+    #[serde(rename = "dns")]
     EnterDefaultNamespace,
+    #[serde(rename = "key")]
     RunKey{
         key: Key
     },
 
+    #[serde(rename = "cmd")]
     RunCommand{
         cmd: String
     },
+    #[serde(rename = "Cmd")]
     RunCommandSpecify,
 
-    #[serde(alias = "a")]
+    #[serde(rename = "a")]
     RunAction{
-        #[serde(alias = "n")]
+        #[serde(rename = "n")]
         name: String,
     },
+    #[serde(rename = "A")]
     RunActionSpecify,
+    #[serde(rename = "la")]
     RunLastAction,
 
+    #[serde(rename = "sl")]
     PreviewFocusLayer,
+    #[serde(rename = "sp")]
     PreviewProject,
-    PrintCanvasJson,
-
-    #[serde(alias = "keymap")]
-    PrintKeybindMap,
-
+    #[serde(rename = "ss")]
     UpdateStatusline,
+
+    #[serde(rename = "pc")]
+    PrintCanvasJson,
+    #[serde(rename = "pk")]
+    PrintKeybindMap,
 }
 
 /// The mapping of [`Keys`](Key) to functions mandatorily required by the app. 

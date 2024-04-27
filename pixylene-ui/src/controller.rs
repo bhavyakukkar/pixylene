@@ -18,7 +18,7 @@ use std::{
     rc::Rc,
     path::PathBuf,
 };
-use serde::Deserialize;
+use serde::{ Deserialize, Serialize };
 use clap::Subcommand;
 
 use dirs::config_dir;
@@ -36,7 +36,7 @@ const SPLASH_LOGO: &str = r#"
  Pixylene, the extensible Pixel Art Editor
 
 
- type  :keymap        - to see all keybindings
+ type  :pk            - to print the current keybindings
  type  :q             - to quit
 "#;
 // type  :help          - if you are new!
@@ -45,12 +45,12 @@ const SPLASH_LOGO: &str = r#"
 // type  :e foo.json                - to edit a previously saved canvas file 'foo.json'
 // type  :ep foo.pixylene           - to edit a previously saved project file 'foo.pixylene'
 
-#[derive(Deserialize)]
-struct UiFnContainer {
-    u: UiFn,
-}
-
 fn parse(string: &str) -> Result<UiFn, toml::de::Error> {
+    #[derive(Deserialize)]
+    struct Container {
+        u: UiFn,
+    }
+
     let mut string = String::from(string);
     if string.find("{").is_none() {
         string.insert(0, '"');
@@ -61,7 +61,29 @@ fn parse(string: &str) -> Result<UiFn, toml::de::Error> {
     }
 
     toml::from_str(&format!("u = {}", string))
-        .map(|container: UiFnContainer| container.u)
+        .map(|container: Container| container.u)
+}
+
+fn deparse(uifns: &Vec<UiFn>) -> String {
+    #[derive(Serialize)]
+    struct Container {
+        u: UiFn,
+    }
+
+    "[".to_owned() +
+    &uifns.iter()
+        .map(|uifn| {
+            let mut value = String::new();
+            Container{ u: uifn.clone() }.serialize(toml::ser::ValueSerializer::new(&mut value)).unwrap_or(());
+            value[6..(value.len() - 2)].to_owned()
+        })
+        .reduce(|a, b| a + ", " + &b).unwrap_or(" ".to_owned()) +
+    "]"
+    //"[".to_owned() + &uifns.iter()
+    //    .map(|uifn| toml::to_string(&Container { u: uifn.clone() })
+    //        .map(|ser| ser/*.replace("\n", " ")[4..(ser.len()-1)].to_owned()*/)
+    //        .expect("Failed to serialize UiFn"))
+    //    .reduce(|a, b| a + ", " + &b).unwrap_or(" ".to_owned()) + "]"
 }
 
 #[derive(Subcommand)]
@@ -135,7 +157,9 @@ pub struct Controller {
     //this index is 1-based
     sel_session: u8,
 
+    //config
     defaults: PixyleneDefaults,
+    keymap_show_command_names: bool,
 
     possible_namespaces: HashMap<String, ()>,
     namespace: Option<String>,
@@ -302,6 +326,7 @@ impl Controller {
             sel_session: 0,
 
             defaults,
+            keymap_show_command_names: config.keymap_show_command_names,
 
             possible_namespaces,
             namespace: None,
@@ -624,7 +649,7 @@ impl Controller {
                 if self.sessions.len() > 0
                     && self.sessions[self.sel_session as usize - 1].modified {
                     self.console_out(
-                        "project has been modified since last change, force quit (:q!) to discard \
+                        "canvas has been modified since last change, force quit (:q!) to discard \
                         modifications",
                         &LogType::Error,
                     );
@@ -1149,12 +1174,22 @@ impl Controller {
                         if let Some((key, ui_fns)) = keys.next() {
                             line.push_str(
                                 &format!("{:<half_width$}",
-                                    format!("  {:<10} : {:?}", key.to_string(), ui_fns)));
+                                    format!(
+                                        "  {:<10} : {}",
+                                        key.to_string(),
+                                        if self.keymap_show_command_names { format!("{:?}", ui_fns) }
+                                        else { deparse(ui_fns) }
+                                    )));
                         } else {
                             break;
                         }
                         if let Some((key, ui_fns)) = keys.next() {
-                            line.push_str(&format!("{:<10} : {:?}", key.to_string(), ui_fns));
+                            line.push_str(&format!(
+                                "{:<10} : {}",
+                                key.to_string(),
+                                if self.keymap_show_command_names { format!("{:?}", ui_fns) }
+                                else { deparse(ui_fns) }
+                            ));
                             lines.push(line.into());
                         } else {
                             lines.push(line.into());
