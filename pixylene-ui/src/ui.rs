@@ -1,8 +1,8 @@
 use libpixylene::{ types::{ UCoord, PCoord }, project::{ OPixel } };
 use pixylene_actions::{ LogType };
 use serde::{ Deserialize, Serialize };
-use std::collections::HashMap;
-use std::path::PathBuf;
+use std::{ collections::HashMap, path::PathBuf };
+use clap::Subcommand;
 
 
 /// Trait needed for any User Interface Target to implement so that it can be controlled by
@@ -119,104 +119,150 @@ pub type Statusline = Vec<colored::ColoredString>;
 /// sequence of [`UiFns`](UiFn) they will execute when pressed
 pub type KeyMap = HashMap<Option<String>, HashMap<Key, Vec<UiFn>>>;
 
-#[derive(Debug, Clone, Eq, Hash, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Eq, Hash, PartialEq, Deserialize, Serialize, Subcommand)]
 pub enum UiFn {
-    #[serde(rename = "new")]
+    #[serde(alias = "new")]
+    //not needed: #[command(alias = "new")]
     New{
-        #[serde(rename = "w")]
+        #[serde(alias = "w")]
         width: Option<u16>,
-        #[serde(rename = "h")]
+        #[serde(alias = "h")]
         height: Option<u16>
     },
 
-    #[serde(rename = "e")]
+    #[serde(alias = "e")]
+    #[command(alias = "e")]
     OpenCanvas{
         path: PathBuf
     },
-    #[serde(rename = "E")]
+
+    #[serde(alias = "E")]
+    #[command(alias = "E")]
     OpenCanvasSpecify,
 
-    #[serde(rename = "ep")]
+    #[serde(alias = "ep")]
+    #[command(alias = "ep")]
     OpenProject{
         path: PathBuf
     },
-    #[serde(rename = "Ep")]
+
+    #[serde(alias = "Ep")]
+    #[command(alias = "Ep")]
     OpenProjectSpecify,
 
-    #[serde(rename = "import")]
+    #[serde(alias = "import")]
+    //not needed: #[command(alias = "import")]
     Import{
         path: String
     },
-    #[serde(rename = "Import")]
+
+    #[serde(alias = "Import")]
+    #[command(alias = "Import")]
     ImportSpecify,
 
-    #[serde(rename = "q")]
+    #[serde(alias = "q")]
+    #[command(alias = "q")]
     Quit,
 
-    #[serde(rename = "q!")]
+    #[serde(alias = "q!")]
+    #[command(alias = "q!")]
     ForceQuit,
 
-    #[serde(rename = "ses")]
+    #[serde(alias = "ses")]
+    #[command(alias = "ses")]
     GoToSession{
         index: u8
     },
-    #[serde(rename = "nses")]
+
+    #[serde(alias = "nses")]
+    #[command(alias = "nses")]
     GoToNextSession,
-    #[serde(rename = "pses")]
+
+    #[serde(alias = "pses")]
+    #[command(alias = "pses")]
     GoToPrevSession,
 
-    #[serde(rename = "w")]
+    #[serde(alias = "w")]
+    #[command(alias = "w")]
     SaveCanvas,
-    #[serde(rename = "wp")]
+
+    #[serde(alias = "wp")]
+    #[command(alias = "wp")]
     SaveProject,
-    #[serde(rename = "export")]
+
+    #[serde(alias = "export")]
+    //not needed: #[command(alias = "export")]
     Export,
 
-    #[serde(rename = "undo")]
+    #[serde(alias = "undo")]
+    //not needed: #[command(alias = "undo")]
     Undo,
-    #[serde(rename = "redo")]
+
+    #[serde(alias = "redo")]
+    //not needed: #[command(alias = "redo")]
     Redo,
 
-    #[serde(rename = "ns")]
+    #[serde(alias = "ns")]
+    #[command(alias = "ns")]
     EnterNamespace{
-        #[serde(rename = "n")]
+        #[serde(alias = "n")]
         name: Option<String>
     },
-    #[serde(rename = "dns")]
+
+    #[serde(alias = "dns")]
+    #[command(alias = "dns")]
     EnterDefaultNamespace,
-    #[serde(rename = "key")]
+
+    #[serde(alias = "key")]
+    #[command(alias = "key")]
     RunKey{
         #[serde(with = "string")]
         key: KeySer,
     },
 
-    #[serde(rename = "cmd")]
+    #[serde(alias = "cmd")]
+    #[command(alias = "cmd")]
     RunCommand{
         cmd: String
     },
-    #[serde(rename = "Cmd")]
+
+    #[serde(alias = "Cmd")]
+    #[command(alias = "Cmd")]
     RunCommandSpecify,
 
-    #[serde(rename = "a")]
+    #[serde(alias = "a")]
+    #[command(alias = "a")]
     RunAction{
-        #[serde(rename = "n")]
+        #[serde(alias = "n")]
         name: String,
     },
-    #[serde(rename = "A")]
+
+    #[serde(alias = "A")]
+    #[command(alias = "A")]
     RunActionSpecify,
-    #[serde(rename = "la")]
+
+    #[serde(alias = "la")]
+    #[command(alias = "la")]
     RunLastAction,
 
-    #[serde(rename = "sl")]
+    #[serde(alias = "sl")]
+    #[command(alias = "sl")]
     PreviewFocusLayer,
-    #[serde(rename = "sp")]
+
+    #[serde(alias = "sp")]
+    #[command(alias = "sp")]
     PreviewProject,
-    #[serde(rename = "ss")]
+
+    #[serde(alias = "ss")]
+    #[command(alias = "ss")]
     UpdateStatusline,
 
-    #[serde(rename = "pc")]
+    #[serde(alias = "pc")]
+    #[command(alias = "pc")]
     PrintCanvasJson,
-    #[serde(rename = "pk")]
+
+    #[serde(alias = "pk")]
+    #[command(alias = "pk")]
     PrintKeybindMap,
 }
 

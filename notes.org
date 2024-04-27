@@ -3,10 +3,10 @@
 * TASKS
 ** Next
 *** TODO Makefile
-*** TODO you are now ready to serialize commands with clap instead of toml
-*** TODO dimensions should show on statusline
+*** DONE you are now ready to serialize commands with clap instead of toml
+*** DONE dimensions should show on statusline
+*** TODO PrintCommandList to print possible commands. can be done simply with parse_cmd("--help")
 *** TODO defined palette contains 10 colors, foreground+background+eight defined colors. switchForeground is a wrapper that performs Palette.changeTo(1, <input>). switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
-*** TODO PrintCommandList to print possible commands
 *** TODO IndexedScene for use with indexed images
 *** TODO (pixylenetui) refresh on terminal resize for both targets [[https://docs.rs/crossterm/latest/crossterm/event/enum.Event.html#variant.Resize][Resize]]. b_console/b_camera/b_statusline should then be loaded from a fn rather than attributes on Controller
 *** TODO refactor all error handling so draws as paragraph if too big (use lua action invocation as reference). OR, handle all error messages larger than console size by converting them to cmdin's that print messages in chunks of console size, or by printing them in large window using draw_paragraph

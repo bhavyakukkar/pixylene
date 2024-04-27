@@ -19,7 +19,7 @@ use std::{
     path::PathBuf,
 };
 use serde::{ Deserialize, Serialize };
-use clap::Subcommand;
+use clap::{ Subcommand, Parser };
 
 use dirs::config_dir;
 use std::fs::read_to_string;
@@ -27,15 +27,20 @@ use std::fs::read_to_string;
 
 const PADDING: u8 = 1;
 const SPLASH_LOGO: &str = r#"
- |~~\  '            |                 
- |__/  |  \/  \  /  |  /~/  |/~\   /~/
- |     |  /\   \/   |  \/_  |   |  \/_
-             _/
+
+    ____  _ ___  ____  _ _     _____ _      _____
+   /  __\/ \\  \//\  \/// \   /  __// \  /|/  __/
+   |  \/|| | \  /  \  / | |   |  \  | |\ |||  \  
+   |  __/| | /  \  / /  | |_/\|  /_ | | \|||  /_ 
+   \_/   \_//__/\\/_/   \____/\____\\_/  \|\____\
+
 
  Welcome to
- Pixylene, the extensible Pixel Art Editor
+ Pixylene,
+ the extensible Pixel Art Editor
 
 
+ type  :new 16 16     - to create a new 16x16 canvas
  type  :pk            - to print the current keybindings
  type  :q             - to quit
 "#;
@@ -45,9 +50,24 @@ const SPLASH_LOGO: &str = r#"
 // type  :e foo.json                - to edit a previously saved canvas file 'foo.json'
 // type  :ep foo.pixylene           - to edit a previously saved project file 'foo.pixylene'
 
-fn parse(string: &str) -> Result<UiFn, toml::de::Error> {
+fn parse_cmd(string: &str) -> Result<UiFn, String> {
+    #[derive(Debug, Parser)]
+    struct Container {
+        #[command(subcommand)]
+        u: UiFn
+    }
+    Container::try_parse_from(
+        shlex::split(&(": ".to_owned() + string)).ok_or("malformed input".to_owned())?)
+        .map(|container: Container| container.u)
+        .map_err(|err| err.to_string().lines()
+            .filter(|s| s.len() > 0 && !s.contains("Usage") && !s.contains("--help"))
+            .map(|s| s.trim().to_owned()).reduce(|a, b| a + ", " + &b).unwrap_or("".to_owned()))
+}
+
+fn _parse_toml(string: &str) -> Result<UiFn, toml::de::Error> {
     #[derive(Deserialize)]
     struct Container {
+        #[allow(dead_code)]
         u: UiFn,
     }
 
@@ -945,13 +965,12 @@ impl Controller {
                 }
             },
             RunCommand{ cmd } => {
-                parse(cmd)
+                parse_cmd(cmd)
                     .map(|uifn| {
                         _ = self.perform_ui(&uifn);
                     })
                     .unwrap_or_else(|err| {
-                        self.console_out(&format!("{}", err.message()),
-                                         &LogType::Error);
+                        self.console_out(&format!("{}", err), &LogType::Error);
                     });
             },
 
