@@ -2,7 +2,6 @@ use libpixylene::{ types::{ UCoord, PCoord }, project::{ OPixel } };
 use pixylene_actions::{ LogType };
 use serde::{ Deserialize, Serialize };
 use std::collections::HashMap;
-use crossterm::event::{ KeyCode, KeyEvent, KeyModifiers };
 use std::path::PathBuf;
 
 
@@ -39,7 +38,7 @@ pub trait UserInterface {
 
 pub enum KeyInfo {
     #[allow(dead_code)]
-    Key(Key),
+    Key(crossterm::event::KeyEvent),
     #[allow(dead_code)]
     UiFn(UiFn),
 }
@@ -48,71 +47,62 @@ pub enum KeyInfo {
 /// [`ReqUiFn`](crate::keybinds::ReqUiFn).
 ///
 /// `Note`: This was made primarily with compatibility to [`crossterm`](crossterm) in mind and
-/// hence is simply a type alias to crossterm's [`KeyEvent`](crossterm::event::KeyEvent).
+/// hence is simply a type alias to keymap-rs's [`KeyMap`](keymap::KeyMap) (not to be confused with
+/// this crate's [`KeyMap`](KeyMap)) which wraps around crossterm's
+/// [`KeyEvent`](crossterm::event::KeyEvent).
 ///
 /// Other target implementations require manual association.
-//pub type Key = crossterm::event::KeyEvent;
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize, Serialize)]
-pub struct Key {
-    #[serde(rename = "c")]
-    code: KeyCode,
-    #[serde(rename = "m")]
-    modifiers: Option<KeyModifiers>,
-}
+pub type Key = keymap::KeyMap;
 
-impl Key {
-    pub fn new(code: KeyCode, modifiers: Option<KeyModifiers>) -> Key {
-        let key_event = KeyEvent::new(code, modifiers.unwrap_or(KeyModifiers::empty()));
-        Key {
-            code: key_event.code,
-            modifiers: Some(key_event.modifiers),
-        }
+// needed to serialize Key since KeyMap doesn't implement Serialize
+// all thanks to https://github.com/serde-rs/serde/issues/1316
+mod string {
+    use std::fmt::Display;
+    use std::str::FromStr;
+
+    use serde::{de, Serializer, Deserialize, Deserializer};
+
+    pub fn serialize<T, S>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        T: Display,
+        S: Serializer
+    {
+        serializer.collect_str(value)
     }
 
-    pub fn code(&self) -> KeyCode {
-        self.code.clone()
-    }
-
-    pub fn modifiers(&self) -> KeyModifiers {
-        self.modifiers.unwrap_or(KeyModifiers::empty()).clone()
-    }
-}
-
-impl From<KeyEvent> for Key {
-    fn from(item: KeyEvent) -> Key {
-        Key { code: item.code, modifiers: Some(item.modifiers) }
+    pub fn deserialize<'de, T, D>(deserializer: D) -> Result<T, D::Error>
+    where
+        T: FromStr,
+        T::Err: Display,
+        D: Deserializer<'de>
+    {
+        String::deserialize(deserializer)?.parse().map_err(de::Error::custom)
     }
 }
 
-impl std::fmt::Display for Key {
+#[derive(Eq, Hash, Deserialize, PartialEq, Debug)]
+pub struct KeySer(
+    pub Key
+);
+
+impl std::str::FromStr for KeySer {
+    type Err = pom::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        keymap::backend::parse(s).map(|k| KeySer(k))
+    }
+}
+
+impl std::fmt::Display for KeySer {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        //let code = toml::to_string(&self.code).map_err(|err| panic!("{:?}", self.code)).unwrap();
-        write!(
-            f,
-            "{}{}",
-            self.modifiers.unwrap_or(KeyModifiers::empty()).iter_names()
-                .map(|x| x.0.to_owned()).reduce(|a,b| format!("{a}|{b}"))
-                .map(|s| s + " ").unwrap_or("".to_owned()),
-            if let KeyCode::Char(c) = self.code {
-                String::from(c)
-            } else if let KeyCode::F(u) = self.code {
-                format!("F{}", u)
-            } else if let KeyCode::Media(m) = self.code {
-                format!("{:?}", m)
-            } else if let KeyCode::Modifier(m) = self.code {
-                format!("{:?}", m)
-            } else {
-                format!("{:?}", self.code)
-            }
-                //    toml::to_string(&KeyEvent::new(self.code, KeyModifiers::empty()))
-                //        .unwrap()
-                //        .lines()
-                //        .take(1)
-                //        .map(|s| s.to_owned())
-                //        .fold(String::from(""), |a,b| a.to_owned() + &b)[7..]
-                //        .to_string()
-                //}
-        )
+        write!(f, "{}", self.0)
+    }
+}
+
+impl Clone for KeySer {
+    fn clone(&self) -> Self {
+        KeySer(keymap::backend::parse(&self.0.to_string()).unwrap())
+        //KeySer(Key::from(crossterm::event::KeyEvent::from(self.0)))
     }
 }
 
@@ -125,7 +115,7 @@ pub struct Rectangle {
 /// The Statusline
 pub type Statusline = Vec<colored::ColoredString>;
 
-/// The map of namespace-names to secondary maps of [`Keys`](super::target::Key) to the ordered
+/// The map of namespace-names to secondary maps of [`Keys`](Key) to the ordered
 /// sequence of [`UiFns`](UiFn) they will execute when pressed
 pub type KeyMap = HashMap<Option<String>, HashMap<Key, Vec<UiFn>>>;
 
@@ -196,7 +186,8 @@ pub enum UiFn {
     EnterDefaultNamespace,
     #[serde(rename = "key")]
     RunKey{
-        key: Key
+        #[serde(with = "string")]
+        key: KeySer,
     },
 
     #[serde(rename = "cmd")]

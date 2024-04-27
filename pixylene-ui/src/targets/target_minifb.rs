@@ -5,7 +5,7 @@ use pixylene_ui::{
 
 use libpixylene::{ types::{ PCoord }, project::OPixel };
 use pixylene_actions::{ LogType };
-use crossterm::event::{ KeyCode, KeyModifiers };
+use crossterm::event::{ KeyEvent, KeyCode, KeyModifiers };
 use minifb::{ Window, WindowOptions, KeyRepeat, Scale };
 use minifb_fonts::{ font5x8 };
 use std::rc::Rc;
@@ -32,9 +32,8 @@ impl TargetMinifb {
     /// single [`KeyEvent`](crossterm::event::KeyEvent)
     ///
     /// This method only resolves a single key along with Ctrl/Shift/Alt modifiers
-    fn key_to_crossterm(mut ksd: Vec<minifb::Key>, ksp: Vec<minifb::Key>) -> Option<ui::Key> {
+    fn key_to_crossterm(mut ksd: Vec<minifb::Key>, ksp: Vec<minifb::Key>) -> Option<KeyEvent> {
         use minifb::Key::*;
-        use ui::Key;
         let mut m = KeyModifiers::empty();
         let mut shift: bool = false;
 
@@ -73,7 +72,7 @@ impl TargetMinifb {
         // handle remaining keys until single convertible key passed
         for k in ksp {
             if k >= Key0 && k <= Key9 {
-                return Some(Key::new(if !shift {
+                return Some(KeyEvent::new(if !shift {
                         //numbers
                         KeyCode::Char( (k as u8 + 48) as char )
                     } else {
@@ -91,130 +90,129 @@ impl TargetMinifb {
                             Key9 => KeyCode::Char('('),
                             _ => panic!(), //wont reach here
                         }
-                    }, Some(m)));
+                    }, m));
             }
 
             if k >= A && k <= Z {
-                return Some(Key::new(if !shift {
+                return Some(KeyEvent::new(if !shift {
                         //small letters
                         KeyCode::Char( ((k as u8 - 10) + 97) as char)
                     } else {
                         //capital letters
                         KeyCode::Char( ((k as u8 - 10) + 65) as char )
-                    }, Some(m)));
+                    }, m));
             }
 
             //Fn keys
             if k >= F1 && k <= F15 {
                 return Some(if !shift {
-                        Key::new(KeyCode::F(k as u8 - 35), Some(m))
+                        KeyEvent::new(KeyCode::F(k as u8 - 35), m)
                     } else {
-                        Key::new(KeyCode::F(k as u8 - 35), Some(m.union(KeyModifiers::SHIFT)))
+                        KeyEvent::new(KeyCode::F(k as u8 - 35), m.union(KeyModifiers::SHIFT))
                     });
             }
 
             //Numpad
             if k >= NumPad0/*86*/ && k <= NumPad9/*95*/ {
                 return Some(if !shift {
-                        Key::new(KeyCode::Char(((k as u8 - 86) + 48) as char), Some(m))
+                        KeyEvent::new(KeyCode::Char(((k as u8 - 86) + 48) as char), m)
                     } else {
-                        Key::new(KeyCode::Char(((k as u8 - 86) + 48) as char),
-                                 Some(m.union(KeyModifiers::SHIFT)))
+                        KeyEvent::new(KeyCode::Char(((k as u8 - 86) + 48) as char),
+                                 m.union(KeyModifiers::SHIFT))
                     });
             }
 
             return Some(match (k, shift) {
-                (Down, false) => Key::new(KeyCode::Down, Some(m)),
-                (Down, true) => Key::new(KeyCode::PageDown, Some(m)),
-                (Left, false) => Key::new(KeyCode::Left, Some(m)),
-                (Left, true) => Key::new(KeyCode::Home, Some(m)),
-                (Right, false) => Key::new(KeyCode::Right, Some(m)),
-                (Right, true) => Key::new(KeyCode::End, Some(m)),
-                (Up, false) => Key::new(KeyCode::Up, Some(m)),
-                (Up, true) => Key::new(KeyCode::PageUp, Some(m)),
+                (Down, false) => KeyEvent::new(KeyCode::Down, m),
+                (Down, true) => KeyEvent::new(KeyCode::PageDown, m),
+                (Left, false) => KeyEvent::new(KeyCode::Left, m),
+                (Left, true) => KeyEvent::new(KeyCode::Home, m),
+                (Right, false) => KeyEvent::new(KeyCode::Right, m),
+                (Right, true) => KeyEvent::new(KeyCode::End, m),
+                (Up, false) => KeyEvent::new(KeyCode::Up, m),
+                (Up, true) => KeyEvent::new(KeyCode::PageUp, m),
 
-                (Apostrophe, false) => Key::new(KeyCode::Char('\''), Some(m)),
-                (Apostrophe, true) => Key::new(KeyCode::Char('"'), Some(m)),
-                (Backquote, false) => Key::new(KeyCode::Char('`'), Some(m)),
-                (Backquote, true) => Key::new(KeyCode::Char('~'), Some(m)),
-                (Backslash, false) => Key::new(KeyCode::Char('\\'), Some(m)),
-                (Backslash, true) => Key::new(KeyCode::Char('|'), Some(m)),
-                (Comma, false) => Key::new(KeyCode::Char(','), Some(m)),
-                (Comma, true) => Key::new(KeyCode::Char('<'), Some(m)),
-                (Equal, false) => Key::new(KeyCode::Char('='), Some(m)),
-                (Equal, true) => Key::new(KeyCode::Char('+'), Some(m)),
-                (LeftBracket, false) => Key::new(KeyCode::Char('['), Some(m)),
-                (LeftBracket, true) => Key::new(KeyCode::Char('{'), Some(m)),
-                (Minus, false) => Key::new(KeyCode::Char('-'), Some(m)),
-                (Minus, true) => Key::new(KeyCode::Char('_'), Some(m)),
-                (Period, false) => Key::new(KeyCode::Char('.'), Some(m)),
-                (Period, true) => Key::new(KeyCode::Char('>'), Some(m)),
-                (RightBracket, false) => Key::new(KeyCode::Char(']'), Some(m)),
-                (RightBracket, true) => Key::new(KeyCode::Char('}'), Some(m)),
-                (Semicolon, false) => Key::new(KeyCode::Char(';'), Some(m)),
-                (Semicolon, true) => Key::new(KeyCode::Char(':'), Some(m)),
-                (Slash, false) => Key::new(KeyCode::Char('/'), Some(m)),
-                (Slash, true) => Key::new(KeyCode::Char('?'), Some(m)),
-                (Backspace, false) => Key::new(KeyCode::Backspace, Some(m)),
-                (Backspace, true) => Key::new(KeyCode::Backspace, Some(m.union(KeyModifiers::SHIFT))),
-                (Delete, false) => Key::new(KeyCode::Delete, Some(m)),
-                (Delete, true) => Key::new(KeyCode::Delete, Some(m.union(KeyModifiers::SHIFT))),
-                (End, false) => Key::new(KeyCode::End, Some(m)),
-                (End, true) => Key::new(KeyCode::End, Some(m.union(KeyModifiers::SHIFT))),
-                (Enter, false) => Key::new(KeyCode::Enter, Some(m)),
-                (Enter, true) => Key::new(KeyCode::Enter, Some(m.union(KeyModifiers::SHIFT))),
-                (Escape, false) => Key::new(KeyCode::Esc, Some(m)),
-                (Escape, true) => Key::new(KeyCode::Esc, Some(m.union(KeyModifiers::SHIFT))),
-                (Home, false) => Key::new(KeyCode::Home, Some(m)),
-                (Home, true) => Key::new(KeyCode::Home, Some(m.union(KeyModifiers::SHIFT))),
-                (Insert, false) => Key::new(KeyCode::Insert, Some(m)),
-                (Insert, true) => Key::new(KeyCode::Insert, Some(m.union(KeyModifiers::SHIFT))),
-                (Menu, false) => Key::new(KeyCode::Menu, Some(m)),
-                (Menu, true) => Key::new(KeyCode::Menu, Some(m.union(KeyModifiers::SHIFT))),
-                (PageDown, false) => Key::new(KeyCode::PageDown, Some(m)),
-                (PageDown, true) => Key::new(KeyCode::PageDown, Some(m.union(KeyModifiers::SHIFT))),
-                (PageUp, false) => Key::new(KeyCode::PageUp, Some(m)),
-                (PageUp, true) => Key::new(KeyCode::PageUp, Some(m.union(KeyModifiers::SHIFT))),
-                (Pause, false) => Key::new(KeyCode::Pause, Some(m)),
-                (Pause, true) => Key::new(KeyCode::Pause, Some(m.union(KeyModifiers::SHIFT))),
-                (Space, false) => Key::new(KeyCode::Char(' '), Some(m)),
-                (Space, true) => Key::new(KeyCode::Char(' '), Some(m.union(KeyModifiers::SHIFT))),
-                (Tab, false) => Key::new(KeyCode::Tab, Some(m)),
-                (Tab, true) => Key::new(KeyCode::Tab, Some(m.union(KeyModifiers::SHIFT))),
-                (NumLock, false) => Key::new(KeyCode::NumLock, Some(m)),
-                (NumLock, true) => Key::new(KeyCode::NumLock, Some(m.union(KeyModifiers::SHIFT))),
+                (Apostrophe, false) => KeyEvent::new(KeyCode::Char('\''), m),
+                (Apostrophe, true) => KeyEvent::new(KeyCode::Char('"'), m),
+                (Backquote, false) => KeyEvent::new(KeyCode::Char('`'), m),
+                (Backquote, true) => KeyEvent::new(KeyCode::Char('~'), m),
+                (Backslash, false) => KeyEvent::new(KeyCode::Char('\\'), m),
+                (Backslash, true) => KeyEvent::new(KeyCode::Char('|'), m),
+                (Comma, false) => KeyEvent::new(KeyCode::Char(','), m),
+                (Comma, true) => KeyEvent::new(KeyCode::Char('<'), m),
+                (Equal, false) => KeyEvent::new(KeyCode::Char('='), m),
+                (Equal, true) => KeyEvent::new(KeyCode::Char('+'), m),
+                (LeftBracket, false) => KeyEvent::new(KeyCode::Char('['), m),
+                (LeftBracket, true) => KeyEvent::new(KeyCode::Char('{'), m),
+                (Minus, false) => KeyEvent::new(KeyCode::Char('-'), m),
+                (Minus, true) => KeyEvent::new(KeyCode::Char('_'), m),
+                (Period, false) => KeyEvent::new(KeyCode::Char('.'), m),
+                (Period, true) => KeyEvent::new(KeyCode::Char('>'), m),
+                (RightBracket, false) => KeyEvent::new(KeyCode::Char(']'), m),
+                (RightBracket, true) => KeyEvent::new(KeyCode::Char('}'), m),
+                (Semicolon, false) => KeyEvent::new(KeyCode::Char(';'), m),
+                (Semicolon, true) => KeyEvent::new(KeyCode::Char(':'), m),
+                (Slash, false) => KeyEvent::new(KeyCode::Char('/'), m),
+                (Slash, true) => KeyEvent::new(KeyCode::Char('?'), m),
+                (Backspace, false) => KeyEvent::new(KeyCode::Backspace, m),
+                (Backspace, true) => KeyEvent::new(KeyCode::Backspace, m.union(KeyModifiers::SHIFT)),
+                (Delete, false) => KeyEvent::new(KeyCode::Delete, m),
+                (Delete, true) => KeyEvent::new(KeyCode::Delete, m.union(KeyModifiers::SHIFT)),
+                (End, false) => KeyEvent::new(KeyCode::End, m),
+                (End, true) => KeyEvent::new(KeyCode::End, m.union(KeyModifiers::SHIFT)),
+                (Enter, false) => KeyEvent::new(KeyCode::Enter, m),
+                (Enter, true) => KeyEvent::new(KeyCode::Enter, m.union(KeyModifiers::SHIFT)),
+                (Escape, false) => KeyEvent::new(KeyCode::Esc, m),
+                (Escape, true) => KeyEvent::new(KeyCode::Esc, m.union(KeyModifiers::SHIFT)),
+                (Home, false) => KeyEvent::new(KeyCode::Home, m),
+                (Home, true) => KeyEvent::new(KeyCode::Home, m.union(KeyModifiers::SHIFT)),
+                (Insert, false) => KeyEvent::new(KeyCode::Insert, m),
+                (Insert, true) => KeyEvent::new(KeyCode::Insert, m.union(KeyModifiers::SHIFT)),
+                (Menu, false) => KeyEvent::new(KeyCode::Menu, m),
+                (Menu, true) => KeyEvent::new(KeyCode::Menu, m.union(KeyModifiers::SHIFT)),
+                (PageDown, false) => KeyEvent::new(KeyCode::PageDown, m),
+                (PageDown, true) => KeyEvent::new(KeyCode::PageDown, m.union(KeyModifiers::SHIFT)),
+                (PageUp, false) => KeyEvent::new(KeyCode::PageUp, m),
+                (PageUp, true) => KeyEvent::new(KeyCode::PageUp, m.union(KeyModifiers::SHIFT)),
+                (Pause, false) => KeyEvent::new(KeyCode::Pause, m),
+                (Pause, true) => KeyEvent::new(KeyCode::Pause, m.union(KeyModifiers::SHIFT)),
+                (Space, false) => KeyEvent::new(KeyCode::Char(' '), m),
+                (Space, true) => KeyEvent::new(KeyCode::Char(' '), m.union(KeyModifiers::SHIFT)),
+                (Tab, false) => KeyEvent::new(KeyCode::Tab, m),
+                (Tab, true) => KeyEvent::new(KeyCode::Tab, m.union(KeyModifiers::SHIFT)),
+                (NumLock, false) => KeyEvent::new(KeyCode::NumLock, m),
+                (NumLock, true) => KeyEvent::new(KeyCode::NumLock, m.union(KeyModifiers::SHIFT)),
 
                 //todo: manage capitalization
-                (CapsLock, false) => Key::new(KeyCode::CapsLock, Some(m)),
-                (CapsLock, true) => Key::new(KeyCode::CapsLock, Some(m.union(KeyModifiers::SHIFT))),
+                (CapsLock, false) => KeyEvent::new(KeyCode::CapsLock, m),
+                (CapsLock, true) => KeyEvent::new(KeyCode::CapsLock, m.union(KeyModifiers::SHIFT)),
 
-                (ScrollLock, false) => Key::new(KeyCode::ScrollLock, Some(m)),
-                (ScrollLock, true) => Key::new(KeyCode::ScrollLock, Some(m.union(KeyModifiers::SHIFT))),
-                (LeftShift|RightShift, _) => Key::new(KeyCode::Null, Some(m.union(KeyModifiers::SHIFT))),
-                (LeftCtrl|RightCtrl, false) => Key::new(KeyCode::Null, Some(m)),
-                (LeftCtrl|RightCtrl, true) => Key::new(KeyCode::Null, Some(m.union(KeyModifiers::SHIFT))),
-                (LeftAlt|RightAlt, false) => Key::new(KeyCode::Null, Some(m)),
-                (LeftAlt|RightAlt, true) => Key::new(KeyCode::Null, Some(m.union(KeyModifiers::SHIFT))),
-                (LeftSuper|RightSuper, false) => Key::new(KeyCode::Null,
-                                                          Some(m.union(KeyModifiers::SUPER))),
-                (LeftSuper|RightSuper, true) => Key::new(KeyCode::Null,
-                                                         Some(m.union(KeyModifiers::SUPER)
-                                                          .union(KeyModifiers::SHIFT))),
-                (NumPadDot, false) => Key::new(KeyCode::Char('.'), Some(m)),
-                (NumPadDot, true) => Key::new(KeyCode::Char('.'), Some(m.union(KeyModifiers::SHIFT))),
-                (NumPadSlash, false) => Key::new(KeyCode::Char('/'), Some(m)),
-                (NumPadSlash, true) => Key::new(KeyCode::Char('/'), Some(m.union(KeyModifiers::SHIFT))),
-                (NumPadAsterisk, false) => Key::new(KeyCode::Char('*'), Some(m)),
-                (NumPadAsterisk, true) => Key::new(KeyCode::Char('*'),
-                                                   Some(m.union(KeyModifiers::SHIFT))),
-                (NumPadMinus, false) => Key::new(KeyCode::Char('-'), Some(m)),
-                (NumPadMinus, true) => Key::new(KeyCode::Char('-'), Some(m.union(KeyModifiers::SHIFT))),
-                (NumPadPlus, false) => Key::new(KeyCode::Char('+'), Some(m)),
-                (NumPadPlus, true) => Key::new(KeyCode::Char('+'), Some(m.union(KeyModifiers::SHIFT))),
-                (NumPadEnter, false) => Key::new(KeyCode::Enter, Some(m)),
-                (NumPadEnter, true) => Key::new(KeyCode::Enter, Some(m.union(KeyModifiers::SHIFT))),
-                (Unknown, false) => Key::new(KeyCode::Null, Some(m)),
-                (Unknown, true) => Key::new(KeyCode::Null, Some(m.union(KeyModifiers::SHIFT))),
+                (ScrollLock, false) => KeyEvent::new(KeyCode::ScrollLock, m),
+                (ScrollLock, true) => KeyEvent::new(KeyCode::ScrollLock, m.union(KeyModifiers::SHIFT)),
+
+                (LeftShift|RightShift, _) => { return None; },
+                (LeftCtrl|RightCtrl, false) => { return None; },
+                (LeftCtrl|RightCtrl, true) => { return None; },
+                (LeftAlt|RightAlt, false) => { return None; },
+                (LeftAlt|RightAlt, true) => { return None; },
+                (LeftSuper|RightSuper, false) => { return None; },
+                (LeftSuper|RightSuper, true) => { return None; },
+
+                (NumPadDot, false) => KeyEvent::new(KeyCode::Char('.'), m),
+                (NumPadDot, true) => KeyEvent::new(KeyCode::Char('.'), m.union(KeyModifiers::SHIFT)),
+                (NumPadSlash, false) => KeyEvent::new(KeyCode::Char('/'), m),
+                (NumPadSlash, true) => KeyEvent::new(KeyCode::Char('/'), m.union(KeyModifiers::SHIFT)),
+                (NumPadAsterisk, false) => KeyEvent::new(KeyCode::Char('*'), m),
+                (NumPadAsterisk, true) => KeyEvent::new(KeyCode::Char('*'),
+                                                   m.union(KeyModifiers::SHIFT)),
+                (NumPadMinus, false) => KeyEvent::new(KeyCode::Char('-'), m),
+                (NumPadMinus, true) => KeyEvent::new(KeyCode::Char('-'), m.union(KeyModifiers::SHIFT)),
+                (NumPadPlus, false) => KeyEvent::new(KeyCode::Char('+'), m),
+                (NumPadPlus, true) => KeyEvent::new(KeyCode::Char('+'), m.union(KeyModifiers::SHIFT)),
+                (NumPadEnter, false) => KeyEvent::new(KeyCode::Enter, m),
+                (NumPadEnter, true) => KeyEvent::new(KeyCode::Enter, m.union(KeyModifiers::SHIFT)),
+                (Unknown, false) => KeyEvent::new(KeyCode::Null, m),
+                (Unknown, true) => KeyEvent::new(KeyCode::Null, m.union(KeyModifiers::SHIFT)),
                 otherwise => panic!("{:?}", otherwise) //Everything else has been accounted for
                                                        //already
             });
@@ -388,10 +386,10 @@ impl UserInterface for TargetMinifb {
                                               self.0.as_ref().expect(NOWIN)
                                               .get_keys_pressed(KeyRepeat::Yes));
             if let Some(key) = mkey {
-                if key == *discard_key {
+                if ui::Key::from(key) == *discard_key {
                     return None;
                 }
-                match key.code() {
+                match key.code {
                     KeyCode::Enter => {
                         return Some(input);
                     },

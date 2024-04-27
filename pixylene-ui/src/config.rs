@@ -59,13 +59,13 @@ impl Default for Config {
         type KUE = KeyXUiFnEntry;
         type NKE = NamespaceXKeysEntry;
         type PCE = PaletteColorEntry;
-        type K = Key;
+        type K = event::KeyEvent;
 
         Config {
             required_keys: ReqUiFnMap {
-                start_command: K::new(Char(':'), None),
-                discard_command: K::new(Esc, Some(KM::empty())),
-                force_quit: K::new(Char('c'), Some(KM::CONTROL)),
+                start_command: K::new(Char(':'), KM::empty()).into(),
+                discard_command: K::new(Esc, KM::empty()).into(),
+                force_quit: K::new(Char('c'), KM::CONTROL).into(),
             },
             new_keys: false,
             every_frame: vec![UiFn::PreviewFocusLayer, UiFn::UpdateStatusline],
@@ -95,45 +95,45 @@ impl Default for Config {
                 NKE {
                     name: None,
                     keys: vec![
-                        KUE { k: K::new(Char('h'), Some(KM::empty())),
+                        KUE { k: K::new(Char('h'), KM::empty()).into(),
                               f: vec![UiFn::RunAction{ name: String::from("cursors_left") }] },
-                        KUE { k: K::new(Char('j'), Some(KM::empty())),
+                        KUE { k: K::new(Char('j'), KM::empty()).into(),
                               f: vec![UiFn::RunAction{ name: String::from("cursors_down") }] },
-                        KUE { k: K::new(Char('k'), Some(KM::empty())),
+                        KUE { k: K::new(Char('k'), KM::empty()).into(),
                               f: vec![UiFn::RunAction{ name: String::from("cursors_up") }] },
-                        KUE { k: K::new(Char('l'), Some(KM::empty())),
+                        KUE { k: K::new(Char('l'), KM::empty()).into(),
                               f: vec![UiFn::RunAction{ name: String::from("cursors_right") }] },
 
-                        KUE { k: K::new(Left, Some(KM::empty())),
+                        KUE { k: K::new(Left, KM::empty()).into(),
                               f: vec![UiFn::RunAction{ name: String::from("cursors_left") }] },
-                        KUE { k: K::new(Down, Some(KM::empty())),
+                        KUE { k: K::new(Down, KM::empty()).into(),
                               f: vec![UiFn::RunAction{ name: String::from("cursors_down") }] },
-                        KUE { k: K::new(Up, Some(KM::empty())),
+                        KUE { k: K::new(Up, KM::empty()).into(),
                               f: vec![UiFn::RunAction{ name: String::from("cursors_up") }] },
-                        KUE { k: K::new(Right, Some(KM::empty())),
+                        KUE { k: K::new(Right, KM::empty()).into(),
                               f: vec![UiFn::RunAction{ name: String::from("cursors_right") }] },
 
-                        KUE { k: K::new(Char('h'), Some(KM::CONTROL)),
+                        KUE { k: K::new(Char('h'), KM::CONTROL).into(),
                               f: vec![UiFn::RunAction{ name: String::from("cursors_dup_left") }] },
-                        KUE { k: K::new(Char('j'), Some(KM::CONTROL)),
+                        KUE { k: K::new(Char('j'), KM::CONTROL).into(),
                               f: vec![UiFn::RunAction{ name: String::from("cursors_dup_down") }] },
-                        KUE { k: K::new(Char('k'), Some(KM::CONTROL)),
+                        KUE { k: K::new(Char('k'), KM::CONTROL).into(),
                               f: vec![UiFn::RunAction{ name: String::from("cursors_dup_up") }] },
-                        KUE { k: K::new(Char('l'), Some(KM::CONTROL)),
+                        KUE { k: K::new(Char('l'), KM::CONTROL).into(),
                               f: vec![UiFn::RunAction{ name: String::from("cursors_dup_right") }] },
 
-                        KUE { k: K::new(Char('r'), Some(KM::empty())),
+                        KUE { k: K::new(Char('r'), KM::empty()).into(),
                               f: vec![UiFn::RunAction{ name: String::from("cursors_reset") }] },
 
-                        KUE { k: K::new(Enter, Some(KM::empty())),
+                        KUE { k: K::new(Enter, KM::empty()).into(),
                               f: vec![UiFn::RunAction{ name: String::from("pencil") }] },
 
-                        KUE { k: K::new(Char('u'), Some(KM::empty())),
+                        KUE { k: K::new(Char('u'), KM::empty()).into(),
                               f: vec![UiFn::Undo] },
-                        KUE { k: K::new(Char('r'), Some(KM::CONTROL)),
+                        KUE { k: K::new(Char('r'), KM::CONTROL).into(),
                               f: vec![UiFn::Redo] },
 
-                        KUE { k: K::new(Char('c'), Some(KM::CONTROL)),
+                        KUE { k: K::new(Char('c'), KM::CONTROL).into(),
                               f: vec![UiFn::ForceQuit] },
                     ]
                 },

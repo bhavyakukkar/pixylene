@@ -1,5 +1,5 @@
 use crate::{
-    ui::{ UserInterface, Rectangle, Statusline, KeyInfo, Key, KeyMap, ReqUiFnMap, UiFn },
+    ui::{ UserInterface, Rectangle, Statusline, KeyInfo, Key, KeySer, KeyMap, ReqUiFnMap, UiFn },
     config::{ Config },
     actions::{ ActionLocation, add_my_native_actions },
 };
@@ -269,13 +269,13 @@ impl Controller {
                     err,
             ))?,
             palette: Palette::from(&config.defaults.palette.iter()
-                                   .map(|entry| (entry.id, entry.c.as_str()))
-                                   .collect::<Vec<(u8, &str)>>()).map_err(|err| format!(
-                                           "{}{}{}",
-                                           "Config File Error: ".red().bold(),
-                                           "defaults.palette\n".italic(),
-                                           err,
-                                    ))?,
+                .map(|entry| (entry.id, entry.c.as_str()))
+                .collect::<Vec<(u8, &str)>>()).map_err(|err| format!(
+                    "{}{}{}",
+                    "Config File Error: ".red().bold(),
+                    "defaults.palette\n".italic(),
+                    err,
+                ))?,
         };
 
         let mut keymap: KeyMap = HashMap::new();
@@ -289,7 +289,7 @@ impl Controller {
                     }
                     let mut map = HashMap::new();
                     _ = group.keys.into_iter().map(|entry| {
-                        map.insert(Key::new(entry.k.code(), Some(entry.k.modifiers())), entry.f);
+                        map.insert(entry.k, entry.f);
                     }).collect::<Vec<()>>();
                     keymap.insert(group.name.clone(), map);
                 })
@@ -304,7 +304,7 @@ impl Controller {
                     }
                     let mut map = HashMap::new();
                     _ = group.keys.into_iter().map(|entry| {
-                        map.insert(Key::new(entry.k.code(), Some(entry.k.modifiers())), entry.f);
+                        map.insert(entry.k, entry.f);
                     }).collect::<Vec<()>>();
 
                     if let Some(existing_group) = keymap.get_mut(&group.name) {
@@ -583,7 +583,7 @@ impl Controller {
             if let Some(key_info) = key_info {
                 match key_info {
                     KeyInfo::Key(key) => {
-                        _ = self.perform_ui(&RunKey{ key });
+                        _ = self.perform_ui(&RunKey{ key: KeySer(Key::from(key)) });
                     },
                     KeyInfo::UiFn(ui_fn) => {
                         _ = self.perform_ui(&ui_fn);
@@ -911,10 +911,10 @@ impl Controller {
             },
             RunKey{ key } => {
                 //special required keys
-                if *key == self.rev_keymap.force_quit {
+                if key.0 == self.rev_keymap.force_quit {
                     _ = self.perform_ui(&ForceQuit);
                 }
-                else if *key == self.rev_keymap.start_command {
+                else if key.0 == self.rev_keymap.start_command {
                     _ = self.perform_ui(&RunCommandSpecify);
                 }
 
@@ -926,7 +926,7 @@ impl Controller {
                                                        //EnterNamespace which sets only from
                                                        //possible_namespaces corresponding to
                                                        //keymap
-                        .get(&key) {
+                        .get(&key.0) {
                         for func in (*funcs).clone() {
                             _ = self.perform_ui(&func);
                         }

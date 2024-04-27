@@ -17,40 +17,40 @@ keymap_show_command_names = false
 [[keys]]
 keys = [
     # every keybind binds a single key 'k' to a sequence of commands 'f'
-    { k = { m = "ALT", c = { Char = 'x' } }, f = [ "A" ] },
-    { k = { c = { Char = ';' } }, f = [ "la" ] },
+    { k = "alt-x", f = [ "A" ] },
+    { k = ";", f = [ "la" ] },
 
-    { k = { c = "Left" },  f = [{ a = { n = "cursors_left" } }] },
-    { k = { c = "Down" },  f = [{ a = { n = "cursors_down" } }] },
-    { k = { c = "Up" },    f = [{ a = { n = "cursors_up" } }] },
-    { k = { c = "Right" }, f = [{ a = { n = "cursors_right" } }] },
+    { k = "left",  f = [{ a = { n = "cursors_left" } }] },
+    { k = "down",  f = [{ a = { n = "cursors_down" } }] },
+    { k = "up",    f = [{ a = { n = "cursors_up" } }] },
+    { k = "right", f = [{ a = { n = "cursors_right" } }] },
 
-    { k = { c = { Char = 'h' } }, f = [{ a = { n = "cursors_left" } }] },
-    { k = { c = { Char = 'j' } }, f = [{ a = { n = "cursors_down" } }] },
-    { k = { c = { Char = 'k' } }, f = [{ a = { n = "cursors_up" } }] },
-    { k = { c = { Char = 'l' } }, f = [{ a = { n = "cursors_right" } }] },
+    { k = "h", f = [{ a = { n = "cursors_left" } }] },
+    { k = "j", f = [{ a = { n = "cursors_down" } }] },
+    { k = "k", f = [{ a = { n = "cursors_up" } }] },
+    { k = "l", f = [{ a = { n = "cursors_right" } }] },
 
-    { k = { c = { Char = 'i' } }, f = [{ a = { n = "zoomin" } }] },
-    { k = { c = { Char = 'o' } }, f = [{ a = { n = "zoomout" } }] },
+    { k = "i", f = [{ a = { n = "zoomin" } }] },
+    { k = "o", f = [{ a = { n = "zoomout" } }] },
     
-    { k = { c = { Char = '1' } }, f = [{ a = { n = "pencil1" } }] },
-    { k = { c = { Char = '2' } }, f = [{ a = { n = "pencil2" } }] },
-    { k = { c = { Char = '3' } }, f = [{ a = { n = "pencil3" } }] },
-    { k = { c = { Char = '4' } }, f = [{ a = { n = "pencil4" } }] },
-    { k = { c = { Char = '5' } }, f = [{ a = { n = "pencil5" } }] },
-    { k = { c = { Char = '6' } }, f = [{ a = { n = "pencil6" } }] },
-    { k = { c = { Char = '7' } }, f = [{ a = { n = "pencil7" } }] },
-    { k = { c = { Char = '8' } }, f = [{ a = { n = "pencil8" } }] },
+    { k = "1", f = [{ a = { n = "pencil1" } }] },
+    { k = "2", f = [{ a = { n = "pencil2" } }] },
+    { k = "3", f = [{ a = { n = "pencil3" } }] },
+    { k = "4", f = [{ a = { n = "pencil4" } }] },
+    { k = "5", f = [{ a = { n = "pencil5" } }] },
+    { k = "6", f = [{ a = { n = "pencil6" } }] },
+    { k = "7", f = [{ a = { n = "pencil7" } }] },
+    { k = "8", f = [{ a = { n = "pencil8" } }] },
 
-    { k = { c = { Char = 'e' } }, f = [{ a = { n = "equip" } }] },
-    { k = { c = { Char = '?' } }, f = [ "pk" ] },
+    { k = "e", f = [{ a = { n = "equip" } }] },
+    { k = "?", f = [ "pk" ] },
 
     # go to Layer namespace
-    { k = { m = "SHIFT", c = { Char = 'l' } }, f = [{ ns = { n = "Layer" } }] },
+    { k = "shift-l", f = [{ ns = { n = "Layer" } }] },
     # go to Cursors namespace
-    { k = { m = "SHIFT", c = { Char = 'c' } }, f = [{ ns = { n = "Cursors" } }] },
+    { k = "shift-c", f = [{ ns = { n = "Cursors" } }] },
     # go to Shapes namespace
-    { k = { m = "SHIFT", c = { Char = 's' } }, f = [{ ns = { n = "Shapes" } }] },
+    { k = "shift-s", f = [{ ns = { n = "Shapes" } }] },
 ]
 
 # LAYER namespace
@@ -58,54 +58,54 @@ keys = [
 name = "Layer"
 keys = [
     # all 3 of these keys perform an action then return to the default namespace
-    { k = { c = { Char = 'n' }, m = "" }, f = [{ a = { n = "layer_new" } }, "dns"] },
-    { k = { c = { Char = 'o' }, m = "" }, f = [{ a = { n = "layer_opacity" } }, "dns"] },
-    { k = { c = { Char = 'm' }, m = "" }, f = [{ a = { n = "layer_mute" } }, "dns"] },
+    { k = "n", f = [{ a = { n = "layer_new" } }, "dns"] },
+    { k = "o", f = [{ a = { n = "layer_opacity" } }, "dns"] },
+    { k = "m", f = [{ a = { n = "layer_mute" } }, "dns"] },
 
-    { k = { c = "Esc" }, f = [ "dns" ] }, # go back to default namespace
+    { k = "esc", f = [ "dns" ] }, # go back to default namespace
 ]
 
 # CURSORS namespace
 [[keys]]
 name = "Cursors"
 keys = [
-    { k = { c = "Left" },  f = [{ a = { n = "cursors_dup_left" } }] },
-    { k = { c = "Down" },  f = [{ a = { n = "cursors_dup_down" } }] },
-    { k = { c = "Up" },    f = [{ a = { n = "cursors_dup_up" } }] },
-    { k = { c = "Right" }, f = [{ a = { n = "cursors_dup_right" } }] },
+    { k = "left",  f = [{ a = { n = "cursors_dup_left" } }] },
+    { k = "down",  f = [{ a = { n = "cursors_dup_down" } }] },
+    { k = "up",    f = [{ a = { n = "cursors_dup_up" } }] },
+    { k = "right", f = [{ a = { n = "cursors_dup_right" } }] },
 
-    { k = { c = { Char = 'h' } }, f = [{ a = { n = "cursors_dup_left" } }] },
-    { k = { c = { Char = 'j' } }, f = [{ a = { n = "cursors_dup_down" } }] },
-    { k = { c = { Char = 'k' } }, f = [{ a = { n = "cursors_dup_up" } }] },
-    { k = { c = { Char = 'l' } }, f = [{ a = { n = "cursors_dup_right" } }] },
+    { k = "h", f = [{ a = { n = "cursors_dup_left" } }] },
+    { k = "j", f = [{ a = { n = "cursors_dup_down" } }] },
+    { k = "k", f = [{ a = { n = "cursors_dup_up" } }] },
+    { k = "l", f = [{ a = { n = "cursors_dup_right" } }] },
 
-    { k = { c = { Char = 'r' } }, f = [{ a = { n = "cursors_reset" } }, "dns"] },
+    { k = "r", f = [{ a = { n = "cursors_reset" } }, "dns"] },
 
-    { k = { c = "Esc" }, f = [ "dns" ] }, # go back to default namespace
+    { k = "esc", f = [ "dns" ] }, # go back to default namespace
 ]
 
 # SHAPES namespace
 [[keys]]
 name = "Shapes"
 keys = [
-    { k = { c = { Char = 'c' } }, f = [{ a = { n = "circularoutline" } }, "dns"] },
-    { k = { c = { Char = 'f' } }, f = [{ a = { n = "fill" } }, "dns"] },
+    { k = "c", f = [{ a = { n = "circularoutline" } }, "dns"] },
+    { k = "f", f = [{ a = { n = "fill" } }, "dns"] },
 
-    { k = { c = "Esc" }, f = [ "dns" ] }, # go back to default namespace
+    { k = "esc", f = [ "dns" ] }, # go back to default namespace
 ]
 
 
 # keys associated to function that are required to be known by pixylene
 [required_keys]
-force_quit = { c = { F = 4 }, m = "ALT" }
+force_quit = "alt-f4"
 
 # vim-like
-discard_command = { c = "Esc", m = "" }
-start_command = { c = { Char = ':' }, m = "" }
+discard_command = "esc"
+start_command = ":"
 
 # emacs-like
-#discard_command = { c = { Char = 'g' }, m = "CONTROL" } 
-#start_command = { c = { Char = 'x' }, m = "ALT" }
+#discard_command = "ctrl-g" 
+#start_command = "alt-x"
 
 # default attributes used by any new pixylene projects
 [defaults]
@@ -129,4 +129,3 @@ palette = [
     { id = 7 , c = "#b16286" },
     { id = 8 , c = "#689d6a" },
 ]
-
