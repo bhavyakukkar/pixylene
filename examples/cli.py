@@ -9,7 +9,7 @@ from truecolor2palette256 import rgb2short, rgb2short_legacy
 import traceback
 
 def action(name):
-    return f'a = {{ n = "{name}" }}'
+    return f'a "{name}"'
 def canvas():
     return f'pc'
 def quit():
