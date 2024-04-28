@@ -193,3 +193,19 @@ actions['fill'] = {
         )
     end
 }
+
+actions['grayscale'] = {
+    grayScale = function(col)
+        avg = (col.red + col.green + col.blue)/3
+        return P(avg, avg, avg, 255)
+    end,
+
+    perform = function(self, project, console)
+        scene = project.canvas:layer(project.focus.layer).scene
+        for i=0, (scene.dim.x - 1) do
+            for j=0, (scene.dim.y - 1) do
+                scene:set(UC(i,j), self.grayScale(scene:get(UC(i,j))))
+            end
+        end
+    end
+}
