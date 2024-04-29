@@ -3,8 +3,8 @@ new_keys = false
 
 # sequence of commands that should run after every frame
 every_frame = [
-    "sl", #show layer
-    "ss", #show statusline
+    "dl", #draw layer
+    "ds", #draw statusline
 ]
 
 # whether the map of keys should show full command names instead of command identifiers used when

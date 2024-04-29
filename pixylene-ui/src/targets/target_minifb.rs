@@ -319,19 +319,20 @@ impl UserInterface for TargetMinifb {
             0xFFFFFFFF
         );
         for colored_string in statusline.iter() {
+            let string = colored_string.replace("｜", "");
             text.color = Color(colored_string.fgcolor()).into();
             text.draw_text(
                 framebuffer,
                 usize::from(PIXELFACTOR*boundary.start.y) + chars_drawn,
                 (PIXELFACTOR*boundary.start.x).into(),
-                &colored_string,
+                &string,
             );
-            chars_drawn += usize::from(FONT_WIDTH)*colored_string.len();
+            chars_drawn += usize::from(FONT_WIDTH)*string.len();
         }
     }
 
     fn draw_paragraph(&mut self, paragraph: Vec<colored::ColoredString>, _boundary: &Rectangle) {
-        todo!()
+        //todo!()
     }
 
     fn clear(&mut self, boundary: &Rectangle) { 

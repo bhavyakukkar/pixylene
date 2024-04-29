@@ -245,17 +245,17 @@ pub enum UiFn {
     #[command(alias = "la")]
     RunLastAction,
 
-    #[serde(alias = "sl")]
-    #[command(alias = "sl")]
+    #[serde(alias = "dl")]
+    #[command(alias = "dl")]
     PreviewFocusLayer,
 
-    #[serde(alias = "sp")]
-    #[command(alias = "sp")]
+    #[serde(alias = "dp")]
+    #[command(alias = "dp")]
     PreviewProject,
 
-    #[serde(alias = "ss")]
-    #[command(alias = "ss")]
-    UpdateStatusline,
+    #[serde(alias = "ds")]
+    #[command(alias = "ds")]
+    DrawStatusline,
 
     #[serde(alias = "pc")]
     #[command(alias = "pc")]

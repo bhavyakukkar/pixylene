@@ -1225,7 +1225,7 @@ impl Controller {
                 self.target.borrow_mut().clear_all();
             },
 
-            UpdateStatusline => {
+            DrawStatusline => {
                 use colored::Colorize;
                 let s = self.sel_session()?;
 

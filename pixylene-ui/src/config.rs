@@ -68,7 +68,7 @@ impl Default for Config {
                 force_quit: K::new(Char('c'), KM::CONTROL).into(),
             },
             new_keys: false,
-            every_frame: vec![UiFn::PreviewFocusLayer, UiFn::UpdateStatusline],
+            every_frame: vec![UiFn::PreviewFocusLayer, UiFn::DrawStatusline],
             defaults: PixyleneDefaultsConfig {
                 dimensions: UCoordEntry { x: 32, y: 32 },
                 repeat: UCoordEntry { x: 1, y: 2 },
