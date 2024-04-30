@@ -122,7 +122,7 @@ pub type KeyMap = HashMap<Option<String>, HashMap<Key, Vec<UiFn>>>;
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Deserialize, Serialize, Subcommand)]
 pub enum UiFn {
     #[serde(alias = "new")]
-    //not needed: #[command(alias = "new")]
+    //not needed: #[command(visible_alias = "new")]
     New{
         #[serde(alias = "w")]
         width: Option<u16>,
@@ -131,139 +131,143 @@ pub enum UiFn {
     },
 
     #[serde(alias = "e")]
-    #[command(alias = "e")]
+    #[command(visible_alias = "e")]
     OpenCanvas{
         path: PathBuf
     },
 
     #[serde(alias = "E")]
-    #[command(alias = "E")]
+    #[command(visible_alias = "E")]
     OpenCanvasSpecify,
 
     #[serde(alias = "ep")]
-    #[command(alias = "ep")]
+    #[command(visible_alias = "ep")]
     OpenProject{
         path: PathBuf
     },
 
     #[serde(alias = "Ep")]
-    #[command(alias = "Ep")]
+    #[command(visible_alias = "Ep")]
     OpenProjectSpecify,
 
     #[serde(alias = "import")]
-    //not needed: #[command(alias = "import")]
+    //not needed: #[command(visible_alias = "import")]
     Import{
         path: String
     },
 
     #[serde(alias = "Import")]
-    #[command(alias = "Import")]
+    #[command(visible_alias = "Import")]
     ImportSpecify,
 
     #[serde(alias = "q")]
-    #[command(alias = "q")]
+    #[command(visible_alias = "q")]
     Quit,
 
     #[serde(alias = "q!")]
-    #[command(alias = "q!")]
+    #[command(visible_alias = "q!")]
     ForceQuit,
 
     #[serde(alias = "ses")]
-    #[command(alias = "ses")]
+    #[command(visible_alias = "ses")]
     GoToSession{
         index: u8
     },
 
     #[serde(alias = "nses")]
-    #[command(alias = "nses")]
+    #[command(visible_alias = "nses")]
     GoToNextSession,
 
     #[serde(alias = "pses")]
-    #[command(alias = "pses")]
+    #[command(visible_alias = "pses")]
     GoToPrevSession,
 
     #[serde(alias = "w")]
-    #[command(alias = "w")]
+    #[command(visible_alias = "w")]
     SaveCanvas,
 
     #[serde(alias = "wp")]
-    #[command(alias = "wp")]
+    #[command(visible_alias = "wp")]
     SaveProject,
 
     #[serde(alias = "export")]
-    //not needed: #[command(alias = "export")]
+    //not needed: #[command(visible_alias = "export")]
     Export,
 
     #[serde(alias = "undo")]
-    //not needed: #[command(alias = "undo")]
+    //not needed: #[command(visible_alias = "undo")]
     Undo,
 
     #[serde(alias = "redo")]
-    //not needed: #[command(alias = "redo")]
+    //not needed: #[command(visible_alias = "redo")]
     Redo,
 
     #[serde(alias = "ns")]
-    #[command(alias = "ns")]
+    #[command(visible_alias = "ns")]
     EnterNamespace{
         #[serde(alias = "n")]
         name: Option<String>
     },
 
     #[serde(alias = "dns")]
-    #[command(alias = "dns")]
+    #[command(visible_alias = "dns")]
     EnterDefaultNamespace,
 
     #[serde(alias = "key")]
-    #[command(alias = "key")]
+    #[command(visible_alias = "key")]
     RunKey{
         #[serde(with = "string")]
         key: KeySer,
     },
 
     #[serde(alias = "cmd")]
-    #[command(alias = "cmd")]
+    #[command(visible_alias = "cmd")]
     RunCommand{
         cmd: String
     },
 
     #[serde(alias = "Cmd")]
-    #[command(alias = "Cmd")]
+    #[command(visible_alias = "Cmd")]
     RunCommandSpecify,
 
     #[serde(alias = "a")]
-    #[command(alias = "a")]
+    #[command(visible_alias = "a")]
     RunAction{
         #[serde(alias = "n")]
         name: String,
     },
 
     #[serde(alias = "A")]
-    #[command(alias = "A")]
+    #[command(visible_alias = "A")]
     RunActionSpecify,
 
     #[serde(alias = "la")]
-    #[command(alias = "la")]
+    #[command(visible_alias = "la")]
     RunLastAction,
 
     #[serde(alias = "dl")]
-    #[command(alias = "dl")]
+    #[command(visible_alias = "dl")]
     PreviewFocusLayer,
 
     #[serde(alias = "dp")]
-    #[command(alias = "dp")]
+    #[command(visible_alias = "dp")]
     PreviewProject,
 
     #[serde(alias = "ds")]
-    #[command(alias = "ds")]
+    #[command(visible_alias = "ds")]
     DrawStatusline,
 
     #[serde(alias = "pc")]
-    #[command(alias = "pc")]
+    #[command(visible_alias = "pc")]
     PrintCanvasJson,
 
-    #[serde(alias = "pk")]
-    #[command(alias = "pk")]
-    PrintKeybindMap,
+    #[serde(alias = "lk")]
+    #[command(visible_alias = "lk")]
+    ListKeybindMap,
+
+    #[serde(alias = "lc")]
+    #[command(visible_alias = "lc")]
+    ListCommands,
 }
 
 /// The mapping of [`Keys`](Key) to functions mandatorily required by the app. 

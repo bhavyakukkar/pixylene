@@ -43,7 +43,7 @@ keys = [
     { k = "8", f = [{ a = { n = "pencil8" } }] },
 
     { k = "e", f = [{ a = { n = "equip" } }] },
-    { k = "?", f = [ "pk" ] },
+    { k = "?", f = [ "lc" ] },
 
     # go to Layer namespace
     { k = "shift-l", f = [{ ns = { n = "Layer" } }] },

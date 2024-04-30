@@ -41,7 +41,8 @@ const SPLASH_LOGO: &str = r#"
 
 
  type  :new 16 16     - to create a new 16x16 canvas
- type  :pk            - to print the current keybindings
+ type  :lc            - to list all commands
+ type  :lk            - to list the current keybindings
  type  :q             - to quit
 "#;
 // type  :help          - if you are new!
@@ -59,9 +60,7 @@ fn parse_cmd(string: &str) -> Result<UiFn, String> {
     Container::try_parse_from(
         shlex::split(&(": ".to_owned() + string)).ok_or("malformed input".to_owned())?)
         .map(|container: Container| container.u)
-        .map_err(|err| err.to_string().lines()
-            .filter(|s| s.len() > 0 && !s.contains("Usage") && !s.contains("--help"))
-            .map(|s| s.trim().to_owned()).reduce(|a, b| a + ", " + &b).unwrap_or("".to_owned()))
+        .map_err(|err| err.to_string())
 }
 
 fn _parse_toml(string: &str) -> Result<UiFn, toml::de::Error> {
@@ -965,12 +964,18 @@ impl Controller {
                 }
             },
             RunCommand{ cmd } => {
+                //todo: ignore --help, -help, -h, & help
+                //todo: exlude separator ',' when error of arguments not provided
                 parse_cmd(cmd)
                     .map(|uifn| {
                         _ = self.perform_ui(&uifn);
                     })
                     .unwrap_or_else(|err| {
-                        self.console_out(&format!("{}", err), &LogType::Error);
+                        self.console_out(&format!("{}", err.lines()
+                            .filter(|s| s.len() > 0 && !s.contains("Usage") && !s.contains("--help"))
+                            .map(|s| s.trim().to_owned()).reduce(|a, b| a + ", " + &b)
+                            .unwrap_or("".to_owned())
+                        ), &LogType::Error);
                     });
             },
 
@@ -1155,7 +1160,7 @@ impl Controller {
                 self.console_in("press ENTER to stop previewing canvas JSON");
             },
 
-            PrintKeybindMap => {
+            ListKeybindMap => {
                 use colored::{ Colorize, ColoredString };
                 let mut paragraph: Vec<ColoredString> = Vec::new();
                 let half_width = self.target.borrow().get_size().y() as usize/2;
@@ -1222,7 +1227,23 @@ impl Controller {
                 self.target.borrow_mut().draw_paragraph(paragraph,
                     &self.b_camera.unwrap()
                 );
-                self.console_in("press ENTER to stop previewing keybindings");
+                self.console_in("press ENTER to exit listing keybindings");
+                self.target.borrow_mut().clear_all();
+            },
+
+            ListCommands => {
+                use colored::{ Colorize, ColoredString };
+                self.target.borrow_mut().clear_all();
+                self.target.borrow_mut().draw_paragraph(
+                    vec![
+                        vec!["Commands".underline().bright_yellow()],
+                        parse_cmd("--help").unwrap_err().lines().skip(3)
+                            .take_while(|line| !line.contains("  help"))
+                            .map(|l| l.into()).collect::<Vec<ColoredString>>()
+                    ].into_iter().flatten().collect(),
+                    &self.b_camera.unwrap()
+                );
+                self.console_in("press ENTER to exit listing commands");
                 self.target.borrow_mut().clear_all();
             },
 
