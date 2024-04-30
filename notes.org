@@ -31,6 +31,7 @@
 
 ** New Features
 *** TODO downscaling of artwork while importing (1280x1280 "/10" = 128x128)
+*** TODO Provide From<(r,g,b)>, From<(r,g,b,a)> and From<&str> impl for Pixel
 *** TODO Namespace that lets you 'write' colors line-by-line, left-to-right. also the earlier idea of ooze mode (still present down below)
 *** TODO alternative to vim's :qall
 *** TODO config setting to by default display layers with black background or all layers before it or all layers
