@@ -2,16 +2,17 @@
 #+author: Bhavya Kukkar
 * TASKS
 ** Next
-*** TODO Makefile
 *** DONE you are now ready to serialize commands with clap instead of toml
 *** DONE dimensions should show on statusline
 *** TODO PrintCommandList to print possible commands. can be done simply with parse_cmd("--help")
+*** TODO command history
+*** TODO downscaling of artwork while importing (1280x1280 "/10" = 128x128)
+*** TODO Makefile
 *** TODO defined palette contains 10 colors, foreground+background+eight defined colors. switchForeground is a wrapper that performs Palette.changeTo(1, <input>). switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
 *** TODO IndexedScene for use with indexed images
 *** TODO (pixylenetui) refresh on terminal resize for both targets [[https://docs.rs/crossterm/latest/crossterm/event/enum.Event.html#variant.Resize][Resize]]. b_console/b_camera/b_statusline should then be loaded from a fn rather than attributes on Controller
 *** TODO refactor all error handling so draws as paragraph if too big (use lua action invocation as reference). OR, handle all error messages larger than console size by converting them to cmdin's that print messages in chunks of console size, or by printing them in large window using draw_paragraph
 *** TODO Png to/fro Scene: fill more color-type/bit-depth combos
-*** TODO command history
 *** TODO dont let config list key that RunKey's itself. crashes the app
 *** TODO new actions 'GoTo' (to get something like vim's 'gg' and 0) and 'ClearAllCursors'
 *** TODO use image source bit-depth/color-type or from config.toml
@@ -30,7 +31,6 @@
 *** TODO remove console_in and let all input be handled by controller showing typing of input through simply console_out
 
 ** New Features
-*** TODO downscaling of artwork while importing (1280x1280 "/10" = 128x128)
 *** TODO Provide From<(r,g,b)>, From<(r,g,b,a)> and From<&str> impl for Pixel
 *** TODO Namespace that lets you 'write' colors line-by-line, left-to-right. also the earlier idea of ooze mode (still present down below)
 *** TODO alternative to vim's :qall

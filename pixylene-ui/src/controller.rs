@@ -1171,9 +1171,10 @@ impl Controller {
                         ref discard_command } = self.rev_keymap;
                     paragraph.push("".into());
                     paragraph.push("Required Keys".underline().bright_yellow());
-                    paragraph.push(format!("  Force Quit      : {}", force_quit).into());
-                    paragraph.push(format!("  Start Command   : {}", start_command).into());
-                    paragraph.push(format!("  Discard Command : {}", discard_command).into());
+                    paragraph.push(format!(
+                        "  Force Quit <- '{}',   Start Command <- '{}',   Discard Command <- '{}'",
+                        force_quit, start_command, discard_command
+                    ).into());
                 }
 
                 //all namespaces & their keys
@@ -1194,8 +1195,8 @@ impl Controller {
                             line.push_str(
                                 &format!("{:<half_width$}",
                                     format!(
-                                        "  {:<10} : {}",
-                                        key.to_string(),
+                                        "  {:<10} -> {}",
+                                        format!("'{}'", key.to_string()),
                                         if self.keymap_show_command_names { format!("{:?}", ui_fns) }
                                         else { deparse(ui_fns) }
                                     )));
@@ -1204,8 +1205,8 @@ impl Controller {
                         }
                         if let Some((key, ui_fns)) = keys.next() {
                             line.push_str(&format!(
-                                "{:<10} : {}",
-                                key.to_string(),
+                                "{:<10} -> {}",
+                                format!("'{}'", key.to_string()),
                                 if self.keymap_show_command_names { format!("{:?}", ui_fns) }
                                 else { deparse(ui_fns) }
                             ));
