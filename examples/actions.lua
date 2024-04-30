@@ -209,3 +209,78 @@ actions['grayscale'] = {
         end
     end
 }
+
+actions['crop'] = {
+    start = nil,
+    perform = function(self, project, console)
+        local ncurs = project.num_cursors
+        if (self.start == nil) then
+            if (ncurs == 1) then
+                self.start = project.cursors[1]
+                console:cmdout("First corner selected, go to 2nd corner and run crop again")
+            elseif (ncurs > 1) then
+                local dim = project.canvas.dim
+                local found
+                local topleft
+                local bottomright
+
+                for i=0, (dim.x - 1) do
+                    found = false
+                    for j=0, (dim.y - 1) do
+                        if (project:is_cursor_at(UC(i, j), project.focus.layer)) then
+                            topleft = UC(i, j)
+                            found = true
+                            break
+                        end
+                    end
+                    if (found) then
+                        break
+                    end
+                end
+
+                for i=(dim.x - 1), 0, -1 do
+                    found = false
+                    for j=(dim.y - 1), 0, -1 do
+                        if (project:is_cursor_at(UC(i, j), project.focus.layer)) then
+                            bottomright = UC(i, j)
+                            found = true
+                            break
+                        end
+                    end
+                    if (found) then
+                        break
+                    end
+                end
+
+                local newdim = PC(
+                    (bottomright.x - topleft.x) + 1,
+                    (bottomright.y - topleft.y) + 1
+                )
+
+                local layers = {}
+                for k=0, (project.canvas.num_layers - 1) do
+                    layers[k+1] = project.canvas:layer(k)
+                end
+                for k=1, project.canvas.num_layers do
+                    local newgrid = {}
+                    for i=topleft.x, bottomright.x do
+                        for j=topleft.y, bottomright.y do
+                            table.insert(newgrid, layers[k].scene:get(UC(i,j)))
+                        end
+                    end
+                    layers[k].scene = Scene(newdim, newgrid)
+                end
+                project.canvas = Canvas(newdim, layers, project.canvas.palette)
+            else
+                console:cmdout("Need at least 1 cursor for context")
+            end
+        else
+            if (ncurs == 1) then
+                
+                self.start = nil
+            else
+                console:cmdout("Need exactly 1 cursor to select 2nd corner")
+            end
+        end
+    end
+}

@@ -77,6 +77,26 @@ impl TealData for Project {
         }
         */
 
+        //Lua inteface to is_cursor_at()
+        {
+            mlua_create_named_parameters!(
+                ProjectIsCursorAtArgs with
+                    coord: UCoord,
+                    layer: u16,
+            );
+            methods.document("Returns whether there is a cursor at the provided coordinate on the \
+                             layer at given layer index");
+            methods.add_method_mut("is_cursor_at", |_, this, a: ProjectIsCursorAtArgs| {
+                use mlua::Error::{ ExternalError };
+                let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
+
+                this.0.borrow().project.is_cursor_at(&(a.coord.0, a.layer))
+                    .map_err(|err| ExternalError(Arc::from(
+                        boxed_error(&err.to_string())
+                    )))
+            });
+        }
+
         //Lua inteface to set_out_mul()
         {
             mlua_create_named_parameters!(
