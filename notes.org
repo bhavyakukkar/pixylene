@@ -4,7 +4,7 @@
 ** Next
 *** DONE you are now ready to serialize commands with clap instead of toml
 *** DONE dimensions should show on statusline
-*** TODO PrintCommandList to print possible commands. can be done simply with parse_cmd("--help")
+*** DONE PrintCommandList to print possible commands. can be done simply with parse_cmd("--help")
 *** TODO command history
 *** TODO downscaling of artwork while importing (1280x1280 "/10" = 128x128)
 *** TODO Makefile

@@ -153,7 +153,7 @@ pub enum UiFn {
     #[serde(alias = "import")]
     //not needed: #[command(visible_alias = "import")]
     Import{
-        path: String
+        path: PathBuf
     },
 
     #[serde(alias = "Import")]

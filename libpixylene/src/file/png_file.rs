@@ -4,10 +4,7 @@ use crate::{
     utils::messages::U32TOUSIZE,
 };
 
-use std::fmt;
-use std::fs::File;
-use std::path::Path;
-use std::io::BufWriter;
+use std::{ fmt, fs::File, path::PathBuf, io::BufWriter };
 use png::{ Decoder, ColorType, BitDepth };
 use ColorType::*;
 use BitDepth::*;
@@ -26,9 +23,9 @@ pub struct PngFile {
 }
 
 impl PngFile {
-    pub fn read(path: String) -> Result<Self, PngFileError> {
+    pub fn read(path: &PathBuf) -> Result<Self, PngFileError> {
         use PngFileError::{ DecodingError, SizeError, FileNotFoundError };
-        match File::open(&path) {
+        match File::open(path) {
             Ok(file) => {
                 let decoder = Decoder::new(file);
                 match decoder.read_info() {
@@ -52,23 +49,22 @@ impl PngFile {
                                 });
                             },
                             Err(decoding_error) => {
-                                return Err(DecodingError(path, decoding_error));
+                                return Err(DecodingError(path.clone(), decoding_error));
                             },
                         }
                     },
                     Err(decoding_error) => {
-                        return Err(DecodingError(path, decoding_error));
+                        return Err(DecodingError(path.clone(), decoding_error));
                     },
                 }
             },
             Err(io_error) => {
-                return Err(FileNotFoundError(path, io_error));
+                return Err(FileNotFoundError(path.clone(), io_error));
             },
         }
     }
-    pub fn write(&self, file_path: String) -> Result<(), PngFileError> {
+    pub fn write(&self, path: &PathBuf) -> Result<(), PngFileError> {
         use PngFileError::{ EncodingError, DirectoryNotFoundError };
-        let path = Path::new(&file_path);
         match File::create(path) {
             Ok(file) => {
                 let ref mut w = BufWriter::new(file);
@@ -81,15 +77,15 @@ impl PngFile {
                         match writer.write_image_data(&self.bytes) {
                             Ok(_) => Ok(()),
                             Err(encoding_error) => {
-                                return Err(EncodingError(file_path, encoding_error));
+                                return Err(EncodingError(path.clone(), encoding_error));
                             },
                         }
                     },
-                    Err(encoding_error) => Err(EncodingError(file_path, encoding_error)),
+                    Err(encoding_error) => Err(EncodingError(path.clone(), encoding_error)),
                 };
                 x
             },
-            Err(io_error) => Err(DirectoryNotFoundError(file_path, io_error)),
+            Err(io_error) => Err(DirectoryNotFoundError(path.clone(), io_error)),
         }
     }
     pub fn to_scene(self) -> Result<Scene, PngFileError> {
@@ -252,10 +248,10 @@ impl PngFile {
 #[derive(Debug)]
 pub enum PngFileError {
     Unsupported(ColorType, BitDepth),
-    DecodingError(String, png::DecodingError),
-    EncodingError(String, png::EncodingError),
-    FileNotFoundError(String, std::io::Error),
-    DirectoryNotFoundError(String, std::io::Error),
+    DecodingError(PathBuf, png::DecodingError),
+    EncodingError(PathBuf, png::EncodingError),
+    FileNotFoundError(PathBuf, std::io::Error),
+    DirectoryNotFoundError(PathBuf, std::io::Error),
     SizeError(u32, u32),
 }
 impl fmt::Display for PngFileError {
@@ -271,25 +267,25 @@ impl fmt::Display for PngFileError {
             DecodingError(path, decoding_error) => write!(
                 f,
                 "failed to decode png from file '{}': {}",
-                path,
+                path.display(),
                 decoding_error,
             ),
             EncodingError(path, encoding_error) => write!(
                 f,
                 "failed to encode png to file '{}': {}",
-                path,
+                path.display(),
                 encoding_error,
             ),
             FileNotFoundError(path, io_error) => write!(
                 f,
                 "file '{}' was not found: {}",
-                path,
+                path.display(),
                 io_error,
             ),
             DirectoryNotFoundError(path, io_error) => write!(
                 f,
                 "file '{}' could not be created (hint: the enclosing directory may not exist): {}",
-                path,
+                path.display(),
                 io_error,
             ),
             SizeError(height, width) => write!(

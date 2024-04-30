@@ -50,8 +50,8 @@ impl Pixylene {
     }
 
     //To/Fro PNG File
-    pub fn import(path: &str, defaults: &PixyleneDefaults) -> Result<Pixylene, PixyleneError> {
-        let png_file = PngFile::read(String::from(path))?;
+    pub fn import(path: &PathBuf, defaults: &PixyleneDefaults) -> Result<Pixylene, PixyleneError> {
+        let png_file = PngFile::read(path)?;
         let scene = png_file.to_scene()?;
         let dim = scene.dim();
         let mut project = Project::new(Canvas::new(dim, defaults.palette.clone()), defaults.repeat);
@@ -67,7 +67,7 @@ impl Pixylene {
 
         Ok(Pixylene { project })
     }
-    pub fn export(&self, path: &str, scale_up: u16) -> Result<(), PixyleneError> {
+    pub fn export(&self, path: &PathBuf, scale_up: u16) -> Result<(), PixyleneError> {
         PngFile::from_scene(
             &self.project.canvas.merged_scene(None),
             //todo: use from Pixylene struct instead of defaults
@@ -75,7 +75,7 @@ impl Pixylene {
             png::BitDepth::Eight,
             scale_up,
         )?
-        .write(path.to_string())?;
+        .write(path)?;
         Ok(())
     }
     /*

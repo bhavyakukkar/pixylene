@@ -115,14 +115,14 @@ pub enum StartType {
         height: Option<u16>,
         /*/*todo*/colorscheme: Option<Colorscheme>,*/
     },
-    Canvas{
+    Canvas {
         path: PathBuf
     },
-    Project{
+    Project {
         path: PathBuf
     },
-    Import{
-        path: String
+    Import {
+        path: PathBuf
         /*/*todo*/colorscheme: Option<Colorscheme>,*/
     },
 }
@@ -522,7 +522,7 @@ impl Controller {
                         initialize_project(&mut pixylene);
                         native_action_manager = ActionManager::new(&pixylene.project.canvas);
                         self.sessions.push(PixyleneSession {
-                            name: path.clone(),
+                            name: path.display().to_string(),
                             pixylene: Rc::new(RefCell::new(pixylene)),
                             last_action_name: None,
                             canvas_file_path: None,
@@ -627,6 +627,7 @@ impl Controller {
             New{ width, height } => {
                 self.new_session(&StartType::New{ width: *width, height: *height }, false);
             },
+
             OpenCanvas{ path } => {
                 self.new_session(&StartType::Canvas{ path: path.clone() }, false);
             },
@@ -634,8 +635,8 @@ impl Controller {
                 let input = self.console_in("open canvas file: ");
                 match input {
                     Some(input) => {
-                        self.new_session(&StartType::Canvas{path: PathBuf::from(input)}, false);
-                    },
+                        _ = self.perform_ui(&OpenCanvas{ path: PathBuf::from(input) });
+                    }
                     None => (),
                 }
             },
@@ -645,23 +646,23 @@ impl Controller {
             OpenProjectSpecify => {
                 let input = self.console_in("open project file: ");
                 match input {
-                    Some(input) => {
-                        self.new_session(&StartType::Project{path: PathBuf::from(input)}, false);
-                    },
-                    None => (),
-                }
-            },
-            ImportSpecify => {
-                let input = self.console_in("import: ");
-                match input {
-                    Some(input) => {
-                        self.new_session(&StartType::Import{path: input}, false);
+                    Some(input) => { 
+                        _ = self.perform_ui(&OpenProject{ path: PathBuf::from(input) });
                     },
                     None => (),
                 }
             },
             Import{ path } => {
                 self.new_session(&StartType::Import{ path: path.clone() }, false);
+            },
+            ImportSpecify => {
+                let input = self.console_in("import: ");
+                match input {
+                    Some(input) => { 
+                        _ = self.perform_ui(&Import{ path: PathBuf::from(input) });
+                    },
+                    None => (),
+                }
             },
 
             Quit => {
@@ -736,9 +737,7 @@ impl Controller {
                 let mut did_save = false;
                 match &self.sessions[s].canvas_file_path {
                     Some(path) => {
-                        match self.sessions[s].pixylene.borrow()
-                            .save_canvas(&path)
-                        {
+                        match self.sessions[s].pixylene.borrow().save_canvas(&path) {
                             Ok(()) => {
                                 self.console_out(
                                     &format!("saved to {}", path.display()),
@@ -761,8 +760,7 @@ impl Controller {
                                 self.console_out("saving...", &LogType::Info);
                                 let mut path = PathBuf::from(input.clone());
                                 path.set_extension("json");
-                                match self.sessions[s].pixylene
-                                    .borrow().save_canvas(&path) {
+                                match self.sessions[s].pixylene.borrow().save_canvas(&path) {
                                     Ok(()) => {
                                         self.console_out(
                                             &format!("saved to {}", path.display()),
@@ -857,21 +855,19 @@ impl Controller {
                     Some(path) => match self.console_in("scaling factor: ") {
                         Some(input) => match str::parse::<u16>(&input) {
                             Ok(scale_up) => {
-                                self.console_out("exporting...",
-                                                   &LogType::Info);
-                                match self.sessions[s].pixylene
-                                    .borrow().export(&path,
-                                                              scale_up) {
+                                let mut path = PathBuf::from(path.clone());
+                                path.set_extension("png");
+                                self.console_out("exporting...", &LogType::Info);
+                                match self.sessions[s].pixylene.borrow().export(&path, scale_up) {
                                     Ok(()) => {
                                         self.console_out(
-                                            &format!("exported to {}", path),
+                                            &format!("exported to {}", path.display()),
                                             &LogType::Info
                                         );
                                     },
                                     Err(err) => {
                                         self.console_out(
-                                            &format!("failed to export: {}",
-                                                    err),
+                                            &format!("failed to export: {}", err),
                                             &LogType::Error
                                         );
                                     }
@@ -879,8 +875,7 @@ impl Controller {
                             },
                             Err(_) => {
                                 self.console_out(
-                                    &format!("invalid scaling factor: '{}'",
-                                             input),
+                                    &format!("invalid scaling factor: '{}'", input),
                                     &LogType::Error
                                 );
                             }
@@ -972,7 +967,9 @@ impl Controller {
                     })
                     .unwrap_or_else(|err| {
                         self.console_out(&format!("{}", err.lines()
-                            .filter(|s| s.len() > 0 && !s.contains("Usage") && !s.contains("--help"))
+                            .filter(|s| s.len() > 0)
+                            .take_while(|s| !s.contains("Usage") && !s.contains("--help") &&
+                                        !s.contains("Commands:"))
                             .map(|s| s.trim().to_owned()).reduce(|a, b| a + ", " + &b)
                             .unwrap_or("".to_owned())
                         ), &LogType::Error);
