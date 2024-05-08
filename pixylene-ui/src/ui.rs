@@ -245,6 +245,16 @@ pub enum UiFn {
     #[command(visible_alias = "la")]
     RunLastAction,
 
+    #[serde(alias = "l")]
+    #[command(visible_alias = "l")]
+    RunLua{
+        statement: String,
+    },
+
+    #[serde(alias = "L")]
+    #[command(visible_alias = "L")]
+    RunLuaSpecify,
+
     #[serde(alias = "dl")]
     #[command(visible_alias = "dl")]
     PreviewFocusLayer,

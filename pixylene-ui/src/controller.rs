@@ -1014,7 +1014,7 @@ impl Controller {
                         target.borrow_mut().clear(&b_console.unwrap());
                         match action_location {
                             ActionLocation::Lua => {
-                                match lua_action_manager.invoke(&name, pixylene.clone(),
+                                match lua_action_manager.invoke_action(&name, pixylene.clone(),
                                                                 Rc::new(self_clone)) {
                                     Ok(()) => {
                                         if native_action_manager
@@ -1085,23 +1085,6 @@ impl Controller {
                         );
                     }
                 }
-
-                /*
-                match action_manager.perform(
-                    &mut pixylene.borrow_mut().project,
-                    &mut self_clone,
-                    &mut Echo,
-                ) {
-                    Ok(()) => (),
-                    Err(err) => {
-                        target.borrow_mut().console_out(
-                            &format!("failed to perform: {}", err.to_string()),
-                            &LogType::Error,
-                            &b_console.unwrap()
-                        );
-                    }
-                }
-                */
             },
             RunLastAction => {
                 let s = self.sel_session()?;
@@ -1110,6 +1093,70 @@ impl Controller {
                 }
                 else {
                     self.console_out("no previous action to repeat", &LogType::Warning);
+                }
+            },
+
+            RunLuaSpecify => {
+                _ = self.sel_session()?;
+                if let Some(statement) = self.console_in("lua statement: ") {
+                    _ = self.perform_ui(&RunLua{ statement });
+                } else {
+                    self.console_clear();
+                }
+            },
+            RunLua{ statement } => {
+                let s = self.sel_session()?;
+                let mut self_clone = Controller::new(self.target.clone()).unwrap();
+                self_clone.set_boundaries((self.b_camera.unwrap(),
+                                           self.b_statusline.unwrap(),
+                                           self.b_console.unwrap()));
+
+                let Self {
+                    sessions,
+                    target,
+                    b_console,
+                    b_camera,
+                    ..
+                } = self;
+
+                let PixyleneSession {
+                    ref mut pixylene,
+                    ref mut native_action_manager,
+                    ref mut lua_action_manager,
+                    ref mut modified,
+                    ..
+                } = &mut sessions[s];
+
+                target.borrow_mut().clear(&b_console.unwrap());
+                match lua_action_manager.invoke(statement, pixylene.clone(), Rc::new(self_clone)) {
+                    Ok(()) => {
+                        if native_action_manager.commit(&pixylene.borrow().project.canvas) {
+                            *modified = true;
+                        }
+                    },
+                    Err(err) => {
+                        use colored::Colorize;
+
+                        let error = format!(
+                            "{}",
+                            err.to_string().lines()
+                                .map(|s| s.to_string().replace("\t", " "))
+                                .collect::<Vec<String>>().join(", ")
+                        );
+                        if error.len() <= b_console.unwrap().size.y().into() {
+                            target.borrow_mut().console_out(
+                                &error,
+                                &LogType::Error,
+                                &b_console.unwrap()
+                            );
+                        } else {
+                            target.borrow_mut().draw_paragraph(
+                                vec![error.red()],
+                                &b_camera.unwrap()
+                            );
+                            self.console_in("press ENTER to close error");
+                        }
+                    }
                 }
             },
 

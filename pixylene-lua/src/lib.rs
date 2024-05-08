@@ -1,4 +1,4 @@
-use tealr::mlu::mlua::{ Lua, Table, Result };
+use tealr::mlu::mlua::{ Lua, Table, Result, Value };
 //use std::io::Read;
 use libpixylene::{ Pixylene, project, types };
 use std::rc::Rc;
@@ -52,7 +52,7 @@ pub struct LuaActionManager{
 }
 
 impl LuaActionManager {
-    pub fn invoke(&mut self, action_name: &str, pixylene: Rc<RefCell<libpixylene::Pixylene>>,
+    pub fn invoke_action(&mut self, action_name: &str, pixylene: Rc<RefCell<libpixylene::Pixylene>>,
                   console: Rc<dyn pixylene_actions::Console>)
         -> Result<()>
     {
@@ -63,7 +63,23 @@ impl LuaActionManager {
         self.ctx.globals().set("Console", Console(console)).unwrap();
         self.ctx.load(format!("actions.{0}.perform(actions.{0}, Project, Console)", action_name))
             .exec()?;
+        self.ctx.globals().set("Project", Value::Nil)?;
+        self.ctx.globals().set("Console", Value::Nil)?;
+
+        Ok(())
+    }
+
+    pub fn invoke(&mut self, statement: &str, pixylene: Rc<RefCell<libpixylene::Pixylene>>,
+                  console: Rc<dyn pixylene_actions::Console>) -> Result<()>
+    {
+        use crate::values::{ Console, project::Project };
+
+        let project_lua = Project(pixylene);
+        self.ctx.globals().set("Project", project_lua).unwrap();
+        self.ctx.globals().set("Console", Console(console)).unwrap();
+        self.ctx.load(statement).exec()?;
         //self.ctx.globals().set("Project", Value::Nil)?;
+        //self.ctx.globals().set("Console", Value::Nil)?;
 
         Ok(())
     }
@@ -179,7 +195,7 @@ mod tests {
 
         let path = Path::new("/home/bhavya/.config/pixylene/actions.lua");
         let mut lam = LuaActionManager::setup(&std::fs::read_to_string(path).unwrap())?;
-        lam.invoke("test", pixylene.clone(), Rc::new(ExampleConsole))?;
+        lam.invoke_action("test", pixylene.clone(), Rc::new(ExampleConsole))?;
 
         Ok(())
     }

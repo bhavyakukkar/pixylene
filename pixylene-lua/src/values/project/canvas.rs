@@ -132,7 +132,7 @@ impl TealData for Canvas {
                 CanvasGetArgs with
                     index: u16,
             );
-            methods.document("Gets the Layer at the specified index in the Canvas");
+            methods.document("Gets the Layer at the specified 1-based index in the Canvas");
             methods.add_method("layer", |_, this, a: CanvasGetArgs| {
                 use Context::*;
                 use mlua::Error::ExternalError;
@@ -141,10 +141,12 @@ impl TealData for Canvas {
                 Ok(Layer(
                     match &this.0 {
                         Solo(ref canvas) =>
-                            canvas.get_layer(a.index).map(|layer| Solo(layer.clone())),
+                            canvas.get_layer(a.index.checked_sub(1).unwrap_or(0))
+                            .map(|layer| Solo(layer.clone())),
                         Linked(pixylene, _) =>
-                            pixylene.borrow_mut().project.canvas.get_layer_mut(a.index)
-                            .map(|_| Linked(pixylene.clone(), a.index)),
+                            pixylene.borrow_mut().project.canvas
+                            .get_layer_mut(a.index.checked_sub(1).unwrap_or(0))
+                            .map(|_| Linked(pixylene.clone(), a.index.checked_sub(1).unwrap_or(0))),
                     }.map_err(|err| ExternalError(Arc::from(boxed_error(&err.to_string()))))?
                 ))
             });
