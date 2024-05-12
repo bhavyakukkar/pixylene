@@ -1,5 +1,5 @@
 use crate::{
-    types::{ Pixel, PixelError },
+    types::{ TruePixel, TruePixelError },
     utils::messages::{ EQUIPPEDISINPALETTE, PALETTELEN },
 };
 
@@ -7,13 +7,13 @@ use std::collections::HashMap;
 use serde::{ Serialize, Deserialize };
 
 
-/// A `Palette` containing a set of [`Pixels`](Pixel)
+/// A `Palette` containing a set of [`true-color pixels`](TruePixel)
 ///
-/// The palette works by using a hashmap of u8 indexes to Pixel definitions, and the most
+/// The palette works by using a hashmap of u8 indexes to pixel definitions, and the most
 /// significant color at any time can be chosen by its index and picked.
 #[derive(Serialize, Deserialize, PartialEq, Savefile, Clone)]
 pub struct Palette {
-    colors: HashMap<u8, Pixel>,
+    colors: HashMap<u8, TruePixel>,
     equipped: Option<u8>,
 }
 
@@ -23,9 +23,9 @@ impl Palette {
     pub fn new() -> Palette { Palette { colors: HashMap::new(), equipped: None } }
 
     /// Returns a Palette initialized with a collection of (index, color hex-string) pairs, failing
-    /// if any of the colors fail to get parsed into [`Pixels`](Pixel)
+    /// if any of the colors fail to get parsed
     ///
-    /// This method may fail with the [`PixelError`](PaletteError::PixelError) error variant only.
+    /// This method may fail with the [`TruePixelError`](PaletteError::TruePixelError) error variant only.
     pub fn from(colors: &[(u8, &str)]) -> Result<Palette, PaletteError> {
         let mut palette = Palette {
             colors: HashMap::new(),
@@ -42,22 +42,21 @@ impl Palette {
         Ok(palette)
     }
 
-    /// Gets the `Pixel` corresponding to a particular index, fails if no pixels correspond
+    /// Gets the pixel corresponding to a particular index, fails if no pixels correspond
     ///
     /// This method may fail with the [`InvalidIndex`](PaletteError::InvalidIndex) error variant
     /// only.
-    pub fn get_color(&self, index: u8) -> Result<&Pixel, PaletteError> {
+    pub fn get_color(&self, index: u8) -> Result<&TruePixel, PaletteError> {
         use PaletteError::InvalidIndex;
 
         self.colors.get(&index).ok_or(InvalidIndex(index))
     }
 
-    /// Gets the equipped pixel (see [`Palette`] documentation), fails if no index has been
-    /// equipped yet
+    /// Gets the equipped pixel, fails if no index has been equipped yet
     ///
-    /// This method may fail with the [`NothingEquipped`](PaletteError::InvalidIndex) error variant
-    /// only.
-    pub fn get_equipped_strict(&self) -> Result<&Pixel, PaletteError> {
+    /// This method may fail with the [`NothingEquipped`](PaletteError::NothingEquipped) error
+    /// variant only.
+    pub fn get_equipped_strict(&self) -> Result<&TruePixel, PaletteError> {
         use PaletteError::NothingEquipped;
 
         if let Some(index) = self.equipped {
@@ -67,13 +66,14 @@ impl Palette {
         }
     }
 
-    /// Gets the equipped pixel (see [`Palette`] documentation), returns [`my favourite color`](fc)
-    /// if nothing is equipped yet
-    pub fn get_equipped(&self) -> &Pixel {
+    /// Gets the equipped pixel, returning [`my favourite color`][fc] if nothing is equipped yet
+    ///
+    /// [fc]: TruePixel::FAVOURITE
+    pub fn get_equipped(&self) -> &TruePixel {
         if let Some(index) = self.equipped {
             self.colors.get(&index).expect(EQUIPPEDISINPALETTE)
         } else {
-            &Pixel::FAVOURITE
+            &TruePixel::FAVOURITE
         }
     }
 
@@ -94,15 +94,15 @@ impl Palette {
     }
 
     /// Sets a color corresponding to a particular index, overwrites if already present, failing if
-    /// the color string failed to be parsed into a [`Pixel`]
+    /// the color string failed to be parsed into a [`TruePixel`]
     ///
-    /// This method may fail with the [`PixelError`](PaletteError::PixelError) error variant only.
+    /// This method may fail with the [`TruePixelError`](PaletteError::TruePixelError) error variant only.
     pub fn set_color(&mut self, index: u8, color_hex: &str) -> Result<(), PaletteError> {
-        use PaletteError::PixelError;
+        use PaletteError::TruePixelError;
 
         if let None = self.colors.insert(
             index,
-            Pixel::from_hex(color_hex).map_err(|err| PixelError(err))?
+            TruePixel::from_hex(color_hex).map_err(|err| TruePixelError(err))?
         ) {
             //if nothing was equipped, equip this
             self.equipped = Some(self.equipped.unwrap_or(index));
@@ -133,7 +133,7 @@ impl Palette {
 
     /// Returns an iterator to the palette colors with each entry of the iterator being a tuple of
     /// the index, the color, and whether or not it is the equipped color in the palette
-    pub fn colors(&self) -> impl Iterator<Item = (&u8, &Pixel, bool)> {
+    pub fn colors(&self) -> impl Iterator<Item = (&u8, &TruePixel, bool)> {
         self.colors.iter().map(|(index, color)| {
             return (index, color, self.equipped.is_some() && *index == self.equipped.unwrap());
         })
@@ -153,8 +153,9 @@ pub enum PaletteError {
     /// Error that occurs when equipped index is accessed somehow but nothing has been equipped
     NothingEquipped,
 
-    /// Error that is propagated when trying to parse color hex-strings into [`Pixel`](Pixel}
-    PixelError(PixelError),
+    /// Error that is propagated when trying to parse color hex-strings into
+    /// [`TruePixel`](TruePixel)
+    TruePixelError(TruePixelError),
 }
 
 impl std::fmt::Display for PaletteError {
@@ -170,7 +171,7 @@ impl std::fmt::Display for PaletteError {
                 f,
                 "cannot get equipped color as nothing has been equipped",
             ),
-            PixelError(pixel_error) => write!(f, "{}", pixel_error),
+            TruePixelError(true_pixel_error) => write!(f, "{}", true_pixel_error),
         }
     }
 }

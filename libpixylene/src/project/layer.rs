@@ -1,5 +1,5 @@
 use crate::{
-    types::{ self, UCoord, PCoord, Pixel, BlendMode },
+    types::{ self, UCoord, PCoord, Pixel, TruePixel, BlendMode },
     project::{ Scene, SceneError },
     utils::messages::U32TOUSIZE,
 };
@@ -7,22 +7,24 @@ use crate::{
 use serde::{ Deserialize, Serialize };
 
 
+
 /// A [`Scene`](Scene) with additional information including an opacity, mute switch and a
 /// [`BlendMode`](BlendMode).
 #[derive(Serialize, Deserialize, PartialEq, Savefile, Clone)]
-pub struct Layer {
-    pub scene: Scene,
+pub struct Layer<T=TruePixel>
+where T: Pixel
+{
+    pub scene: Scene<T>,
     pub opacity: u8,
     pub mute: bool,
     pub blend_mode: BlendMode,
 }
 
-impl Layer {
-
-    /// Create a new layer with the given dimensions and single color (optional pixel)
-    pub fn new_with_solid_color(dimensions: PCoord, color: Option<Pixel>) -> Layer {
-        Layer {
-            scene: Scene::new(
+impl<T: Pixel> Layer<T> {
+    /// Create a new layer with the given dimensions and single color
+    pub fn new_with_solid_color(dimensions: PCoord, color: Option<T>) -> Layer<T> {
+        Layer::<T> {
+            scene: Scene::<T>::new(
                 dimensions,
                 vec![color; usize::try_from(dimensions.area()).expect(U32TOUSIZE)]
             ).unwrap(),
@@ -31,8 +33,11 @@ impl Layer {
             blend_mode: BlendMode::Normal,
         }
     }
+}
 
-    /// Return the net merged layer as a result of merging two layers with a given blend-mode
+impl Layer{
+    /// Return the net merged layer as a result of merging two truecolor layers with a given
+    /// blend-mode
     ///
     /// `Note`: This method does not use the respective layer's owned
     /// [`blend-modes`](Layer::blend_mode) in order to not make assumptions, however you may simply
@@ -43,20 +48,24 @@ impl Layer {
     ///
     /// [me]: LayerError::MergeError
     /// [be]: LayerError::BlendError
-    pub fn merge(dimensions: PCoord, top: &Layer, bottom: &Layer, blend_mode: BlendMode)
-    -> Result<Scene, LayerError> {
+    pub fn merge(
+        dimensions: PCoord,
+        top: &Layer<TruePixel>,
+        bottom: &Layer<TruePixel>,
+        blend_mode: BlendMode
+    )
+        -> Result<Scene<TruePixel>, LayerError>
+    {
         use LayerError::{ MergeError, BlendError };
-        //todo urgent: this doesn't even use opacity
-
-        let mut merged_scene_grid: Vec<Option<Pixel>> = Vec::new();
+        let mut merged_scene_grid: Vec<Option<TruePixel>> = Vec::new();
         for i in 0..dimensions.x() {
             for j in 0..dimensions.y() {
                 let coord = UCoord{ x: i, y: j };
                 let top_p = if top.mute {
-                    Pixel::empty()
+                    TruePixel::empty()
                 } else {
                     match top.scene.get_pixel(coord) {
-                        Ok(pixel) => pixel.unwrap_or(Pixel::empty()).dissolve(top.opacity),
+                        Ok(pixel) => pixel.unwrap_or(TruePixel::empty()).dissolve(top.opacity),
                         Err(scene_error) => {
                             return Err(MergeError(true, coord, scene_error));
                         }
@@ -66,7 +75,7 @@ impl Layer {
                     Pixel::empty()
                 } else {
                     match bottom.scene.get_pixel(coord) {
-                        Ok(pixel) => pixel.unwrap_or(Pixel::empty()).dissolve(bottom.opacity),
+                        Ok(pixel) => pixel.unwrap_or(TruePixel::empty()).dissolve(bottom.opacity),
                         Err(scene_error) => {
                             return Err(MergeError(false, coord, scene_error));
                         }
@@ -78,7 +87,7 @@ impl Layer {
                 );
             }
         }
-        Ok(Scene::new(dimensions, merged_scene_grid).unwrap())
+        Ok(Scene::<TruePixel>::new(dimensions, merged_scene_grid).unwrap())
     }
 }
 

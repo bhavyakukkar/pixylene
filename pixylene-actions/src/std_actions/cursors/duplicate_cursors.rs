@@ -22,7 +22,7 @@ impl memento::Action for DuplicateCursors {
         if self.amount == 0 {
             return Err(ActionError::ArgsError(String::from("given amount 0")));
         }
-        let dim = project.canvas.dim();
+        let dim = project.canvas().inner().dim();
         let cursors = project.cursors().map(|cursor| cursor.clone())
             .collect::<Vec<(UCoord, u16)>>();
         for cursor in cursors {

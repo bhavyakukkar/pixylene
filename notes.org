@@ -8,6 +8,7 @@
 *** TODO IndexedScene for use with indexed images
 *** TODO command history (check if problems can be solved with default implementation, if not, use flags to determine whether target wants provide implementation for console_out or use default implementation)
 *** TODO rename UiFn to Cmd
+*** TODO like every_frame, have entry initialize to run uifns on startup
 *** TODO downscaling of artwork while importing (1280x1280 "/10" = 128x128)
 *** TODO Makefile
 *** TODO defined palette contains 10 colors, foreground+background+eight defined colors. switchForeground is a wrapper that performs Palette.changeTo(1, <input>). switchBackground is a wrapper that performs Palette.changeTo(2, <input>)

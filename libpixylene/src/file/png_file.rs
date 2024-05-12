@@ -1,5 +1,5 @@
 use crate::{
-    types::{ PCoord, UCoord, Pixel },
+    types::{ PCoord, UCoord, Pixel, TruePixel },
     project::{ Scene },
     utils::messages::U32TOUSIZE,
 };
@@ -63,6 +63,7 @@ impl PngFile {
             },
         }
     }
+
     pub fn write(&self, path: &PathBuf) -> Result<(), PngFileError> {
         use PngFileError::{ EncodingError, DirectoryNotFoundError };
         match File::create(path) {
@@ -88,28 +89,29 @@ impl PngFile {
             Err(io_error) => Err(DirectoryNotFoundError(path.clone(), io_error)),
         }
     }
+
     pub fn to_scene(self) -> Result<Scene, PngFileError> {
         use PngFileError::Unsupported;
         let dim = PCoord::new(
             u16::try_from(self.height).unwrap(),
             u16::try_from(self.width).unwrap()
         ).unwrap();
-        let mut scene: Scene = Scene::new(
-            dim,
-            vec![None; usize::try_from(dim.area()).expect(U32TOUSIZE)]
-        ).unwrap();
         match self.color_type {
             Grayscale => {
                 return Err(Unsupported(self.color_type, self.bit_depth));
             },
             Rgb => {
+                let mut scene = Scene::<TruePixel>::new(
+                    dim,
+                    vec![None; usize::try_from(dim.area()).expect(U32TOUSIZE)]
+                ).unwrap();
                 match self.bit_depth {
                     Eight => {
                         for i in 0..scene.dim().x() {
                             for j in 0..scene.dim().y() {
                                 scene.set_pixel(
                                     UCoord{ x: i, y: j },
-                                    Some(Pixel {
+                                    Some(TruePixel {
                                         r: self.bytes[((3*i*scene.dim().y()) + (3*j) + 0) as usize],
                                         g: self.bytes[((3*i*scene.dim().y()) + (3*j) + 1) as usize],
                                         b: self.bytes[((3*i*scene.dim().y()) + (3*j) + 2) as usize],
@@ -123,7 +125,9 @@ impl PngFile {
                         return Err(Unsupported(self.color_type, self.bit_depth));
                     }
                 }
+                Ok(scene)
             },
+            //over here
             Indexed => {
                 return Err(Unsupported(self.color_type, self.bit_depth));
             },
@@ -131,13 +135,17 @@ impl PngFile {
                 return Err(Unsupported(self.color_type, self.bit_depth));
             },
             Rgba => {
+                let mut scene = Scene::<TruePixel>::new(
+                    dim,
+                    vec![None; usize::try_from(dim.area()).expect(U32TOUSIZE)]
+                ).unwrap();
                 match self.bit_depth {
                     Eight => {
                         for i in 0..scene.dim().x() {
                             for j in 0..scene.dim().y() {
                                 scene.set_pixel(
                                     UCoord{ x: i, y: j },
-                                    Some(Pixel {
+                                    Some(TruePixel {
                                         r: self.bytes[((4*i*scene.dim().y()) + (4*j) + 0) as usize],
                                         g: self.bytes[((4*i*scene.dim().y()) + (4*j) + 1) as usize],
                                         b: self.bytes[((4*i*scene.dim().y()) + (4*j) + 2) as usize],
@@ -151,10 +159,11 @@ impl PngFile {
                         return Err(Unsupported(self.color_type, self.bit_depth));
                     }
                 }
+                Ok(scene)
             }
         }
-        Ok(scene)
     }
+
     pub fn from_scene(
         scene: &Scene,
         color_type: ColorType,
@@ -179,14 +188,14 @@ impl PngFile {
                         for i in 0..scene.dim().x() {
                             for _ in 0..scale_up {
                                 for j in 0..scene.dim().y() {
-                                    let Pixel {
+                                    let TruePixel {
                                         r: red,
                                         g: green,
                                         b: blue,
                                         ..
                                     } = scene.get_pixel(UCoord{ x: i, y: j })
                                             .unwrap()
-                                            .unwrap_or(Pixel::empty());
+                                            .unwrap_or(TruePixel::empty());
                                     for _ in 0..scale_up {
                                         png.bytes.push(red);
                                         png.bytes.push(green);
@@ -214,14 +223,14 @@ impl PngFile {
                         for i in 0..scene.dim().x() {
                             for _ in 0..scale_up {
                                 for j in 0..scene.dim().y() {
-                                    let Pixel {
+                                    let TruePixel {
                                         r: red,
                                         g: green,
                                         b: blue,
                                         a: alpha
                                     } = scene.get_pixel(UCoord{ x: i, y: j })
                                             .unwrap()
-                                            .unwrap_or(Pixel::empty());
+                                            .unwrap_or(TruePixel::empty());
                                     for _ in 0..scale_up {
                                         png.bytes.push(red);
                                         png.bytes.push(green);

@@ -1,4 +1,4 @@
-use libpixylene::types::Coord;
+use libpixylene::types::{TruePixel, IndexedPixel, Coord};
 
 
 pub enum AbsOrRel<A, B> {
@@ -26,4 +26,16 @@ impl Direction {
             Right => Coord{ x: 0, y: 1 },
         }
     }
+}
+
+#[derive(Clone, Debug)]
+pub enum TrueOrIndexed {
+    True(TruePixel),
+    Indexed(IndexedPixel),
+}
+
+#[derive(Clone, Debug)]
+pub enum OptionalTrueOrIndexed {
+    True(Option<TruePixel>),
+    Indexed(Option<IndexedPixel>),
 }
