@@ -161,12 +161,12 @@ impl TealData for Project {
 
         fields.document("the cursors in the Project");
         fields.add_field_method_get("cursors", |lua_ctx, this| {
-            let element = lua_ctx.create_table()?;
             let mut cursors = Vec::new();
             for (coord, layer) in this.0.borrow().project.cursors() {
+                let element = lua_ctx.create_table()?;
                 element.set("coord", UCoord(coord.clone()))?;
                 element.set("layer", *layer)?;
-                cursors.push(element.clone());
+                cursors.push(element);
             }
             Ok(cursors)
         });

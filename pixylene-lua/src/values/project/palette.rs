@@ -161,6 +161,15 @@ impl TealData for Palette {
 
         methods.generate_help();
     }
+
+    fn add_fields<'lua, F: tealr::mlu::TealDataFields<'lua, Self>>(fields: &mut F) {
+        //Lua interface to Palette::get_equipped_index()
+        fields.document("the equipped index of this Canvas");
+        fields.add_field_method_get("equipped", |_, this| Ok(this.0.do_imt(
+            |palette| palette.get_equipped_index(),
+            |pixylene, _| pixylene.project.canvas.palette.get_equipped_index(),
+        )));
+    }
 }
 
 impl ToTypename for Palette {

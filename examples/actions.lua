@@ -284,3 +284,40 @@ actions['crop'] = {
         end
     end
 }
+
+actions['palette_equipped_color'] = {
+    perform = function(self, project, console)
+        palette = project.canvas.palette
+        if (palette.equipped ~= nil) then
+            local current = palette:get()
+            local input = console:cmdin(
+                "new color for index " .. palette.equipped ..
+                " (current: " .. tostring(current) .. "): "
+            )
+            if (input ~= nil) then
+                palette:set_color(palette.equipped, input)
+                scene = project.canvas:layer(project.focus.layer).scene
+                for i=0, (scene.dim.x - 1) do
+                    for j=0, (scene.dim.y - 1) do
+                        if (tostring(scene:get(UC(i,j))) == tostring(current)) then
+                            scene:set(UC(i,j), P.hex(input))
+                        end
+                    end
+                end
+            end
+        else
+            console:cmdout("nothing equipped", LogType.ERROR)
+        end
+    end
+}
+
+actions['hex_at_cursors'] = {
+    perform = function(self, project, console)
+        local input = console:cmdin("color: ")
+        if (input ~= nil) then
+            for i, cursor in pairs(project.cursors) do
+                project.canvas:layer(cursor.layer).scene:set(cursor.coord, P.hex(input))
+            end
+        end
+    end
+}

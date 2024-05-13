@@ -1299,7 +1299,7 @@ impl Controller {
 
                 let session = &self.sessions[s];
                 let mut statusline: Statusline = Vec::new();
-                let padding = "     ".on_truecolor(60,60,60);
+                let padding = "   ".on_truecolor(60,60,60);
                 let spacing = "  ".on_truecolor(60,60,60);
                 let divider = "｜".on_truecolor(60,60,60).truecolor(100,100,100);
 
