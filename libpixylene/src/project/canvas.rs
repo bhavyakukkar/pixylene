@@ -30,7 +30,6 @@ impl CanvasType {
 
 
 pub trait Canvas {
-
     fn layers_true(&self) -> Layers<TruePixel>;
     fn layers_indexed(&self) -> Layers<IndexedPixel>;
 

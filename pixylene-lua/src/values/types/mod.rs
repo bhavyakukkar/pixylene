@@ -7,8 +7,11 @@ pub use ucoord::UCoord;
 mod pcoord;
 pub use pcoord::PCoord;
 
-mod pixel;
-pub use pixel::Pixel;
+mod true_pixel;
+pub use true_pixel::TruePixel;
+
+mod indexed_pixel;
+pub use indexed_pixel::IndexedPixel;
 
 mod blend_mode;
 pub use blend_mode::BlendMode;

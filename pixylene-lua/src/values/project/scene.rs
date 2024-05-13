@@ -1,7 +1,7 @@
 use crate::{
     Context,
     utils::LAYER_GONE,
-    values::types::{ UCoord, PCoord, Pixel }
+    values::types::{ UCoord, PCoord, TruePixel }
 };
 
 use tealr::{
@@ -51,7 +51,7 @@ impl TealData for Scene {
             mlua_create_named_parameters!(
                 SceneNewArgs with
                     dimensions: PCoord,
-                    buffer: Vec<Pixel>,
+                    buffer: Vec<TruePixel>,
             );
             methods.document("Create a new scene with given dimensions and buffer of Pixels");
             methods.add_meta_method(MetaMethod::Call, |_, _, a: SceneNewArgs| {
@@ -78,16 +78,20 @@ impl TealData for Scene {
             );
             methods.document("Get the pixel at a particular coordinate on the scene");
             methods.add_method("get", |_, this, a: SceneGetPixelArgs| {
+                use types::Pixel;
                 use mlua::Error::{ ExternalError };
                 let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
                 match this.0.do_imt(
                     |scene| Ok(scene.get_pixel(a.coordinate.0)),
-                    |pixylene, index| pixylene.project.canvas
-                        .get_layer(*index)
-                        .map(|layer| layer.scene.get_pixel(a.coordinate.0))
+                    |pixylene, index| match pixylene.project.canvas() {
+                        CanvasType::True(ref canvas) => canvas.layers().get_layer(*index)
+                            .map(|layer| layer.scene.get_pixel(a.coordinate.0)),
+                        CanvasType::Indexed(ref canvas) => canvas.layers().get_layer(*index)
+                            .map(|layer| layer.scene.get_pixel(a.coordinate.0)),
+                    }
                 ).map_err(|_| ExternalError(Arc::from(boxed_error(LAYER_GONE))))?
                 {
-                    Ok(pixel) => Ok(Pixel(pixel.unwrap_or(types::Pixel::empty()))),
+                    Ok(pixel) => Ok(TruePixel(pixel.unwrap_or(types::TruePixel::empty()))),
                     Err(err) => Err(ExternalError(Arc::from(
                         boxed_error(&err.to_string())
                     ))),
@@ -100,7 +104,7 @@ impl TealData for Scene {
             mlua_create_named_parameters!(
                 SceneSetPixelArgs with
                     coordinate: UCoord,
-                    new_pixel: Pixel,
+                    new_pixel: TruePixel,
             );
             methods.document("Set the pixel at a particular coordinate on the scene");
             methods.add_method_mut("set", |_, this, a: SceneSetPixelArgs| {

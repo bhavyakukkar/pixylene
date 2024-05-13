@@ -1,4 +1,4 @@
-use super::{ Pixel };
+use super::{ TruePixel };
 
 use tealr::{
     mlu::{
@@ -53,8 +53,8 @@ impl TealData for BlendMode {
         {
             mlua_create_named_parameters!(
                 BlendModeBlendArgs with
-                    top : Pixel,
-                    bottom : Pixel,
+                    top: TruePixel,
+                    bottom: TruePixel,
             );
             methods.document("Blend two pixels and return the resultant pixel");
             methods.add_method("blend", |_, this, a: BlendModeBlendArgs| {
@@ -62,7 +62,7 @@ impl TealData for BlendMode {
                 let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
 
                 match this.0.blend(a.top.0, a.bottom.0) {
-                    Ok(p) => Ok(Pixel(p)),
+                    Ok(p) => Ok(TruePixel(p)),
                     Err(err) => Err(ExternalError(Arc::from(
                         boxed_error(&err.to_string())
                     ))),

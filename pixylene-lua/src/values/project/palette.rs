@@ -1,6 +1,6 @@
 use crate::{
     Context,
-    values::{ types::{ Pixel } }
+    values::{ types::{ TruePixel } }
 };
 
 use tealr::{
@@ -83,12 +83,12 @@ impl TealData for Palette {
                         |palette| palette.get_color(index).map(|p| p.clone()),
                         |pixylene, _| pixylene.project.canvas.palette.get_color(index).map(|p| p.clone()),
                     ) {
-                        Ok(pixel) => Ok(Pixel(pixel)),
+                        Ok(pixel) => Ok(TruePixel(pixel)),
                         Err(err) => Err(ExternalError(Arc::from(
                             boxed_error(&err.to_string())
                         ))),
                     },
-                    None => Ok(Pixel(this.0.do_imt(
+                    None => Ok(TruePixel(this.0.do_imt(
                         //todo: remove clone()'s when adding context to Pixel as well
                         |palette| palette.get_equipped().clone(),
                         |pixylene, _| pixylene.project.canvas.palette.get_equipped().clone(),

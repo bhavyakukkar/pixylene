@@ -2,7 +2,7 @@ use crate::{
     utils::LAYER_GONE,
     values::{
         project::{Layer, Palette, Scene},
-        types::{PCoord, Pixel},
+        types::{PCoord, TruePixel},
     },
     Context,
 };
@@ -22,7 +22,7 @@ use tealr::{
 
 /// Lua interface to libpixylene's [`Canvas`][project::Canvas] type
 #[derive(Clone)]
-pub struct Canvas(pub Context<project::Canvas, ()>);
+pub struct Canvas(pub Context<project::TrueCanvas, ()>);
 
 impl<'lua> FromLua<'lua> for Canvas {
     fn from_lua(value: LuaValue<'lua>, _: &'lua Lua) -> Result<Canvas> {
@@ -42,6 +42,7 @@ impl TealData for Canvas {
         methods.document_type("A set of Layers with uniform dimensions and a Palette.");
 
         //Lua interface to from_layers() [also counts as interface for new()]
+        /*
         {
             mlua_create_named_parameters!(
                 CanvasArgs with
@@ -80,16 +81,30 @@ impl TealData for Canvas {
                 }
             });
         }
+        */
+
+        {
+            mlua_create_named_parameters!(
+                CanvasArgs with
+                    dimensions: PCoord,
+            );
+            methods.document(
+                "Creates & returns a new true-color Canvas of the provided dimensions",
+            );
+            methods.add_meta_method(MetaMethod::Call, |_, _, a: CanvasArgs| {
+                Ok(Canvas(Context::Solo(project::TrueCanvas::new(a.dimensions))))
+            });
+        }
 
         //Lua interface to merged_scene()
         {
             mlua_create_named_parameters!(
                 CanvasMergeArgs with
-                    background: Option<Pixel>,
+                    background: Option<TruePixel>,
             );
             methods.document(
-                "Merges the layers of the Canvas into a Scene with an optional \
-                             background color",
+                "Merges the layers of the true-color Canvas into a Scene with an optional \
+                background color",
             );
             methods.add_method("merge", |_, this, a: CanvasMergeArgs| {
                 let color = match a.background {

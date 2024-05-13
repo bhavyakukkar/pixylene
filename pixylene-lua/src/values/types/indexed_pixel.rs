@@ -34,87 +34,24 @@ impl TealData for IndexedPixel {
     fn add_methods<'lua, T: TealDataMethods<'lua, Self>>(methods: &mut T) {
         use mlua::Error::{ ExternalError };
 
-        methods.document_type("An RGBA type to represent a color, composed of 8-bit red, green, \
-                              blue & alpha values.");
+        methods.document_type("An indexed color type");
 
-        //Flexible Lua call metamethod to construct a new RGBA IndexedPixel
+        //Lua interface to construct a new IndexedPixel with a 8-bit index
         {
             mlua_create_named_parameters!(
                 IndexedPixelArgs with
-                    r : Option<u8>,
-                    g : Option<u8>,
-                    b : Option<u8>,
-                    a : Option<u8>,
+                    index: u8,
             );
-            methods.document("Create & return a new IndexedPixel with optional red, green, blue & alpha \
-                             levels, each between 0-255, defaulting to 0 (expect 255 for alpha)");
+            methods.document("Create & return a new IndexedPixel with a specified index");
             methods.add_meta_method(MetaMethod::Call, |_, _, args: IndexedPixelArgs| {
-                Ok(IndexedPixel(types::IndexedPixel{
-                    r: args.r.unwrap_or(0),
-                    g: args.g.unwrap_or(0),
-                    b: args.b.unwrap_or(0),
-                    a: args.a.unwrap_or(255),
-                }))
-            });
-        }
-
-        //Lua interface to construct a new IndexedPixel with r, g, b, a
-        {
-            mlua_create_named_parameters!(
-                IndexedPixelRgbaArgs with
-                    r : u8,
-                    g : u8,
-                    b : u8,
-                    a : u8,
-            );
-            methods.document("Create & return a new IndexedPixel with specified red, green, blue & alpha \
-                             levels, each between 0-255");
-            methods.add_function("rgba", |_, args: IndexedPixelRgbaArgs| {
-                Ok(IndexedPixel(types::IndexedPixel{r: args.r, g: args.g, b: args.b, a: args.a}))
-            });
-        }
-
-        //Lua interface to construct a new IndexedPixel with r, g, b (a defaults to 255)
-        {
-            mlua_create_named_parameters!(
-                IndexedPixelRgbArgs with
-                    r : u8,
-                    g : u8,
-                    b : u8,
-            );
-            methods.document("Create & return a new IndexedPixel with specified red, green & blue \
-                             levels, each between 0-255 (alpha defaults to 0)");
-            methods.add_function("rgb", |_, args: IndexedPixelRgbArgs| {
-                Ok(IndexedPixel(types::IndexedPixel{r: args.r, g: args.g, b: args.b, a: 255}))
-            });
-        }
-
-        //todo: cmyk & hsl
-
-
-        //Lua interface to construct a new IndexedPixel with a hex-triplet (6 or 8 digits)
-        {
-            mlua_create_named_parameters!(
-                IndexedPixelHexArgs with
-                    s: String,
-            );
-            methods.document("Create & return a new IndexedPixel with a specified CSS-like hex string, \
-                             e.g. `#694269` or `#69426942`");
-            methods.add_function("hex", |_, a: IndexedPixelHexArgs| {
-                let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
-
-                match types::IndexedPixel::from_hex(&a.s) {
-                    Ok(p) => Ok(IndexedPixel(p)),
-                    Err(err) => Err(ExternalError(Arc::from(
-                        boxed_error(&err.to_string())
-                    ))),
-                }
+                Ok(types::IndexedPixel(args.index))
             });
         }
 
         methods.generate_help();
     }
 
+    /*
     fn add_fields<'lua, F: tealr::mlu::TealDataFields<'lua, Self>>(fields: &mut F) {
 
         //todo: add constants RED, GREEN, BLUE, etc.
@@ -147,6 +84,7 @@ impl TealData for IndexedPixel {
             Ok(())
         });
     }
+    */
 }
 
 impl ToTypename for IndexedPixel {
