@@ -13,8 +13,10 @@ pub use layers::{ Layers, LayersIter, LayersError };
 mod generic_canvas;
 pub use generic_canvas::{ GenericCanvas, TrueCanvas, IndexedCanvas };
 
-mod canvas;
-pub use canvas::{ CanvasType, Canvas };
+//mod canvas;
+//pub use canvas::{ CanvasType, Canvas };
+mod canvas_new;
+pub use canvas_new::{ LayersType, Canvas };
 
 mod project;
 pub use project::{ ProjectError, Project };

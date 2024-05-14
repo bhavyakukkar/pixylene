@@ -1,0 +1,2 @@
+- [x] project owner can know if canvas true or indexed
+- [ ] common properties can be accessed directly: dim, palette

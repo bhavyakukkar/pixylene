@@ -1,6 +1,6 @@
 use crate::{
     types::{ Coord, PCoord, UCoord, TruePixel, BlendMode },
-    project::{ Layer, OPixel, LayersError, TrueCanvas, IndexedCanvas, CanvasType },
+    project::{ Layer, OPixel, LayersError, TrueCanvas, IndexedCanvas, Canvas, LayersType },
 };
 
 use std::collections::HashMap;
@@ -16,7 +16,7 @@ use std::iter::Iterator;
 #[derive(Savefile)]
 pub struct Project {
     /// The [`Canvas`] composed into the Project.
-    canvas: CanvasType,
+    pub canvas: Canvas,
     indexed: bool,
 
     /// The dimensions of the rendered output.
@@ -64,13 +64,13 @@ impl Project {
         }
     }
 
-    pub fn canvas(&self) -> &CanvasType {
-        &self.canvas
-    }
+    //pub fn canvas(&self) -> &Canvas {
+    //    &self.canvas
+    //}
 
-    pub fn canvas_mut(&mut self) -> &mut CanvasType {
-        &mut self.canvas
-    }
+    //pub fn canvas_mut(&mut self) -> &mut CanvasType {
+    //    &mut self.canvas
+    //}
 
     /// Renders the [`Scene`][s] at the focussed [`Layer`] of the [`Canvas`] at the Layer specified
     /// by the Project's [`focus.1`][f] field, mapping the center of the output to the coordinate
@@ -87,22 +87,39 @@ impl Project {
     /// [or]: #structfield.out_repeat
     /// [ce]: ProjectError::LayersError
     pub fn render_layer(&self) -> Result<Vec<OPixel>, ProjectError> {
-        let layers = self.canvas.inner().layers_true().layers().map(|l| l.clone())
-            .collect::<Vec<Layer<TruePixel>>>();
-            //.map_err(|err| LayersError(err))?;
-        let net_scene = Layer::merge(
-            self.canvas.inner().dim(),
-            &Layer{
-                opacity: 255,
-                mute: false,
-                ..layers.get(self.focus.1 as usize)
-                    .ok_or(ProjectError::LayersError(
-                        LayersError::IndexOutOfBounds(self.focus.1 as usize, layers.len())))?
-                    .clone()
+        //over here
+        let net_scene = match self.canvas.layers {
+            LayersType::True(layers) => {
+                Layer::merge(
+                    layers.dim(),
+                    &Layer{
+                        opacity: 255,
+                        mute: false,
+                        ..layers.get_layer(self.focus.1 as usize)
+                            .ok_or(ProjectError::LayersError(
+                                LayersError::IndexOutOfBounds(self.focus.1 as usize, layers.len())))?
+                            .clone()
+                    },
+                    &Layer::new_with_solid_color(layers.dim(), Some(TruePixel::BLACK)),
+                    BlendMode::Normal,
+                )?;
             },
-            &Layer::new_with_solid_color(self.canvas.inner().dim(), Some(TruePixel::BLACK)),
-            BlendMode::Normal
-        ).unwrap();
+            LayersType::Indexed(layers) => {
+                Layer::merge(
+                    layers.dim(),
+                    &Layer{
+                        opacity: 255,
+                        mute: false,
+                        ..layers.get_layer(self.focus.1 as usize)
+                            .ok_or(ProjectError::LayersError(
+                                LayersError::IndexOutOfBounds(self.focus.1 as usize, layers.len())))?
+                            .clone()
+                    },
+                    &Layer::new_with_solid_color(layers.dim(), Some(TruePixel::BLACK)),
+                    BlendMode::Normal,
+                )?;
+            },
+        },
 
         let out_pixels = net_scene.render(
             self.out_dim, self.out_mul, self.out_repeat, self.focus.0
@@ -135,7 +152,7 @@ impl Project {
     /// [om]: Project::get_out_mul
     /// [or]: #structfield.out_repeat
     pub fn render(&self) -> Vec<OPixel> {
-        self.canvas.inner().merged_scene(Some(TruePixel::BLACK)).render(
+        self.canvas.merged_scene(Some(TruePixel::BLACK)).render(
             self.out_dim, self.out_mul, self.out_repeat, self.focus.0
         )
     }
@@ -151,17 +168,17 @@ impl Project {
     pub fn is_cursor_at(&self, cursor: &(UCoord, u16)) -> Result<bool, ProjectError> {
         use ProjectError::{ CursorCoordOutOfBounds, CursorLayerOutOfBounds };
 
-        if cursor.1 < self.canvas.inner().num_layers() {
-            if cursor.0.x < self.canvas.inner().dim().x() &&
-               cursor.0.y < self.canvas.inner().dim().y()
+        if cursor.1 < self.canvas.layers().len() {
+            if cursor.0.x < self.canvas.dim().x() &&
+               cursor.0.y < self.canvas.dim().y()
             {
                 Ok(self.cursors.get(cursor).is_some())
             }
             else {
-                Err(CursorCoordOutOfBounds(cursor.0.clone(), self.canvas.inner().dim()))
+                Err(CursorCoordOutOfBounds(cursor.0.clone(), self.canvas.dim()))
             }
         } else {
-            Err(CursorLayerOutOfBounds(cursor.1, self.canvas.inner().num_layers()))
+            Err(CursorLayerOutOfBounds(cursor.1, self.canvas.layers().len()))
         }
     }
 
@@ -176,9 +193,9 @@ impl Project {
     pub fn toggle_cursor_at(&mut self, cursor: &(UCoord, u16)) -> Result<(), ProjectError> {
         use ProjectError::{ CursorCoordOutOfBounds, CursorLayerOutOfBounds };
 
-        if cursor.1 < self.canvas.inner().num_layers() {
-            if cursor.0.x < self.canvas.inner().dim().x() &&
-               cursor.0.y < self.canvas.inner().dim().y()
+        if cursor.1 < self.canvas.layers().len() {
+            if cursor.0.x < self.canvas.dim().x() &&
+               cursor.0.y < self.canvas.dim().y()
             {
                 if self.cursors.get(&cursor).is_some() {
                     self.cursors.remove(&cursor).unwrap();
@@ -190,10 +207,10 @@ impl Project {
                 Ok(())
             }
             else {
-                Err(CursorCoordOutOfBounds(cursor.0, self.canvas.inner().dim()))
+                Err(CursorCoordOutOfBounds(cursor.0, self.canvas.dim()))
             }
         } else {
-            Err(CursorLayerOutOfBounds(cursor.1, self.canvas.inner().num_layers()))
+            Err(CursorLayerOutOfBounds(cursor.1, self.canvas.layers().len()))
         }
     }
 
