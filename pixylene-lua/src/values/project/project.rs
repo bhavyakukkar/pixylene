@@ -165,7 +165,7 @@ impl TealData for Project {
             for (coord, layer) in this.0.borrow().project.cursors() {
                 let element = lua_ctx.create_table()?;
                 element.set("coord", UCoord(coord.clone()))?;
-                element.set("layer", *layer)?;
+                element.set("layer", *layer + 1)?;
                 cursors.push(element);
             }
             Ok(cursors)
