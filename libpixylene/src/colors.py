@@ -1,23 +1,23 @@
 a = "#ffffff00" #white
 b = "#00000000" #black
-c = "#f44336"
-d = "#ff9800"
-e = "#ffc107"
-f = "#ffeb3b"
-g = "#cddc39"
-h = "#8bc348"
-i = "#4caf50"
-j = "#009688"
-k = "#00bcd4"
-l = "#03a9f4"
-m = "#2196f3"
-n = "#3f51b5"
-o = "#673ab7"
-p = "#9c27b0"
-q = "#f06292"
-r = "#ff1744"
-s = "#ff5722"
-t = "#3e2723"
+c = "#f44336ff"
+d = "#ff9800ff"
+e = "#ffc107ff"
+f = "#ffeb3bff"
+g = "#cddc39ff"
+h = "#8bc348ff"
+i = "#4caf50ff"
+j = "#009688ff"
+k = "#00bcd4ff"
+l = "#03a9f4ff"
+m = "#2196f3ff"
+n = "#3f51b5ff"
+o = "#673ab7ff"
+p = "#9c27b0ff"
+q = "#f06292ff"
+r = "#ff1744ff"
+s = "#ff5722ff"
+t = "#3e2723ff"
 
 
 grid = [
@@ -97,13 +97,15 @@ grids = [
 
 ]
 
-for i in range(len(grids)):
-    grid = grids[i]
-    print(f"let layer{i} = Layer {{ scene: Scene::new(Coord{{ x: 3, y: 3 }}, vec![")
+#for i in range(len(grids)):
+for i in range(1):
+    #grid = grids[i]
+    #print(f"let layer{i} = Layer {{ scene: Scene::new(Coord{{ x: 3, y: 3 }}, vec![")
+    print(f"Scene::new(PCoord::new(3, 3).unwrap(), vec![")
     for row in grid:
         for x in row:
             print(
-                "Some(Pixel4{{r:{},g:{},b:{},a:{}}}),"
+                "Some(Pixel{{r:{},g:{},b:{},a:{}}}),"
                 .format(
                     *list(map(
                         lambda hx: int(f"0x{hx}", 16), [x[1:3], x[3:5], x[5:7], x[7:]]
@@ -112,4 +114,4 @@ for i in range(len(grids)):
                 end=''
             )
         print()
-    print("]).unwrap(), opacity: 255 };")
+    print("]).unwrap()")

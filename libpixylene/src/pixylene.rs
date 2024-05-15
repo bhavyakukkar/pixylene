@@ -61,37 +61,33 @@ impl Pixylene {
     }
 
     //To/Fro PNG File
-    //pub fn import(path: &PathBuf, defaults: &PixyleneDefaults) -> Result<Pixylene, PixyleneError> {
-    //    let png_file = PngFile::read(path)?;
-    //    let scene = png_file.to_scene()?;
-    //    let mut canvas = Canvas::new(scene.dim(), defaults.palette.clone());
-    //    let mut canvas = Canvas{ layers: LayersType::
-    //    canvas.layers_mut()
-    //        .add_layer(Layer {
-    //            scene,
-    //            opacity: 255,
-    //            mute: false,
-    //            blend_mode: BlendMode::Normal,
-    //        })
-    //        .unwrap(); //cant fail, this is first layer, not 257th
+    pub fn import(path: &PathBuf, defaults: &PixyleneDefaults) -> Result<Pixylene, PixyleneError> {
+        let png_file = PngFile::read(path)?;
+        let scene = png_file.to_scene()?;
+        let mut layers = Layers::<TruePixel>::new(scene.dim());
+        layers.add_layer(Layer{ scene, opacity: 255, mute: false, blend_mode: BlendMode::Normal })
+            .unwrap(); //cant fail because layers was constructed on same scene's dim
+        let canvas = Canvas{
+            layers: LayersType::True(layers),
+            palette: defaults.palette.clone(),
+        };
+        let mut project = Project::new(canvas);
+        project.out_repeat = defaults.repeat;
 
-    //    let mut project = Project::from(canvas);
-    //    project.out_repeat = defaults.repeat;
+        Ok(Pixylene { project })
+    }
 
-    //    Ok(Pixylene { project })
-    //}
-
-    //pub fn export(&self, path: &PathBuf, scale_up: u16) -> Result<(), PixyleneError> {
-    //    PngFile::from_scene(
-    //        &self.project.canvas().inner().merged_scene(None),
-    //        //todo: use from Pixylene struct instead of defaults
-    //        png::ColorType::Rgba,
-    //        png::BitDepth::Eight,
-    //        scale_up,
-    //    )?
-    //    .write(path)?;
-    //    Ok(())
-    //}
+    pub fn export(&self, path: &PathBuf/*, scale_up: u16*/) -> Result<(), PixyleneError> {
+        PngFile::from_scene(
+            &self.project.canvas.merged_scene(None),
+            //todo: use from Pixylene struct instead of defaults
+            png::ColorType::Rgba,
+            png::BitDepth::Eight,
+            //scale_up,
+        )?
+        .write(path)?;
+        Ok(())
+    }
 }
 
 // Error Types

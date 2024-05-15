@@ -1,8 +1,8 @@
 use crate::types::{PCoord, TruePixel, IndexedPixel, Pixel};
-use super::{Scene, Palette, Layer};
+use super::{Palette, Layer};
 
 use serde::{Serialize, Deserialize};
-use std::{fmt, ops::{Index, IndexMut}, iter::Map, slice::{Iter, IterMut}};
+use std::{fmt, ops::{Index, IndexMut}, slice::{Iter, IterMut}};
 
 
 /// The maximum number of Layers that a Canvas is allowed to have
@@ -28,78 +28,6 @@ impl<T: Pixel> IndexMut<u16> for Layers<T> {
     }
 }
 
-//pub struct LayersIter<T: Pixel> {
-//    //pub iter: Iter<'a, Layer<T>>,
-//    pub iter: Box<dyn Iterator<Item = Layer<T>>>,
-//}
-
-//impl<T: Pixel> Iterator for LayersIter<T> {
-//    type Item = Layer<T>;
-//    fn next(&mut self) -> Option<Layer<T>> {
-//        (*self.iter).next()
-//    }
-//}
-
-//impl<T, F, S> From<Map<LayersIter<S>, F>> for LayersIter<T>
-//where
-//    T: Pixel,
-//    S: Pixel + 'static,
-//    F: FnMut(Layer<S>) -> Layer<T> + 'static,
-//{
-//    fn from(item: Map<LayersIter<S>, F>) -> LayersIter<T> {
-//        LayersIter{ iter: Box::new(item) }
-//    }
-//}
-
-//pub struct LayersIter<'a, T: Pixel> {
-//    pub layers: VecDeque<&'a Layer<T>>,
-//}
-//
-//impl<'a, T: Pixel> Iterator for LayersIter<'a, T> {
-//    type Item = &'a Layer<T>;
-//    fn next(&mut self) -> Option<&'a Layer<T>> {
-//        self.layers.pop_front()
-//    }
-//}
-
-/*
-impl<T: Pixel> From<Iter<'_, Layer<T>>> for LayersIter<'_, T> {
-    fn from(item: Iter<Layer<T>>) -> LayersIter<T> {
-        LayersIter{ iter: item.collect::<VecDeque<&Layer<T>>>() }
-    }
-}
-*/
-
-/*
-struct LayersIter<T, F> {
-    layer: Layer<T>,
-    func: F,
-}
-
-impl<T, F> Iterator for LayersIter<T, F>
-where
-    T: Pixel,
-    F: FnOnce(Layer<T>) -> Layer<T>,
-{
-    type Item = Layer<T>;
-
-    fn next(&mut self) -> Option<Layer<T>> {
-        self.iter.next().map(&mut self.func)
-    }
-}
-
-// Define a helper function to create the wrapper
-fn layers_iter<F, T>(iter: Layer<T>, func: F) -> MapIter<Layer<T>, F>
-where
-    T: Iterator<Item = T>,
-    F: FnOnce(Layer<T>) -> Layer<T>,
-{
-    LayersIter { layer, func }
-}
-*/
-
-//type LayersIter<'a, T> = Iter<'a, Layer<T>>;
-
 impl<T: Pixel> TryFrom<Vec<Layer<T>>> for Layers<T> {
     type Error = LayersError;
 
@@ -114,24 +42,6 @@ impl<T: Pixel> TryFrom<Vec<Layer<T>>> for Layers<T> {
         Ok(layers)
     }
 }
-
-//impl<T, S> TryFrom<S> for Layers<T>
-//where
-//    T: Pixel,
-//    S: Iterator<Item = Layer<T>>,
-//{
-//    type Error = LayersError;
-//
-//    fn try_from(mut item: S) -> Result<Layers<T>, LayersError> {
-//        let first_layer = item.next().ok_or(LayersError::NoDimensionInformation)?;
-//        let mut layers = Layers::<T>::new(first_layer.scene.dim());
-//        layers.add_layer(first_layer.clone()).unwrap(); //cant fail, first_layer has same dim as layers
-//        while let Some(layer) = item.next() {
-//            layers.add_layer(layer.clone())?;
-//        }
-//        Ok(layers)
-//    }
-//}
 
 impl<T: Pixel> Layers<T> {
 

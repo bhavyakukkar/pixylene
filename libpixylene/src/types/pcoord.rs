@@ -3,34 +3,62 @@ use super::UCoord;
 use std::fmt;
 use serde::{ Serialize, Deserialize };
 
-/// A `P`ositive `Coord`inate type composed of two positive (>= 1) 16-bit unsigned integers.
+/// A `P`ositive `Coord`inate type composed of two positive (>= 1) unsigned integers.
 ///
 /// `This type can not be constructed directly, use `[`PCoord::new`][new]` to construct.`
 ///
 /// [new]: #method.new
 #[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Default, Debug, Savefile)]
-pub struct PCoord { x: u16, y: u16 }
+pub struct PCoord<T=u16>
+where T: Into<u128> + Copy
+{
+    x: T,
+    y: T,
+}
 
-impl PCoord {
+
+impl PCoord<u16> {
     /// The largest value allowed as a coordinate of a PCoord
     pub const MAX: isize = u16::MAX as isize;
 
     /// The smallest value allowed as a coordinate of a PCoord
     pub const MIN: isize = 1;
 
+    /// Returns the product of the PCoord's coordinates
+    pub fn area(&self) -> u32 {
+        u32::from(self.x) * u32::from(self.y)
+    }
+}
 
-    /// Tries to construct & return a new PCoord with the given 'x' and 'y' coordinates
-    pub fn new(x: u16, y: u16) -> Result<Self, ()> {
-        if x > 0 && y > 0 { Ok(PCoord{x, y}) }
+impl PCoord<u32> {
+    /// The largest value allowed as a coordinate of a PCoord
+    pub const MAX: isize = u32::MAX as isize;
+
+    /// The smallest value allowed as a coordinate of a PCoord
+    pub const MIN: isize = 1;
+
+    /// Returns the product of the PCoord's coordinates
+    pub fn area(&self) -> u64 {
+        u64::from(self.x) * u64::from(self.y)
+    }
+}
+
+
+impl<T: Into<u128> + Copy> PCoord<T> {
+
+    /// Tries to construct & return a new PCoord with the given 'x' and 'y' coordinates, failing if
+    /// any of the coordinates are 0
+    pub fn new(x: T, y: T) -> Result<PCoord<T>, ()> {
+        if x.into() != 0 && y.into() != 0u128 { Ok(PCoord{x, y}) }
         else { Err(()) }
     }
 
     /// Gets the 'x' coordinate of the PCoord
-    pub fn x(&self) -> u16 { self.x }
+    pub fn x(&self) -> T { self.x }
 
-    /// Tries to set the 'x' coordinate of the PCoord
-    pub fn set_x(&mut self, x: u16) -> Result<(), ()> {
-        if x > 0 {
+    /// Tries to set the 'x' coordinate of the PCoord, failing if 0 is provided
+    pub fn set_x(&mut self, x: T) -> Result<(), ()> {
+        if x.into() != 0u128 {
             self.x = x;
             Ok(())
         } else {
@@ -39,21 +67,16 @@ impl PCoord {
     }
 
     /// Gets the 'y' coordinate of the PCoord
-    pub fn y(&self) -> u16 { self.y }
+    pub fn y(&self) -> T { self.y }
 
-    /// Tries to set the 'y' coordinate of the PCoord
-    pub fn set_y(&mut self, y: u16) -> Result<(), ()> {
-        if y > 0 {
+    /// Tries to set the 'y' coordinate of the PCoord, failing if 0 is provided
+    pub fn set_y(&mut self, y: T) -> Result<(), ()> {
+        if y.into() != 0u128 {
             self.y = y;
             Ok(())
         } else {
             Err(())
         }
-    }
-
-    /// Returns the product of the PCoord's coordinates
-    pub fn area(&self) -> u32 {
-        u32::from(self.x) * u32::from(self.y)
     }
 }
 
