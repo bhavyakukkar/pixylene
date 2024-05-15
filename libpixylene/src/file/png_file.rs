@@ -19,7 +19,7 @@ pub struct PngFile {
     width: u32,
     color_type: ColorType,
     bit_depth: BitDepth,
-    bytes: Vec<u8>
+    bytes: Vec<u8>,
 }
 
 impl PngFile {

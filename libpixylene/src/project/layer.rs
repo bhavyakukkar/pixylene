@@ -1,6 +1,6 @@
 use crate::{
-    types::{ self, UCoord, PCoord, Pixel, TruePixel, BlendMode },
-    project::{ Scene, SceneError },
+    types::{ self, UCoord, PCoord, Pixel, TruePixel, IndexedPixel, BlendMode },
+    project::{ Scene, SceneError, Palette },
     utils::messages::U32TOUSIZE,
 };
 
@@ -10,7 +10,7 @@ use serde::{ Deserialize, Serialize };
 
 /// A [`Scene`](Scene) with additional information including an opacity, mute switch and a
 /// [`BlendMode`](BlendMode).
-#[derive(Serialize, Deserialize, PartialEq, Savefile, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Savefile, Clone)]
 pub struct Layer<T=TruePixel>
 where T: Pixel
 {
@@ -35,7 +35,7 @@ impl<T: Pixel> Layer<T> {
     }
 }
 
-impl Layer{
+impl Layer {
     /// Return the net merged layer as a result of merging two truecolor layers with a given
     /// blend-mode
     ///
@@ -88,6 +88,28 @@ impl Layer{
             }
         }
         Ok(Scene::<TruePixel>::new(dimensions, merged_scene_grid).unwrap())
+    }
+}
+
+impl Layer<IndexedPixel> {
+    pub fn to_true_layer(&self, palette: &Palette) -> Layer<TruePixel> {
+        Layer::<TruePixel> {
+            scene: Scene::<TruePixel>::new(
+                self.scene.dim(),
+                self.scene.grid()
+                    .map(|index_maybe| match index_maybe {
+                        Some(index) => palette.get_color(index.0)
+                            .map(|true_pixel| Some(true_pixel.clone()))
+                            .unwrap_or(None),
+                        None => None,
+                    })
+                    .collect::<Vec<Option<TruePixel>>>()
+            ).unwrap(), //cant fail because x.dim() is used to construct scene from x.grid()
+                        //which are consistent
+            opacity: self.opacity,
+            mute: self.mute,
+            blend_mode: self.blend_mode.clone(),
+        }
     }
 }
 

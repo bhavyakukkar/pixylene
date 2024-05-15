@@ -1,16 +1,15 @@
-use crate::types::{PCoord, Pixel};
-use super::Layer;
+use crate::types::{PCoord, TruePixel, IndexedPixel, Pixel};
+use super::{Scene, Palette, Layer};
 
-use std::{fmt, ops::Index};
 use serde::{Serialize, Deserialize};
-use std::{ iter::Map, slice::{Iter, IterMut} };
+use std::{fmt, ops::{Index, IndexMut}, iter::Map, slice::{Iter, IterMut}};
 
 
 /// The maximum number of Layers that a Canvas is allowed to have
 pub const MAX_LAYERS: u16 = u16::MAX;
 
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Savefile)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Savefile)]
 pub struct Layers<T: Pixel> {
     layers: Vec<Layer<T>>,
     dimensions: PCoord,
@@ -23,28 +22,34 @@ impl<T: Pixel> Index<u16> for Layers<T> {
     }
 }
 
-pub struct LayersIter<T: Pixel> {
-    //pub iter: Iter<'a, Layer<T>>,
-    pub iter: Box<dyn Iterator<Item = Layer<T>>>,
-}
-
-impl<T: Pixel> Iterator for LayersIter<T> {
-    type Item = Layer<T>;
-    fn next(&mut self) -> Option<Layer<T>> {
-        (*self.iter).next()
+impl<T: Pixel> IndexMut<u16> for Layers<T> {
+    fn index_mut(&mut self, index: u16) -> &mut Layer<T> {
+        &mut self.layers[index as usize]
     }
 }
 
-impl<T, F, S> From<Map<LayersIter<S>, F>> for LayersIter<T>
-where
-    T: Pixel,
-    S: Pixel + 'static,
-    F: FnMut(Layer<S>) -> Layer<T> + 'static,
-{
-    fn from(item: Map<LayersIter<S>, F>) -> LayersIter<T> {
-        LayersIter{ iter: Box::new(item) }
-    }
-}
+//pub struct LayersIter<T: Pixel> {
+//    //pub iter: Iter<'a, Layer<T>>,
+//    pub iter: Box<dyn Iterator<Item = Layer<T>>>,
+//}
+
+//impl<T: Pixel> Iterator for LayersIter<T> {
+//    type Item = Layer<T>;
+//    fn next(&mut self) -> Option<Layer<T>> {
+//        (*self.iter).next()
+//    }
+//}
+
+//impl<T, F, S> From<Map<LayersIter<S>, F>> for LayersIter<T>
+//where
+//    T: Pixel,
+//    S: Pixel + 'static,
+//    F: FnMut(Layer<S>) -> Layer<T> + 'static,
+//{
+//    fn from(item: Map<LayersIter<S>, F>) -> LayersIter<T> {
+//        LayersIter{ iter: Box::new(item) }
+//    }
+//}
 
 //pub struct LayersIter<'a, T: Pixel> {
 //    pub layers: VecDeque<&'a Layer<T>>,
@@ -95,18 +100,38 @@ where
 
 //type LayersIter<'a, T> = Iter<'a, Layer<T>>;
 
-impl<T: Pixel> TryFrom<Iter<'_, Layer<T>>> for Layers<T> {
+impl<T: Pixel> TryFrom<Vec<Layer<T>>> for Layers<T> {
     type Error = LayersError;
-    fn try_from(mut item: Iter<Layer<T>>) -> Result<Layers<T>, LayersError> {
-        let first_layer = item.next().ok_or(LayersError::NoDimensionInformation)?;
+
+    fn try_from(item: Vec<Layer<T>>) -> Result<Layers<T>, LayersError> {
+        let mut layer_iter = item.iter();
+        let first_layer = layer_iter.next().ok_or(LayersError::NoDimensionInformation)?;
         let mut layers = Layers::<T>::new(first_layer.scene.dim());
         layers.add_layer(first_layer.clone()).unwrap(); //cant fail, first_layer has same dim as layers
-        while let Some(layer) = item.next() {
+        while let Some(layer) = layer_iter.next() {
             layers.add_layer(layer.clone())?;
         }
         Ok(layers)
     }
 }
+
+//impl<T, S> TryFrom<S> for Layers<T>
+//where
+//    T: Pixel,
+//    S: Iterator<Item = Layer<T>>,
+//{
+//    type Error = LayersError;
+//
+//    fn try_from(mut item: S) -> Result<Layers<T>, LayersError> {
+//        let first_layer = item.next().ok_or(LayersError::NoDimensionInformation)?;
+//        let mut layers = Layers::<T>::new(first_layer.scene.dim());
+//        layers.add_layer(first_layer.clone()).unwrap(); //cant fail, first_layer has same dim as layers
+//        while let Some(layer) = item.next() {
+//            layers.add_layer(layer.clone())?;
+//        }
+//        Ok(layers)
+//    }
+//}
 
 impl<T: Pixel> Layers<T> {
 
@@ -258,6 +283,18 @@ impl<T: Pixel> Layers<T> {
 
     fn _resize(&mut self, _new_dim: PCoord) {
         todo!()
+    }
+}
+
+impl Layers<IndexedPixel> {
+    /// Converts these indexed-color Layers to true-color Layers using the provided Palette from
+    /// which to extract true-color pixels corresponding to indexed-color indexes
+    pub fn to_true_layers(&self, palette: &Palette) -> Layers<TruePixel> {
+        Layers::<TruePixel>::try_from(self.layers.iter()
+            .map(|layer_indexed| layer_indexed.to_true_layer(palette))
+            .collect::<Vec<Layer<TruePixel>>>())
+        .unwrap() //cant fail because layers extracted from Layers which can only exist with
+                  //consistent-dimensions layers
     }
 }
 

@@ -16,6 +16,12 @@ pub struct Coord {
 
 impl Coord {
 
+    /// The largest value allowed as a coordinate of a Coord
+    pub const MAX: isize = i32::MAX as isize;
+
+    /// The smallest value allowed as a coordinate of a Coord
+    pub const MIN: isize = i32::MIN as isize;
+
     /// Returns a Coord with coordinates (0,0)
     pub fn zero() -> Coord {
         Self{ x: 0, y: 0 }

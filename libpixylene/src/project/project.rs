@@ -1,6 +1,6 @@
 use crate::{
     types::{ Coord, PCoord, UCoord, TruePixel, BlendMode },
-    project::{ Layer, OPixel, LayersError, TrueCanvas, IndexedCanvas, Canvas, LayersType },
+    project::{ Layer, OPixel, LayersError, Canvas, LayersType },
 };
 
 use std::collections::HashMap;
@@ -17,7 +17,6 @@ use std::iter::Iterator;
 pub struct Project {
     /// The [`Canvas`] composed into the Project.
     pub canvas: Canvas,
-    indexed: bool,
 
     /// The dimensions of the rendered output.
     pub out_dim: PCoord,
@@ -44,6 +43,21 @@ pub struct Project {
 }
 
 impl Project {
+
+    /// Creates a new empty Project containing the provided [`Canvas`]
+    pub fn new(canvas: Canvas) -> Self {
+        Self {
+            canvas,
+            focus: (Coord{x: 0, y: 0}, 0),
+            out_dim: PCoord::new(10, 10).unwrap(), //shouldn't fail
+            out_mul: 1,
+            out_repeat: PCoord::new(1, 1).unwrap(), //shouldn't fail
+            cursors: HashMap::new(),
+            num_cursors: 0,
+            sel_cursor: None,
+        }
+    }
+
     /// Gets the output multiplier of the Project
     ///
     /// Setters and getters are required for this attribute because out_mul is not allowed to be 0
@@ -87,22 +101,21 @@ impl Project {
     /// [or]: #structfield.out_repeat
     /// [ce]: ProjectError::LayersError
     pub fn render_layer(&self) -> Result<Vec<OPixel>, ProjectError> {
-        //over here
-        let net_scene = match self.canvas.layers {
+        let net_scene = match &self.canvas.layers {
             LayersType::True(layers) => {
                 Layer::merge(
                     layers.dim(),
                     &Layer{
                         opacity: 255,
                         mute: false,
-                        ..layers.get_layer(self.focus.1 as usize)
-                            .ok_or(ProjectError::LayersError(
-                                LayersError::IndexOutOfBounds(self.focus.1 as usize, layers.len())))?
+                        ..layers.get_layer(self.focus.1)
+                            .map_err(|err| ProjectError::LayersError(err))?
                             .clone()
                     },
                     &Layer::new_with_solid_color(layers.dim(), Some(TruePixel::BLACK)),
                     BlendMode::Normal,
-                )?;
+                ).unwrap() //cant fail because dimensions and layers taken from same Layers which
+                           //cannot exist with inconsistent-dimension layers
             },
             LayersType::Indexed(layers) => {
                 Layer::merge(
@@ -110,16 +123,17 @@ impl Project {
                     &Layer{
                         opacity: 255,
                         mute: false,
-                        ..layers.get_layer(self.focus.1 as usize)
-                            .ok_or(ProjectError::LayersError(
-                                LayersError::IndexOutOfBounds(self.focus.1 as usize, layers.len())))?
+                        ..layers.get_layer(self.focus.1)
+                            .map(|layer_indexed| layer_indexed.to_true_layer(&self.canvas.palette))
+                            .map_err(|err| ProjectError::LayersError(err))?
                             .clone()
                     },
                     &Layer::new_with_solid_color(layers.dim(), Some(TruePixel::BLACK)),
                     BlendMode::Normal,
-                )?;
+                ).unwrap() //cant fail because dimensions and layers taken from same Layers which
+                           //cannot exist with inconsistent-dimension layers
             },
-        },
+        };
 
         let out_pixels = net_scene.render(
             self.out_dim, self.out_mul, self.out_repeat, self.focus.0
@@ -168,17 +182,17 @@ impl Project {
     pub fn is_cursor_at(&self, cursor: &(UCoord, u16)) -> Result<bool, ProjectError> {
         use ProjectError::{ CursorCoordOutOfBounds, CursorLayerOutOfBounds };
 
-        if cursor.1 < self.canvas.layers().len() {
-            if cursor.0.x < self.canvas.dim().x() &&
-               cursor.0.y < self.canvas.dim().y()
+        if cursor.1 < self.canvas.layers.len() {
+            if cursor.0.x < self.canvas.layers.dim().x() &&
+               cursor.0.y < self.canvas.layers.dim().y()
             {
                 Ok(self.cursors.get(cursor).is_some())
             }
             else {
-                Err(CursorCoordOutOfBounds(cursor.0.clone(), self.canvas.dim()))
+                Err(CursorCoordOutOfBounds(cursor.0.clone(), self.canvas.layers.dim()))
             }
         } else {
-            Err(CursorLayerOutOfBounds(cursor.1, self.canvas.layers().len()))
+            Err(CursorLayerOutOfBounds(cursor.1, self.canvas.layers.len()))
         }
     }
 
@@ -193,9 +207,9 @@ impl Project {
     pub fn toggle_cursor_at(&mut self, cursor: &(UCoord, u16)) -> Result<(), ProjectError> {
         use ProjectError::{ CursorCoordOutOfBounds, CursorLayerOutOfBounds };
 
-        if cursor.1 < self.canvas.layers().len() {
-            if cursor.0.x < self.canvas.dim().x() &&
-               cursor.0.y < self.canvas.dim().y()
+        if cursor.1 < self.canvas.layers.len() {
+            if cursor.0.x < self.canvas.layers.dim().x() &&
+               cursor.0.y < self.canvas.layers.dim().y()
             {
                 if self.cursors.get(&cursor).is_some() {
                     self.cursors.remove(&cursor).unwrap();
@@ -207,10 +221,10 @@ impl Project {
                 Ok(())
             }
             else {
-                Err(CursorCoordOutOfBounds(cursor.0, self.canvas.dim()))
+                Err(CursorCoordOutOfBounds(cursor.0, self.canvas.layers.dim()))
             }
         } else {
-            Err(CursorLayerOutOfBounds(cursor.1, self.canvas.layers().len()))
+            Err(CursorLayerOutOfBounds(cursor.1, self.canvas.layers.len()))
         }
     }
 
@@ -232,33 +246,33 @@ impl Project {
     }
 }
 
-impl From<CanvasType> for Project {
-    fn from(canvas: CanvasType) -> Project {
-        Project {
-            indexed: if let CanvasType::Indexed(_) = canvas { true } else { false },
-            canvas,
-            focus: (Coord{x: 0, y: 0}, 0),
-            out_dim: PCoord::new(10, 10).unwrap(), //shouldn't fail
-            out_mul: 1,
-            out_repeat: PCoord::new(1, 1).unwrap(), //shouldn't fail
-            cursors: HashMap::new(),
-            num_cursors: 0,
-            sel_cursor: None,
-        }
-    }
-}
+//impl From<CanvasType> for Project {
+//    fn from(canvas: CanvasType) -> Project {
+//        Project {
+//            indexed: if let CanvasType::Indexed(_) = canvas { true } else { false },
+//            canvas,
+//            focus: (Coord{x: 0, y: 0}, 0),
+//            out_dim: PCoord::new(10, 10).unwrap(), //shouldn't fail
+//            out_mul: 1,
+//            out_repeat: PCoord::new(1, 1).unwrap(), //shouldn't fail
+//            cursors: HashMap::new(),
+//            num_cursors: 0,
+//            sel_cursor: None,
+//        }
+//    }
+//}
 
-impl From<TrueCanvas> for Project {
-    fn from(canvas: TrueCanvas) -> Project {
-        Project::from(CanvasType::True(canvas))
-    }
-}
+//impl From<TrueCanvas> for Project {
+//    fn from(canvas: TrueCanvas) -> Project {
+//        Project::from(CanvasType::True(canvas))
+//    }
+//}
 
-impl From<IndexedCanvas> for Project {
-    fn from(canvas: IndexedCanvas) -> Project {
-        Project::from(CanvasType::Indexed(canvas))
-    }
-}
+//impl From<IndexedCanvas> for Project {
+//    fn from(canvas: IndexedCanvas) -> Project {
+//        Project::from(CanvasType::Indexed(canvas))
+//    }
+//}
 
 
 // Error Types

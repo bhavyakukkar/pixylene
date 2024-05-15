@@ -12,6 +12,13 @@ use serde::{ Serialize, Deserialize };
 pub struct PCoord { x: u16, y: u16 }
 
 impl PCoord {
+    /// The largest value allowed as a coordinate of a PCoord
+    pub const MAX: isize = u16::MAX as isize;
+
+    /// The smallest value allowed as a coordinate of a PCoord
+    pub const MIN: isize = 1;
+
+
     /// Tries to construct & return a new PCoord with the given 'x' and 'y' coordinates
     pub fn new(x: u16, y: u16) -> Result<Self, ()> {
         if x > 0 && y > 0 { Ok(PCoord{x, y}) }

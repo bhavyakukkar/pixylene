@@ -1,7 +1,7 @@
 use crate::{
     file::{PngFile, PngFileError, ProjectFile, ProjectFileError, CanvasFile, CanvasFileError},
-    project::{Layer, Palette, TrueCanvas, IndexedCanvas, Project, SceneError},
-    types::{BlendMode, PCoord},
+    project::{Layer, Layers, LayersType, Palette, Canvas, Project, SceneError},
+    types::{BlendMode, PCoord, TruePixel, IndexedPixel},
 };
 use std::path::PathBuf;
 
@@ -21,36 +21,35 @@ impl Pixylene {
     /// Creates a new empty Project containing an empty true-color Canvas if `indexed` is false or
     /// an empty indexed-color Canvas if `indexed` is true.
     pub fn new(defaults: &PixyleneDefaults, indexed: bool) -> Self {
-        let mut project: Project;
-        if indexed {
-            project = Project::from(
-                IndexedCanvas::new(defaults.dim, defaults.palette.clone()));
-        } else {
-            project = Project::from(
-                TrueCanvas::new(defaults.dim, defaults.palette.clone()));
-        }
-
+        let mut project = Project::new(Canvas{
+            palette: defaults.palette.clone(),
+            layers: if indexed {
+                LayersType::Indexed(Layers::<IndexedPixel>::new(defaults.dim))
+            } else {
+                LayersType::True(Layers::<TruePixel>::new(defaults.dim))
+            },
+        });
         project.out_repeat = defaults.repeat;
         Self { project }
     }
 
     // To/Fro Canvas File
-    pub fn open_canvas(path: &PathBuf, defaults: &PixyleneDefaults) -> Result<Pixylene, PixyleneError> {
+    pub fn open_canvas(path: &PathBuf, defaults: &PixyleneDefaults) -> Result<Self, PixyleneError> {
         CanvasFile::read(path)
             .map(|canvas| {
-                let mut p = Project::from(canvas);
-                p.out_repeat = defaults.repeat;
-                Pixylene { project: p }
+                let mut project = Project::new(canvas);
+                project.out_repeat = defaults.repeat;
+                Self { project }
             })
             .map_err(|error| PixyleneError::CanvasFileError(error))
     }
     pub fn save_canvas(&self, path: &PathBuf) -> Result<(), PixyleneError> {
-        CanvasFile::write(path, self.project.canvas())
+        CanvasFile::write(path, &self.project.canvas)
             .map_err(|err| PixyleneError::CanvasFileError(err))
     }
 
     //To/Fro Project File
-    pub fn open_project(path: &PathBuf) -> Result<Pixylene, PixyleneError> {
+    pub fn open_project(path: &PathBuf) -> Result<Self, PixyleneError> {
         match (ProjectFile { version: 0 }).read(path) {
             Ok(project) => Ok(Pixylene { project }),
             Err(error) => Err(PixyleneError::ProjectFileError(error)),
@@ -62,36 +61,37 @@ impl Pixylene {
     }
 
     //To/Fro PNG File
-    pub fn import(path: &PathBuf, defaults: &PixyleneDefaults) -> Result<Pixylene, PixyleneError> {
-        let png_file = PngFile::read(path)?;
-        let scene = png_file.to_scene()?;
-        let mut canvas = TrueCanvas::new(scene.dim(), defaults.palette.clone());
-        canvas.layers_mut()
-            .add_layer(Layer {
-                scene,
-                opacity: 255,
-                mute: false,
-                blend_mode: BlendMode::Normal,
-            })
-            .unwrap(); //cant fail, this is first layer, not 257th
+    //pub fn import(path: &PathBuf, defaults: &PixyleneDefaults) -> Result<Pixylene, PixyleneError> {
+    //    let png_file = PngFile::read(path)?;
+    //    let scene = png_file.to_scene()?;
+    //    let mut canvas = Canvas::new(scene.dim(), defaults.palette.clone());
+    //    let mut canvas = Canvas{ layers: LayersType::
+    //    canvas.layers_mut()
+    //        .add_layer(Layer {
+    //            scene,
+    //            opacity: 255,
+    //            mute: false,
+    //            blend_mode: BlendMode::Normal,
+    //        })
+    //        .unwrap(); //cant fail, this is first layer, not 257th
 
-        let mut project = Project::from(canvas);
-        project.out_repeat = defaults.repeat;
+    //    let mut project = Project::from(canvas);
+    //    project.out_repeat = defaults.repeat;
 
-        Ok(Pixylene { project })
-    }
+    //    Ok(Pixylene { project })
+    //}
 
-    pub fn export(&self, path: &PathBuf, scale_up: u16) -> Result<(), PixyleneError> {
-        PngFile::from_scene(
-            &self.project.canvas().inner().merged_scene(None),
-            //todo: use from Pixylene struct instead of defaults
-            png::ColorType::Rgba,
-            png::BitDepth::Eight,
-            scale_up,
-        )?
-        .write(path)?;
-        Ok(())
-    }
+    //pub fn export(&self, path: &PathBuf, scale_up: u16) -> Result<(), PixyleneError> {
+    //    PngFile::from_scene(
+    //        &self.project.canvas().inner().merged_scene(None),
+    //        //todo: use from Pixylene struct instead of defaults
+    //        png::ColorType::Rgba,
+    //        png::BitDepth::Eight,
+    //        scale_up,
+    //    )?
+    //    .write(path)?;
+    //    Ok(())
+    //}
 }
 
 // Error Types

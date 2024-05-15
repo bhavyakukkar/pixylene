@@ -11,7 +11,7 @@ use serde::{ Serialize, Deserialize };
 ///
 /// The palette works by using a hashmap of u8 indexes to pixel definitions, and the most
 /// significant color at any time can be chosen by its index and picked.
-#[derive(Serialize, Deserialize, PartialEq, Savefile, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Savefile, Clone)]
 pub struct Palette {
     colors: HashMap<u8, TruePixel>,
     equipped: Option<u8>,

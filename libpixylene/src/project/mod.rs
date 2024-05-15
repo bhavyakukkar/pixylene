@@ -8,10 +8,10 @@ mod layer;
 pub use layer::{ Layer, LayerError };
 
 mod layers;
-pub use layers::{ Layers, LayersIter, LayersError };
+pub use layers::{ Layers, LayersError };
 
-mod generic_canvas;
-pub use generic_canvas::{ GenericCanvas, TrueCanvas, IndexedCanvas };
+//mod generic_canvas;
+//pub use generic_canvas::{ GenericCanvas, TrueCanvas, IndexedCanvas };
 
 //mod canvas;
 //pub use canvas::{ CanvasType, Canvas };

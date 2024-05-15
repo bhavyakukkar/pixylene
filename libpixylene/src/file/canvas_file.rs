@@ -1,10 +1,10 @@
-use crate::project::CanvasType;
+use crate::project::Canvas;
 
 use std::{ fs, io, fmt, path::{ Path, PathBuf } };
 use serde_json::{ to_string, from_str };
 
 
-impl CanvasType {
+impl Canvas {
     //todo: remove after shifting filing responsibility to pixylene-ui
     pub fn to_json(&self) -> Result<String, serde_json::Error> {
         to_string(self)
@@ -15,7 +15,7 @@ impl CanvasType {
 pub struct CanvasFile;
 
 impl CanvasFile {
-    pub fn read(path: &PathBuf) -> Result<CanvasType, CanvasFileError> {
+    pub fn read(path: &PathBuf) -> Result<Canvas, CanvasFileError> {
         use CanvasFileError::{ ReadError, DeserializeError };
 
         Ok(from_str(
@@ -23,7 +23,7 @@ impl CanvasFile {
         ).map_err(|err| DeserializeError(path.clone(), err))?)
     }
 
-    pub fn write(path: &PathBuf, canvas: &CanvasType) -> Result<(), CanvasFileError> {
+    pub fn write(path: &PathBuf, canvas: &Canvas) -> Result<(), CanvasFileError> {
         use CanvasFileError::{ WriteError, SerializeError };
         use std::io::Write;
 
