@@ -1,10 +1,9 @@
 use crate::{
-    file::{PngFile, PngFileError, ProjectFile, ProjectFileError, CanvasFile, CanvasFileError},
-    project::{Layer, Layers, LayersType, Palette, Canvas, Project, SceneError},
-    types::{BlendMode, PCoord, TruePixel, IndexedPixel},
+    file::{CanvasFile, CanvasFileError, PngFile, PngFileError, ProjectFile, ProjectFileError},
+    project::{Canvas, Layer, Layers, LayersType, Palette, Project, SceneError},
+    types::{BlendMode, IndexedPixel, PCoord, TruePixel},
 };
 use std::path::PathBuf;
-
 
 #[derive(Clone)]
 pub struct PixyleneDefaults {
@@ -21,7 +20,7 @@ impl Pixylene {
     /// Creates a new empty Project containing an empty true-color Canvas if `indexed` is false or
     /// an empty indexed-color Canvas if `indexed` is true.
     pub fn new(defaults: &PixyleneDefaults, indexed: bool) -> Self {
-        let mut project = Project::new(Canvas{
+        let mut project = Project::new(Canvas {
             palette: defaults.palette.clone(),
             layers: if indexed {
                 LayersType::Indexed(Layers::<IndexedPixel>::new(defaults.dim))
@@ -56,18 +55,32 @@ impl Pixylene {
         }
     }
     pub fn save_project(&self, path: &PathBuf) -> Result<(), PixyleneError> {
-        (ProjectFile { version: 0 }).write(path, &self.project)
+        (ProjectFile { version: 0 })
+            .write(path, &self.project)
             .map_err(|err| PixyleneError::ProjectFileError(err))
     }
 
     //To/Fro PNG File
-    pub fn import(path: &PathBuf, defaults: &PixyleneDefaults) -> Result<Pixylene, PixyleneError> {
-        let png_file = PngFile::read(path)?;
-        let scene = png_file.to_scene()?;
+    pub fn import(
+        path: &PathBuf,
+        resize: Option<PCoord<u32>>,
+        defaults: &PixyleneDefaults,
+    ) -> Result<Pixylene, PixyleneError> {
+        let mut png = PngFile::read(path)?;
+        if let Some(resize) = resize {
+            png.resize(resize)?;
+        }
+        let scene = png.to_scene()?;
         let mut layers = Layers::<TruePixel>::new(scene.dim());
-        layers.add_layer(Layer{ scene, opacity: 255, mute: false, blend_mode: BlendMode::Normal })
+        layers
+            .add_layer(Layer {
+                scene,
+                opacity: 255,
+                mute: false,
+                blend_mode: BlendMode::Normal,
+            })
             .unwrap(); //cant fail because layers was constructed on same scene's dim
-        let canvas = Canvas{
+        let canvas = Canvas {
             layers: LayersType::True(layers),
             palette: defaults.palette.clone(),
         };
@@ -77,15 +90,22 @@ impl Pixylene {
         Ok(Pixylene { project })
     }
 
-    pub fn export(&self, path: &PathBuf/*, scale_up: u16*/) -> Result<(), PixyleneError> {
-        PngFile::from_scene(
+    pub fn export(
+        &self,
+        resize: Option<PCoord<u32>>,
+        path: &PathBuf, /*, scale_up: u16*/
+    ) -> Result<(), PixyleneError> {
+        let mut png = PngFile::from_scene(
             &self.project.canvas.merged_scene(None),
             //todo: use from Pixylene struct instead of defaults
             png::ColorType::Rgba,
             png::BitDepth::Eight,
             //scale_up,
-        )?
-        .write(path)?;
+        )?;
+        if let Some(resize) = resize {
+            png.resize(resize)?;
+        }
+        png.write(path)?;
         Ok(())
     }
 }

@@ -6,6 +6,7 @@
 *** DONE dimensions should show on statusline
 *** DONE PrintCommandList to print possible commands. can be done simply with parse_cmd("--help")
 *** TODO IndexedScene for use with indexed images
+*** TODO exporting console_out does not indicate that .png will be added
 *** TODO command history (check if problems can be solved with default implementation, if not, use flags to determine whether target wants provide implementation for console_out or use default implementation)
 *** TODO rename UiFn to Cmd
 *** TODO like every_frame, have entry initialize to run uifns on startup

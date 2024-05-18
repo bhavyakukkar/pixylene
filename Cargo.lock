@@ -670,6 +670,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -723,6 +732,7 @@ name = "libpixylene"
 version = "0.1.0"
 dependencies = [
  "hex",
+ "itertools 0.13.0",
  "png",
  "resize",
  "savefile",
@@ -1505,7 +1515,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "04a79794fae9f370d087d12037d58a4c86ec8c116a6bb4ccaa1ff63f9a4fe3ce"
 dependencies = [
  "bstr 0.2.17",
- "itertools",
+ "itertools 0.10.5",
  "mlua",
  "serde",
  "serde_json",
