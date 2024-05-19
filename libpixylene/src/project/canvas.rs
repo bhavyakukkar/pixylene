@@ -1,46 +1,61 @@
-use crate::types::{PCoord, TruePixel, IndexedPixel};
-use super::{GenericCanvas, Palette, Layers, Scene};
+use crate::types::{PCoord, BlendMode, TruePixel, IndexedPixel};
+use super::{Scene, Layer, Layers, Palette};
 use serde::{Serialize, Deserialize};
-use std::boxed::Box;
 
 
-#[derive(Clone, Serialize, Deserialize, PartialEq, Savefile)]
-pub enum CanvasType {
-    True(GenericCanvas<TruePixel>),
-    Indexed(GenericCanvas<IndexedPixel>),
+#[derive(Debug, Savefile, Serialize, Deserialize)]
+pub enum LayersType {
+    True(Layers<TruePixel>),
+    Indexed(Layers<IndexedPixel>),
 }
 
-impl CanvasType {
-    pub fn inner(&self) -> &dyn Canvas {
-        use CanvasType::*;
+impl LayersType {
+    pub fn dim(&self) -> PCoord {
         match self {
-            True(c) => c,
-            Indexed(c) => c,
+            LayersType::True(layers) => layers.dim(),
+            LayersType::Indexed(layers) => layers.dim(),
         }
     }
 
-    pub fn inner_mut(&mut self) -> &mut dyn Canvas {
-        use CanvasType::*;
+    pub fn len(&self) -> u16 {
         match self {
-            True(c) => { return c; },
-            Indexed(c) => { return c; },
+            LayersType::True(layers) => layers.len(),
+            LayersType::Indexed(layers) => layers.len(),
         }
     }
 }
 
+#[derive(Debug, Savefile, Serialize, Deserialize)]
+pub struct Canvas {
+    pub layers: LayersType,
+    pub palette: Palette,
+}
 
-pub trait Canvas {
-    fn layers_true(&self) -> Layers<TruePixel>;
-    fn layers_indexed(&self) -> Layers<IndexedPixel>;
-
-    //fn layers_true<'a>(&self) -> &'a Layers<TruePixel>;
-    //fn layers_true_mut<'a>(&'a mut self) -> &'a mut Layers<TruePixel>;
-
-    //fn layers_indexed<'a>(&'a self) -> &'a Layers<IndexedPixel>;
-    //fn layers_indexed_mut<'a>(&'a mut self) -> &'a mut Layers<IndexedPixel>;
-
-    fn palette<'a>(&'a mut self) -> &'a mut Palette;
-    fn merged_scene(&self, background: Option<TruePixel>) -> Scene;
-    fn dim(&self) -> PCoord;
-    fn num_layers(&self) -> u16;
+impl Canvas {
+    pub fn merged_scene(&self, background: Option<TruePixel>) -> Scene {
+        let mut net_layer = Layer::<TruePixel>::new_with_solid_color(self.layers.dim(), background);
+        let layer_conv;
+        let layers_true: &Layers<TruePixel> = match &self.layers {
+            LayersType::True(layers_true) => layers_true,
+            LayersType::Indexed(layers_indexed) => {
+                layer_conv = layers_indexed.to_true_layers(&self.palette);
+                &layer_conv
+            },
+        };
+        for k in 0..layers_true.len() {
+            if layers_true[k].mute { continue; }
+            net_layer = Layer {
+                scene: Layer::merge(
+                    layers_true.dim(),
+                    &layers_true[k],
+                    &net_layer,
+                    BlendMode::Normal
+                ).unwrap(),
+                opacity: 255,
+                mute: false,
+                blend_mode: layers_true[k].blend_mode,
+            };
+        }
+        net_layer.scene
+    }
 }
