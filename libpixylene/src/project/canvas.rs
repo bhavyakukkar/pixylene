@@ -3,7 +3,7 @@ use super::{Scene, Layer, Layers, Palette};
 use serde::{Serialize, Deserialize};
 
 
-#[derive(Debug, Savefile, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq,Savefile, Serialize, Deserialize)]
 pub enum LayersType {
     True(Layers<TruePixel>),
     Indexed(Layers<IndexedPixel>),
@@ -23,9 +23,39 @@ impl LayersType {
             LayersType::Indexed(layers) => layers.len(),
         }
     }
+
+    pub fn to_true(&self) -> Result<&Layers<TruePixel>, ()> {
+        if let Self::True(layers) = self {
+            Ok(layers)
+        } else {
+            Err(())
+        }
+    }
+    pub fn to_true_mut(&mut self) -> Result<&mut Layers<TruePixel>, ()> {
+        if let Self::True(layers) = self {
+            Ok(layers)
+        } else {
+            Err(())
+        }
+    }
+
+    pub fn to_indexed(&self) -> Result<&Layers<IndexedPixel>, ()> {
+        if let Self::Indexed(layers) = self {
+            Ok(layers)
+        } else {
+            Err(())
+        }
+    }
+    pub fn to_indexed_mut(&mut self) -> Result<&mut Layers<IndexedPixel>, ()> {
+        if let Self::Indexed(layers) = self {
+            Ok(layers)
+        } else {
+            Err(())
+        }
+    }
 }
 
-#[derive(Debug, Savefile, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Savefile, Serialize, Deserialize)]
 pub struct Canvas {
     pub layers: LayersType,
     pub palette: Palette,

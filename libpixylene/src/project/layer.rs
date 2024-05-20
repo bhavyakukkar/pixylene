@@ -35,7 +35,7 @@ impl<T: Pixel> Layer<T> {
     }
 }
 
-impl Layer {
+impl Layer<TruePixel> {
     /// Return the net merged layer as a result of merging two truecolor layers with a given
     /// blend-mode
     ///

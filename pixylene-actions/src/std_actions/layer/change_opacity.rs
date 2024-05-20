@@ -1,7 +1,7 @@
 use crate::{ Console, memento, ActionError };
 
 use libpixylene::{
-    project::{ CanvasType, Project },
+    project::{ LayersType, Project },
 };
 
 
@@ -23,13 +23,14 @@ impl memento::Action for ChangeOpacity {
         };
 
         //temporary solution (doing same exact thing shouldn't need match)
+        //i dont think i have a solution for that honestly
         let layer = project.focus.1;
-        match project.canvas_mut() {
-            CanvasType::True(ref mut canvas) => {
-                canvas.layers_mut().get_layer_mut(layer)?.opacity = opacity?;
+        match project.canvas.layers {
+            LayersType::True(ref mut layers) => {
+                layers.get_layer_mut(layer)?.opacity = opacity?;
             },
-            CanvasType::Indexed(ref mut canvas) => {
-                canvas.layers_mut().get_layer_mut(layer)?.opacity = opacity?;
+            LayersType::Indexed(ref mut layers) => {
+                layers.get_layer_mut(layer)?.opacity = opacity?;
             },
         }
         Ok(())

@@ -1,7 +1,7 @@
 use crate::{ Console, memento };
 
 use libpixylene::{
-    project::{ CanvasType, Project },
+    project::{ LayersType, Project },
 };
 
 
@@ -13,14 +13,15 @@ impl memento::Action for Mute {
         let layer = project.focus.1;
 
         //temporary solution (doing same exact thing shouldn't need match)
-        match project.canvas_mut() {
-            CanvasType::True(ref mut canvas) => {
-                canvas.layers_mut().get_layer_mut(layer)?.mute =
-                    !canvas.layers().get_layer(layer)?.mute;
+        //i dont think i have a solution for that honestly
+        match project.canvas.layers {
+            LayersType::True(ref mut layers) => {
+                layers.get_layer_mut(layer)?.mute =
+                    !layers.get_layer(layer)?.mute;
             },
-            CanvasType::Indexed(ref mut canvas) => {
-                canvas.layers_mut().get_layer_mut(layer)?.mute =
-                    !canvas.layers().get_layer(layer)?.mute;
+            LayersType::Indexed(ref mut layers) => {
+                layers.get_layer_mut(layer)?.mute =
+                    !layers.get_layer(layer)?.mute;
             },
         }
         Ok(())

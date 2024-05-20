@@ -2,7 +2,7 @@ use crate::{Console, ActionError, memento, utils::OptionalTrueOrIndexed};
 
 use libpixylene::{
     types::{UCoord, Pixel, TruePixel, BlendMode},
-    project::{CanvasType, Project},
+    project::{LayersType, Project},
 };
 
  
@@ -49,12 +49,12 @@ impl memento::Action for Draw {
         use ActionError::InvalidCanvasType;
         use OptionalTrueOrIndexed::*;
 
-        match (project.canvas_mut(), &self.color) {
-            (CanvasType::True(ref mut canvas), True(ref new_pixel)) => {
-                let old_pixel: Option<TruePixel> = canvas.layers()
+        match (&mut project.canvas.layers, &self.color) {
+            (LayersType::True(ref mut layers), True(ref new_pixel)) => {
+                let old_pixel: Option<TruePixel> = layers
                     .get_layer(self.cursor.1)?.scene.get_pixel(self.cursor.0)?;
 
-                canvas.layers_mut().get_layer_mut(self.cursor.1)?.scene.set_pixel(
+                layers.get_layer_mut(self.cursor.1)?.scene.set_pixel(
                     self.cursor.0,
                     Some(self.blend_mode.blend(
                         new_pixel.unwrap_or(TruePixel::empty()),
@@ -63,16 +63,16 @@ impl memento::Action for Draw {
                 )?;
                 Ok(())
             },
-            (CanvasType::Indexed(ref mut canvas), Indexed(ref new_pixel)) => {
-                canvas.layers_mut().get_layer_mut(self.cursor.1)?.scene.set_pixel(
+            (LayersType::Indexed(ref mut layers), Indexed(ref new_pixel)) => {
+                layers.get_layer_mut(self.cursor.1)?.scene.set_pixel(
                     self.cursor.0,
                     *new_pixel,
                 )?;
                 Ok(())
             },
-            (CanvasType::True(_), Indexed(_)) =>
+            (LayersType::True(_), Indexed(_)) =>
                 Err(InvalidCanvasType{ expecting_indexed: false }),
-            (CanvasType::Indexed(_), True(_)) =>
+            (LayersType::Indexed(_), True(_)) =>
                 Err(InvalidCanvasType{ expecting_indexed: true }),
         }
     }

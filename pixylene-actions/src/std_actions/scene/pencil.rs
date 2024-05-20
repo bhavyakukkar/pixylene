@@ -3,7 +3,7 @@ use super::Draw;
 
 use libpixylene::{
     types::{ UCoord, IndexedPixel, BlendMode },
-    project::{ CanvasType, Canvas, Project },
+    project::{ LayersType, Project },
 };
 
 
@@ -56,12 +56,12 @@ impl memento::Action for Pencil {
         for cursor in cursors {
             Draw::new(
                 cursor,
-                match project.canvas_mut() {
-                    CanvasType::True(ref mut canvas) => True(Some(match (&self).palette_index {
-                        Some(index) => *canvas.palette().get_color(index)?,
-                        None => *canvas.palette().get_equipped(),
+                match &project.canvas.layers {
+                    LayersType::True(_) => True(Some(match &self.palette_index {
+                        Some(index) => *project.canvas.palette.get_color(*index)?,
+                        None => *project.canvas.palette.get_equipped(),
                     })),
-                    CanvasType::Indexed(_) =>
+                    LayersType::Indexed(_) =>
                         Indexed(self.palette_index.map(|index| IndexedPixel(index))),
                 },
                 BlendMode::Normal,

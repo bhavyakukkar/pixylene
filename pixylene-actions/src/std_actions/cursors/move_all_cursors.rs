@@ -20,7 +20,7 @@ impl MoveAllCursors {
 impl memento::Action for MoveAllCursors {
     fn perform(&mut self, project: &mut Project, _console: &dyn Console) -> memento::ActionResult {
         let mut new_cursors: HashMap<(UCoord, u16), ()> = HashMap::new();
-        let dim = project.canvas().inner().dim();
+        let dim = project.canvas.layers.dim();
         let cursors = project.cursors().map(|cursor| cursor.clone());
         for cursor in cursors {
             let displaced_cursor = Coord::from(&cursor.0).add(self.displacement);

@@ -19,6 +19,6 @@ impl Equip {
 
 impl memento::Action for Equip {
     fn perform(&mut self, project: &mut Project, _console: &dyn Console) -> memento::ActionResult {
-        Ok(project.canvas_mut().inner_mut().palette().equip(self.palette_index)?)
+        Ok(project.canvas.palette.equip(self.palette_index)?)
     }
 }
