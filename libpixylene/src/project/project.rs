@@ -78,14 +78,6 @@ impl Project {
         }
     }
 
-    //pub fn canvas(&self) -> &Canvas {
-    //    &self.canvas
-    //}
-
-    //pub fn canvas_mut(&mut self) -> &mut CanvasType {
-    //    &mut self.canvas
-    //}
-
     /// Renders the [`Scene`][s] at the focussed [`Layer`] of the [`Canvas`] at the Layer specified
     /// by the Project's [`focus.1`][f] field, mapping the center of the output to the coordinate
     /// on the Scene specified by the Project's [`focus.0`][f] field, with the output's scaling

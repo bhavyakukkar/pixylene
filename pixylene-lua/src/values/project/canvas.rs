@@ -1,19 +1,19 @@
 use crate::{
-    utils::LAYER_GONE,
+    utils::{CanvasMismatch, CANVAS_MISMATCH_TRUE, CANVAS_MISMATCH_INDEXED, BOXED_ERROR},
     values::{
-        project::{Layer, Palette, Scene},
-        types::{PCoord, TruePixel},
+        project::{TrueScene, TrueLayers, IndexedLayers, Palette},
+        types::{TruePixel},
     },
     Context,
 };
 
-use libpixylene::project;
+use libpixylene::{types, project};
 use std::sync::Arc;
 use tealr::{
     mlu::{
         mlua::{
-            self, prelude::LuaValue, FromLua, Lua, MetaMethod, Result, UserData, UserDataFields,
-            UserDataMethods,
+            self, prelude::LuaValue, FromLua, Lua, UserData, UserDataFields,
+            UserDataMethods, Error::ExternalError
         },
         TealData, TealDataMethods, UserDataWrapper,
     },
@@ -22,10 +22,10 @@ use tealr::{
 
 /// Lua interface to libpixylene's [`Canvas`][project::Canvas] type
 #[derive(Clone)]
-pub struct Canvas(pub Context<project::TrueCanvas, ()>);
+pub struct Canvas(pub Context<project::Canvas, ()>);
 
 impl<'lua> FromLua<'lua> for Canvas {
-    fn from_lua(value: LuaValue<'lua>, _: &'lua Lua) -> Result<Canvas> {
+    fn from_lua(value: LuaValue<'lua>, _: &'lua Lua) -> mlua::Result<Canvas> {
         match value.as_userdata() {
             Some(ud) => Ok((*ud.borrow::<Canvas>()?).clone()),
             None => Err(mlua::Error::FromLuaConversionError {
@@ -39,60 +39,66 @@ impl<'lua> FromLua<'lua> for Canvas {
 
 impl TealData for Canvas {
     fn add_methods<'lua, T: TealDataMethods<'lua, Self>>(methods: &mut T) {
-        methods.document_type("A set of Layers with uniform dimensions and a Palette.");
+        methods.document_type("A set of true-color or indexed-color Layers with uniform dimensions
+                              and a Palette.");
 
-        //Lua interface to from_layers() [also counts as interface for new()]
-        /*
+        //Lua interface to construct a Canvas containing TrueLayers
         {
             mlua_create_named_parameters!(
-                CanvasArgs with
-                    dimensions: PCoord,
-                    layers: Vec<Layer>,
+                CanvasTrueArgs with
+                    layers: TrueLayers,
                     palette: Palette,
             );
             methods.document(
-                "Creates & returns a new Canvas by providing its dimensions, an \
-                             optional list of layers, and a Palette",
+                "Construct and return a new true Canvas from TrueLayers and a Palette"
             );
-            methods.add_meta_method(MetaMethod::Call, |_, _, a: CanvasArgs| {
-                use mlua::Error::ExternalError;
-                let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
+            methods.add_function("true", |_, a: CanvasTrueArgs| {
+                let layers = a.layers.0.do_imt::<_, _, CanvasMismatch<
+                    project::Layers<types::TruePixel>
+                >>
+                    (|layers| Ok(layers.clone()))
+                    (|pixylene, _| pixylene.project.canvas.layers.to_true()
+                        .map(|layers| layers.clone()))
+                    .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(CANVAS_MISMATCH_TRUE))))?;
 
-                let mut layers = Vec::new();
-                for layer in a.layers {
-                    layers.push(layer.0.do_imt(
-                        |layer| Ok(layer.clone()),
-                        |pixylene, index| pixylene.project.canvas
-                            .get_layer(*index)
-                            .map(|layer| layer.clone())
-                    ).map_err(|_| ExternalError(Arc::from(boxed_error(LAYER_GONE))))?);
-                }
+                let palette = a.palette.0.do_imt
+                    (|palette| palette.clone())
+                    (|pixylene, _| pixylene.project.canvas.palette.clone());
 
-                match project::Canvas::from_layers(
-                    a.dimensions.0,
-                    layers,
-                    a.palette.0.do_imt(
-                        |palette| palette.clone(),
-                        |pixylene, _| pixylene.project.canvas.palette.clone()
-                    )
-                ) {
-                    Ok(canvas) => Ok(Canvas(Context::Solo(canvas))),
-                    Err(err) => Err(ExternalError(Arc::from(boxed_error(&err.to_string())))),
-                }
+                Ok(Canvas(Context::Solo(project::Canvas{
+                    layers: project::LayersType::True(layers),
+                    palette
+                })))
             });
         }
-        */
 
+        //Lua interface to construct a Canvas containing IndexedLayers
         {
             mlua_create_named_parameters!(
-                CanvasArgs with
-                    dimensions: PCoord,
+                CanvasTrueArgs with
+                    layers: IndexedLayers,
+                    palette: Palette,
             );
             methods.document(
-                "Creates & returns a new true-color Canvas of the provided dimensions",
+                "Construct and return a new indexed Canvas from IndexedLayers and a Palette"
             );
-            methods.add_meta_method(MetaMethod::Call, |_, _, a: CanvasArgs| {
-                Ok(Canvas(Context::Solo(project::TrueCanvas::new(a.dimensions))))
+            methods.add_function("true", |_, a: CanvasTrueArgs| {
+                let layers = a.layers.0.do_imt::<_, _, CanvasMismatch<
+                    project::Layers<types::IndexedPixel>
+                >>
+                    (|layers| Ok(layers.clone()))
+                    (|pixylene, _| pixylene.project.canvas.layers.to_indexed()
+                        .map(|layers| layers.clone()))
+                    .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(CANVAS_MISMATCH_INDEXED))))?;
+
+                let palette = a.palette.0.do_imt
+                    (|palette| palette.clone())
+                    (|pixylene, _| pixylene.project.canvas.palette.clone());
+
+                Ok(Canvas(Context::Solo(project::Canvas{
+                    layers: project::LayersType::Indexed(layers),
+                    palette
+                })))
             });
         }
 
@@ -103,202 +109,73 @@ impl TealData for Canvas {
                     background: Option<TruePixel>,
             );
             methods.document(
-                "Merges the layers of the true-color Canvas into a Scene with an optional \
-                background color",
+                "Merges the layers of the Canvas into a Scene with an optional background color",
             );
             methods.add_method("merge", |_, this, a: CanvasMergeArgs| {
-                let color = match a.background {
-                    Some(color) => Some(color.0),
-                    None => None,
-                };
-                Ok(Scene(Context::Solo(this.0.do_imt(
-                    |canvas| canvas.merged_scene(color),
-                    |pixylene, _| pixylene.project.canvas.merged_scene(color),
-                ))))
+                let color = a.background.map(|color| color.0);
+                Ok(TrueScene(Context::Solo(this.0.do_imt
+                    (|canvas| canvas.merged_scene(color))
+                    (|pixylene, _| pixylene.project.canvas.merged_scene(color))
+                )))
             });
         }
-
-        //Lua interface to add_layer()
-        {
-            mlua_create_named_parameters!(
-                CanvasAddArgs with
-                    layer: Layer,
-            );
-            methods.document("Adds a Layer to the back of the Canvas");
-            methods.add_method_mut("add", |_, this, a: CanvasAddArgs| {
-                use mlua::Error::ExternalError;
-                let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
-
-                let layer = a.layer.0.do_imt(
-                    |layer| Ok(layer.clone()),
-                    |pixylene, index| pixylene.project.canvas.get_layer(*index).map(|layer| layer.clone())
-                ).map_err(|_| ExternalError(Arc::from(boxed_error(LAYER_GONE))))?;
-
-                match &mut this.0 {
-                    Context::Solo(ref mut canvas) => canvas.add_layer(layer),
-                    Context::Linked(pixylene, _) => pixylene.borrow_mut().project.canvas.add_layer(layer),
-                }.map_err(|err| ExternalError(Arc::from(boxed_error(&err.to_string()))))
-            });
-        }
-
-        //Lua interface to get_layer_mut()
-        {
-            mlua_create_named_parameters!(
-                CanvasGetArgs with
-                    index: u16,
-            );
-            methods.document("Gets the Layer at the specified 1-based index in the Canvas");
-            methods.add_method("layer", |_, this, a: CanvasGetArgs| {
-                use Context::*;
-                use mlua::Error::ExternalError;
-                let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
-
-                Ok(Layer(
-                    match &this.0 {
-                        Solo(ref canvas) =>
-                            canvas.get_layer(a.index.checked_sub(1).unwrap_or(0))
-                            .map(|layer| Solo(layer.clone())),
-                        Linked(pixylene, _) =>
-                            pixylene.borrow_mut().project.canvas
-                            .get_layer_mut(a.index.checked_sub(1).unwrap_or(0))
-                            .map(|_| Linked(pixylene.clone(), a.index.checked_sub(1).unwrap_or(0))),
-                    }.map_err(|err| ExternalError(Arc::from(boxed_error(&err.to_string()))))?
-                ))
-            });
-        }
-
-        //Hacky Lua interface to get_layer_mut()
-        //{
-        //    mlua_create_named_parameters!(
-        //        CanvasSetArgs with
-        //            index: u16,
-        //            layer: Layer,
-        //    );
-        //    methods.document("Sets the Layer at the specified index in the Canvas");
-        //    methods.add_method_mut("set", |_, this, a: CanvasSetArgs| {
-        //        use mlua::Error::{ ExternalError };
-        //        let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
-
-        //        match this.0.get_layer_mut(a.index) {
-        //            Ok(layer) => {
-        //                *layer = a.layer.0;
-        //                Ok(())
-        //            },
-        //            Err(err) => Err(ExternalError(Arc::from(
-        //                boxed_error(&err.to_string())
-        //            ))),
-        //        }
-        //    });
-        //}
-
-        //Lua interface to del_layer()
-        //{
-        //    mlua_create_named_parameters!(
-        //        CanvasDelArgs with
-        //            index: u16,
-        //    );
-        //    methods.document("Deletes and returns the Layer at the specified index in the Canvas");
-        //    methods.add_method_mut("del", |_, this, a: CanvasDelArgs| {
-        //        use mlua::Error::{ ExternalError };
-        //        let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
-
-        //        match this.0.del_layer(a.index) {
-        //            Ok(layer) => Ok(Layer(layer)),
-        //            Err(err) => Err(ExternalError(Arc::from(
-        //                boxed_error(&err.to_string())
-        //            ))),
-        //        }
-        //    });
-        //}
-
-        //Lua interface to duplicate_layer()
-        //{
-        //    mlua_create_named_parameters!(
-        //        CanvasDuplicateArgs with
-        //            index: u16,
-        //    );
-        //    methods.document("Duplicates the Layer at the specified index in the Canvas and \
-        //                     places it at the next index");
-        //    methods.add_method_mut("duplicate", |_, this, a: CanvasDuplicateArgs| {
-        //        use mlua::Error::{ ExternalError };
-        //        let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
-
-        //        match this.0.duplicate_layer(a.index) {
-        //            Ok(()) => Ok(()),
-        //            Err(err) => Err(ExternalError(Arc::from(
-        //                boxed_error(&err.to_string())
-        //            ))),
-        //        }
-        //    });
-        //}
-
-        //Lua interface to move_layer()
-        //{
-        //    mlua_create_named_parameters!(
-        //        CanvasMoveArgs with
-        //            old_index: u16,
-        //            new_index: u16,
-        //    );
-        //    methods.document("Move the Layer at the specified index to another index in the \
-        //                     Canvas");
-        //    methods.add_method_mut("move", |_, this, a: CanvasMoveArgs| {
-        //        use mlua::Error::{ ExternalError };
-        //        let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
-
-        //        match this.0.move_layer(a.old_index, a.new_index) {
-        //            Ok(()) => Ok(()),
-        //            Err(err) => Err(ExternalError(Arc::from(
-        //                boxed_error(&err.to_string())
-        //            ))),
-        //        }
-        //    });
-        //}
-
-        methods.generate_help();
     }
 
     fn add_fields<'lua, F: tealr::mlu::TealDataFields<'lua, Self>>(fields: &mut F) {
-        use Context::*;
-
-        //Lua interface to dim()
-        fields.document("the dimensions of this Canvas");
-        fields.add_field_method_get("dim", |_, this| Ok(this.0.do_imt(
-            |canvas| PCoord(canvas.dim()),
-            |pixylene, _| PCoord(pixylene.project.canvas.dim())
-        )));
-
-        //Lua interface to num_layers()
-        fields.document("the number of Layers currently in this Canvas");
-        fields.add_field_method_get("num_layers", |_, this| Ok(this.0.do_imt(
-            |canvas| canvas.num_layers(),
-            |pixylene, _| pixylene.project.canvas.num_layers()
-        )));
-
         //Lua interface to field palette
         fields.document("the palette composed by this Canvas");
         fields.add_field_method_get("palette", |_, this| Ok(match &this.0 {
-            Solo(ref canvas) => Palette(Solo(canvas.palette.clone())),
-            Linked(pixylene, _) => Palette(Linked(pixylene.clone(), ())),
+            Context::Solo(ref canvas) => Palette(Context::Solo(canvas.palette.clone())),
+            Context::Linked(pixylene, _) => Palette(Context::Linked(pixylene.clone(), ())),
         }));
-        fields.add_field_method_set("palette", |_, this, palette: Palette| Ok(match &mut this.0 {
-            Solo(ref mut canvas) => match palette.0 {
-                Solo(palette) => {
-                    canvas.palette = palette.clone();
+        fields.add_field_method_set("palette", |_, this, palette: Palette| {
+            let new_palette = palette.0.do_imt
+                (|palette| palette.clone())
+                (|pixylene, _| pixylene.project.canvas.palette.clone());
+
+            this.0.do_mut
+                (|canvas| {
+                    canvas.palette = new_palette.clone();
+                })
+                (|mut pixylene, _| {
+                    pixylene.project.canvas.palette = new_palette.clone();
+                });
+            Ok(())
+        });
+
+        //Lua interface to find out whether Canvas contains indexed layers or not
+        fields.document("whether the Canvas is indexed");
+        fields.add_field_method_get("indexed", |_, this| Ok(this.0.do_imt
+            (|canvas| matches!(canvas.layers, project::LayersType::Indexed(_)))
+            (|pixylene, _|
+                matches!(pixylene.project.canvas.layers, project::LayersType::Indexed(_))))
+        );
+
+        fields.document("the layers of the Canvas, returned in a table that either contains the \
+                        composed TrueLayers to key \"true\" or the composed IndexedLayers to key \
+                        \"indexed\"");
+        fields.add_field_method_get("indexed", |lua_ctx, this| {
+            let table = lua_ctx.create_table()?;
+            match &this.0 {
+                Context::Solo(ref canvas) => match &canvas.layers {
+                    project::LayersType::True(layers) => {
+                        table.set("true", TrueLayers(Context::Solo(layers.clone())))?;
+                    },
+                    project::LayersType::Indexed(layers) => {
+                        table.set("indexed", IndexedLayers(Context::Solo(layers.clone())))?;
+                    },
                 },
-                Linked(pixylene2, _) => {
-                    canvas.palette = pixylene2.borrow().project.canvas.palette.clone();
-                },
-            },
-            Linked(pixylene, _) => match palette.0 {
-                Solo(palette) => {
-                    pixylene.borrow_mut().project.canvas.palette = palette.clone();
-                },
-                Linked(pixylene2, _) => {
-                    pixylene.borrow_mut().project.canvas.palette =
-                        pixylene2.borrow().project.canvas.palette.clone();
-                },
-            },
-        }));
+                Context::Linked(pixylene, _) => match &pixylene.borrow().project.canvas.layers {
+                    project::LayersType::True(layers) => {
+                        table.set("true", TrueLayers(Context::Solo(layers.clone())))?;
+                    },
+                    project::LayersType::Indexed(layers) => {
+                        table.set("indexed", IndexedLayers(Context::Solo(layers.clone())))?;
+                    },
+                }
+            }
+            Ok(table)
+        });
     }
 }
 

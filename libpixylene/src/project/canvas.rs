@@ -62,7 +62,7 @@ pub struct Canvas {
 }
 
 impl Canvas {
-    pub fn merged_scene(&self, background: Option<TruePixel>) -> Scene {
+    pub fn merged_scene(&self, background: Option<TruePixel>) -> Scene<TruePixel> {
         let mut net_layer = Layer::<TruePixel>::new_with_solid_color(self.layers.dim(), background);
         let layer_conv;
         let layers_true: &Layers<TruePixel> = match &self.layers {

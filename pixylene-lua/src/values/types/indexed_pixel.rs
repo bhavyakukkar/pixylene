@@ -9,7 +9,6 @@ use tealr::{
     },
     ToTypename, TypeBody, mlua_create_named_parameters,
 };
-use std::sync::Arc;
 use libpixylene::types;
 
 
@@ -32,8 +31,6 @@ impl<'lua> FromLua<'lua> for IndexedPixel {
 
 impl TealData for IndexedPixel {
     fn add_methods<'lua, T: TealDataMethods<'lua, Self>>(methods: &mut T) {
-        use mlua::Error::{ ExternalError };
-
         methods.document_type("An indexed color type");
 
         //Lua interface to construct a new IndexedPixel with a 8-bit index
@@ -44,7 +41,7 @@ impl TealData for IndexedPixel {
             );
             methods.document("Create & return a new IndexedPixel with a specified index");
             methods.add_meta_method(MetaMethod::Call, |_, _, args: IndexedPixelArgs| {
-                Ok(types::IndexedPixel(args.index))
+                Ok(IndexedPixel(types::IndexedPixel(args.index)))
             });
         }
 

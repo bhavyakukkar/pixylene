@@ -1,5 +1,4 @@
 use tealr::mlu::mlua::{ Lua, Table, Result, Value };
-//use std::io::Read;
 use libpixylene::{ Pixylene, project, types };
 use std::rc::Rc;
 use std::cell::{RefCell, Ref, RefMut};
@@ -17,26 +16,34 @@ pub enum Context<T, U> {
 impl<T, U> Context<T, U> {
 
     //Mutably do & return something with this context by passing what to do in both cases
-    fn do_mut<FS, FL, S>(&mut self, f_solo: FS, f_linked: FL) -> S
+    fn do_mut<'a, FS, FL, S: 'a>(&'a mut self, f_solo: FS) -> Box<dyn FnOnce(FL) -> S + 'a>
     where
-        FS: Fn(&mut T) -> S,
-        FL: Fn(RefMut<'_, Pixylene>, &U) -> S
+        FS: FnOnce(&'a mut T) -> S + 'a,
+        FL: FnOnce(RefMut<'a, Pixylene>, &'a U) -> S + 'a,
     {
         match self {
-            Context::Solo(t) => f_solo(t),
-            Context::Linked(p, data) => f_linked(p.borrow_mut(), data),
+            Context::Solo(t) => {
+                let s = f_solo(t);
+                Box::new(move |_| s)
+            },
+            Context::Linked(pixylene, data) => Box::new(move |f_linked: FL|
+                f_linked(pixylene.borrow_mut(), data)),
         }
     }
 
     //Immutably do & return something with this context by passing what to do in both cases
-    fn do_imt<FS, FL, S>(&self, f_solo: FS, f_linked: FL) -> S
+    fn do_imt<'a, FS, FL, S: 'a>(&'a self, f_solo: FS) -> Box<dyn FnOnce(FL) -> S + 'a>
     where
-        FS: Fn(&T) -> S,
-        FL: Fn(Ref<'_, Pixylene>, &U) -> S
+        FS: FnOnce(&'a T) -> S + 'a,
+        FL: FnOnce(Ref<'a, Pixylene>, &'a U) -> S + 'a,
     {
         match self {
-            Context::Solo(t) => f_solo(t),
-            Context::Linked(p, data) => f_linked(p.borrow(), data),
+            Context::Solo(t) => {
+                let s = f_solo(t);
+                Box::new(move |_| s)
+            },
+            Context::Linked(pixylene, data) => Box::new(move |f_linked: FL|
+                f_linked(pixylene.borrow(), data)),
         }
     }
 }
@@ -122,12 +129,16 @@ impl LuaActionManager {
         let coord;
         let ucoord;
         let pcoord;
-        let pixel;
+        let true_pixel;
+        let indexed_pixel;
         let blend_mode;
-        let scene;
-        let layer;
+        let true_scene;
+        let indexed_scene;
+        let true_layer;
+        let indexed_layer;
         let palette;
-        let canvas;
+        let true_canvas;
+        let indexed_canvas;
         let log_type;
 
         //Construct Initial Pixylene Types
@@ -139,12 +150,23 @@ impl LuaActionManager {
             coord = Coord::zero();
             ucoord = UCoord::zero();
             pcoord = PCoord::new(1,1).unwrap();
-            pixel = Pixel::empty();
+            true_pixel = TruePixel::empty();
+            indexed_pixel = IndexedPixel::empty();
             blend_mode = BlendMode::Normal;
-            scene = Scene::new(pcoord, vec![None]).unwrap();
-            layer = Layer::new_with_solid_color(pcoord, None);
+            true_scene = Scene::<TruePixel>::new(pcoord, vec![None]).unwrap();
+            indexed_scene = Scene::<IndexedPixel>::new(pcoord, vec![None]).unwrap();
+            true_layer = Layer::<TruePixel>::new_with_solid_color(pcoord, None);
+            indexed_layer = Layer::<IndexedPixel>::new_with_solid_color(pcoord, None);
             palette = Palette::new();
-            canvas = Canvas::new(pcoord, palette.clone());
+            true_canvas = Canvas{
+                layers: LayersType::True(Layers::<TruePixel>::new(pcoord)),
+                palette: palette.clone()
+            };
+            indexed_canvas = Canvas{
+                layers: LayersType::Indexed(Layers::<IndexedPixel>::new(pcoord)),
+
+                palette: palette.clone()
+            };
             log_type = LogType::Info;
         }
     
@@ -155,12 +177,16 @@ impl LuaActionManager {
             lua_ctx.globals().set("C", Coord(coord))?;
             lua_ctx.globals().set("UC", UCoord(ucoord))?;
             lua_ctx.globals().set("PC", PCoord(pcoord))?;
-            lua_ctx.globals().set("P", Pixel(pixel))?;
+            lua_ctx.globals().set("TP", TruePixel(true_pixel))?;
+            lua_ctx.globals().set("IP", IndexedPixel(indexed_pixel))?;
             lua_ctx.globals().set("BlendMode", BlendMode(blend_mode))?;
-            lua_ctx.globals().set("Scene", Scene(Context::Solo(scene)))?;
-            lua_ctx.globals().set("Layer", Layer(Context::Solo(layer)))?;
+            lua_ctx.globals().set("TScene", TrueScene(Context::Solo(true_scene)))?;
+            lua_ctx.globals().set("IScene", IndexedScene(Context::Solo(indexed_scene)))?;
+            lua_ctx.globals().set("SLayer", TrueLayer(Context::Solo(true_layer)))?;
+            lua_ctx.globals().set("ILayer", IndexedLayer(Context::Solo(indexed_layer)))?;
             lua_ctx.globals().set("Palette", Palette(Context::Solo(palette)))?;
-            lua_ctx.globals().set("Canvas", Canvas(Context::Solo(canvas)))?;
+            lua_ctx.globals().set("TCanvas", Canvas(Context::Solo(true_canvas)))?;
+            lua_ctx.globals().set("ICanvas", Canvas(Context::Solo(indexed_canvas)))?;
             lua_ctx.globals().set("LogType", LogType(log_type))?;
         }
         Ok(())
