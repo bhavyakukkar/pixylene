@@ -127,7 +127,10 @@ pub enum UiFn {
         #[serde(alias = "w")]
         width: Option<u16>,
         #[serde(alias = "h")]
-        height: Option<u16>
+        height: Option<u16>,
+        #[serde(alias = "i")]
+        #[clap(long, short, action)]
+        indexed: bool,
     },
 
     #[serde(alias = "e")]
@@ -153,12 +156,14 @@ pub enum UiFn {
     #[serde(alias = "import")]
     //not needed: #[command(visible_alias = "import")]
     Import{
-        path: PathBuf
+        path: PathBuf,
+        width: Option<u32>,
+        height: Option<u32>,
     },
 
-    #[serde(alias = "Import")]
-    #[command(visible_alias = "Import")]
-    ImportSpecify,
+    //#[serde(alias = "Import")]
+    //#[command(visible_alias = "Import")]
+    //ImportSpecify,
 
     #[serde(alias = "q")]
     #[command(visible_alias = "q")]
@@ -248,6 +253,7 @@ pub enum UiFn {
     #[serde(alias = "l")]
     #[command(visible_alias = "l")]
     RunLua{
+        #[serde(alias = "s")]
         statement: String,
     },
 

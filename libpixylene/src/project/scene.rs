@@ -1,26 +1,32 @@
 use crate::{
-    types::{Coord, PCoord, Pixel, UCoord},
+    types::{Coord, PCoord, UCoord, Pixel, TruePixel},
     utils::messages::U32TOUSIZE,
 };
 
 use serde::{ Serialize, Deserialize };
+use std::slice::Iter;
 
-/// A two-dimensional grid of pixels.
+/// A two-dimensional grid of pixels that are of a generic type T.
 ///
-/// `Note`: Each item of the grid is an [`Option<Pixel>`] rather than simply a [`Pixel`].
+/// An true-color Canvas uses a Scene of [`Pixels`](crate::types::Pixel), whereas an indexed-color
+/// Canvas uses a Scene of 8-bit unsigned integers to denote palette indexes.
+///
+/// Each item of the grid is either empty or has a value.
 #[derive(Serialize, Deserialize, PartialEq, Debug, Savefile, Clone)]
-pub struct Scene {
+pub struct Scene<T=TruePixel>
+where T: Pixel
+{
     dim: PCoord,
-    grid: Vec<Option<Pixel>>,
+    grid: Vec<Option<T>>,
 }
 
-impl Scene {
-    /// Tries to create a new scene with given dimensions and buffer of optional [`Pixels`][Pixel]
+impl<T: Pixel> Scene<T> {
+    /// Tries to create a new scene with given dimensions and buffer of optional pixels
     ///
     /// `Note`: This method may fail with the [`DimensionMismatch`][dm] error variant only.
     ///
     /// [dm]: SceneError::DimensionMismatch
-    pub fn new(dimensions: PCoord, buffer: Vec<Option<Pixel>>) -> Result<Self, SceneError> {
+    pub fn new(dimensions: PCoord, buffer: Vec<Option<T>>) -> Result<Self, SceneError> {
         use SceneError::DimensionMismatch;
 
         if buffer.len() != usize::try_from(dimensions.area()).expect(U32TOUSIZE) {
@@ -33,13 +39,18 @@ impl Scene {
         }
     }
 
+    /// Returns an immutable iterator over the buffer of the pixels in the scene
+    pub fn grid(&self) -> Iter<Option<T>> {
+        self.grid.iter()
+    }
+
     /// Tries to get the item at the given coordinatel & fails with context if coordinate is out of
     /// bounds for this scene
     ///
     /// `Note`: This method may fail with the [`OutOfBoundCoordinates`][oobc] error variant only.
     ///
     /// [oobc]: SceneError::OutOfBoundCoordinates
-    pub fn get_pixel(&self, coord: UCoord) -> Result<Option<Pixel>, SceneError> {
+    pub fn get_pixel(&self, coord: UCoord) -> Result<Option<T>, SceneError> {
         use SceneError::OutOfBoundCoordinates;
 
         if coord.x >= self.dim.x() || coord.y >= self.dim.y() {
@@ -56,7 +67,7 @@ impl Scene {
     ///
     /// This method is left here for compatiblity with the [render](#method.render)
     /// method.
-    pub fn get_pixel_raw(&self, coord: Coord) -> Option<Option<Pixel>> {
+    pub fn get_pixel_raw(&self, coord: Coord) -> Option<Option<T>> {
         if coord.x < 0 || coord.y < 0 {
             None
         } else if coord.x >= i32::from(self.dim.x()) || coord.y >= i32::from(self.dim.y()) {
@@ -68,13 +79,13 @@ impl Scene {
         }
     }
 
-    /// Tries to set an item at the given coordinate & fails with context if coordinate is out of
-    /// bounds for this scene
+    /// Tries to set the given value at the given coordinate & fails with context if coordinate
+    /// is out of bounds for this scene
     ///
     /// `Note`: This method may fail with the [`OutOfBoundCoordinates`][oobc] error variant only.
     ///
     /// [oobc]: SceneError::OutOfBoundCoordinates
-    pub fn set_pixel(&mut self, coord: UCoord, new_pixel: Option<Pixel>) -> Result<(), SceneError> {
+    pub fn set_pixel(&mut self, coord: UCoord, new_pixel: Option<T>) -> Result<(), SceneError> {
         use SceneError::OutOfBoundCoordinates;
 
         if coord.x >= self.dim.x() || coord.y >= self.dim.y() {
@@ -90,8 +101,13 @@ impl Scene {
     pub fn dim(&self) -> PCoord {
         self.dim
     }
+}
 
+
+impl Scene<TruePixel> {
     /// Renders a given Scene with the coordinate to be rendered at the center
+    ///
+    /// The output is a buffer of [`output pixels`](OPixel) with size equal to `dim`.
     ///
     /// Rendering is the process of previewing any [`Scene`] by taking the following inputs:
     /// - `dim` (dimensions), i.e, `the size of the output`
@@ -102,7 +118,6 @@ impl Scene {
     /// - `repeat`, i.e., `the number of pixels repeated per every [OPixel] in the two respective
     /// directions` (included so terminal users can set to (1,2) to place two 2:1 font characters
     /// to look like a square)
-    ///
     ///
     /// `Note`: the focus can be out of the scene; this function merely looks for the scene around
     /// the passed focus coordinate for the duration of its dimensions, placing [`OutOfScene`][oos]
@@ -222,23 +237,24 @@ impl Scene {
 
 /// An `O`utput `Pixel` as rendered by [`render`](Scene::render)
 ///
-/// [`Pixel`] represents a virtual pixel contained in a piece of pixel art, whereas `OPixel`
-/// represents an actual pixel on the application being used to edit the piece of pixel art.
+/// The items in a Scene represent a virtual pixel contained in a piece of pixel art, whereas
+/// an `OPixel` represents an actual pixel on the interface being used to view the piece of
+/// pixel art.
 #[derive(Debug, Clone)]
 pub enum OPixel {
-    /// An OPixel pointing to a Pixel on the Scene that is filled with some color
+    /// An OPixel pointing to a pixel on the Scene that is filled with some color
     ///
-    /// Associated with a `Some(Some(Pixel))` variant received by [`get_pixel_raw`][gpr]
+    /// Associated with a `Some(Some(T))` variant received by [`get_pixel_raw`][gpr]
     ///
     /// [gpr]: Scene::get_pixel_raw
     Filled {
         scene_coord: UCoord,
-        color: Pixel,
+        color: TruePixel,
         is_focus: bool,
         has_cursor: bool,
     },
 
-    /// An OPixel pointing to a Pixel on the Scene that is left empty or hasn't been filled in yet
+    /// An OPixel pointing to a pixel on the Scene that is left empty or hasn't been filled in yet
     ///
     /// Associated with a `Some(None)` variant received by [`get_pixel_raw`][gpr]
     ///

@@ -2,6 +2,8 @@ use clap::Parser;
 
 pub mod ui;
 
+pub mod utils;
+
 pub mod config;
 
 pub mod actions;

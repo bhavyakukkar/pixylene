@@ -1,31 +1,33 @@
 use crate::{ command::ChangeError };
 
 use libpixylene::{
-    types::{ BlendError, PixelError },
-    project::{ SceneError, PaletteError, ProjectError, CanvasError },
+    types::{ BlendError, TruePixelError },
+    project::{ SceneError, PaletteError, ProjectError, LayersError },
 };
 
 
 
 #[derive(Debug)]
 pub enum ActionError {
-    PixelError(PixelError),
+    TruePixelError(TruePixelError),
     SceneError(SceneError),
     PaletteError(PaletteError),
     ChangeError(ChangeError),
     ProjectError(ProjectError),
-    CanvasError(CanvasError),
+    LayersError(LayersError),
     BlendError(BlendError),
     OnlyNCursorsSupported(String, usize),
 
     // Custom Errors
+    ExpectingCanvasType{ expecting_indexed: bool },
+    InvalidCanvasType{ expecting_indexed: bool },
     ArgsError(String),
     InputError(String),
     OperationError(Option<String>),
     Discarded,
 }
-impl From<PixelError> for ActionError {
-    fn from(item: PixelError) -> ActionError { ActionError::PixelError(item) }
+impl From<TruePixelError> for ActionError {
+    fn from(item: TruePixelError) -> ActionError { ActionError::TruePixelError(item) }
 }
 impl From<SceneError> for ActionError {
     fn from(item: SceneError) -> ActionError { ActionError::SceneError(item) }
@@ -39,8 +41,8 @@ impl From<ChangeError> for ActionError {
 impl From<ProjectError> for ActionError {
     fn from(item: ProjectError) -> ActionError { ActionError::ProjectError(item) }
 }
-impl From<CanvasError> for ActionError {
-    fn from(item: CanvasError) -> ActionError { ActionError::CanvasError(item) }
+impl From<LayersError> for ActionError {
+    fn from(item: LayersError) -> ActionError { ActionError::LayersError(item) }
 }
 impl From<BlendError> for ActionError {
     fn from(item: BlendError) -> ActionError { ActionError::BlendError(item) }
@@ -49,18 +51,38 @@ impl std::fmt::Display for ActionError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use ActionError::*;
         match self {
-            PixelError(pixel_error) => write!(f, "{}", pixel_error),
+            TruePixelError(pixel_error) => write!(f, "{}", pixel_error),
             SceneError(scene_error) => write!(f, "{}", scene_error),
             PaletteError(palette_error) => write!(f, "{}", palette_error),
             ChangeError(change_error) => write!(f, "{}", change_error),
             ProjectError(project_error) => write!(f, "{}", project_error),
-            CanvasError(canvas_error) => write!(f, "{}", canvas_error),
+            LayersError(layers_error) => write!(f, "{}", layers_error),
             BlendError(blend_error) => write!(f, "{}", blend_error),
             OnlyNCursorsSupported(supported, supplied) => write!(
                 f,
                 "this action only supports {} cursor/s, found {}",
                 supported,
                 supplied,
+            ),
+            ExpectingCanvasType{ expecting_indexed } => write!(
+                f, "{}",
+                if *expecting_indexed {
+                    "This action was expecting arguments pertaining to indexed-color but found \
+                    those pertaining to true-color"
+                } else {
+                    "This action was expecting arguments pertaining to true-color but found those \
+                    pertaining to indexed-color"
+                },
+            ),
+            InvalidCanvasType{ expecting_indexed } => write!(
+                f, "{}",
+                if *expecting_indexed {
+                    "This action was inferred to operate using indexed-color but the canvas is \
+                    true-color"
+                } else {
+                    "This action was inferred to operate using true-color but the canvas is \
+                    indexed-color"
+                },
             ),
             ArgsError(desc) => write!(f, "{}", desc),
             InputError(desc) => write!(f, "{}", desc),

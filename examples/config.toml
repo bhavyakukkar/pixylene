@@ -33,6 +33,7 @@ keys = [
     { k = "i", f = [{ a = { n = "zoomin" } }] },
     { k = "o", f = [{ a = { n = "zoomout" } }] },
     
+    { k = "enter", f = [{ a = { n = "pencil" } }] },
     { k = "1", f = [{ a = { n = "pencil1" } }] },
     { k = "2", f = [{ a = { n = "pencil2" } }] },
     { k = "3", f = [{ a = { n = "pencil3" } }] },
@@ -47,12 +48,47 @@ keys = [
     { k = "s", f = [{ a = { n = "hex_at_cursors" } }] },
     { k = "?", f = [ "lc" ] },
 
+    # go to View namespace
+    { k = "shift-v", f = [{ ns = { n = "View" } }] },
     # go to Layer namespace
     { k = "shift-l", f = [{ ns = { n = "Layer" } }] },
     # go to Cursors namespace
     { k = "shift-c", f = [{ ns = { n = "Cursors" } }] },
     # go to Shapes namespace
     { k = "shift-s", f = [{ ns = { n = "Shapes" } }] },
+]
+
+[[keys]]
+name = "View"
+keys = [
+    # directly perform lua statement on keypress
+
+    { k = "h", f = [{ l = { s = """
+        Project.focus = {
+            ['layer'] = Project.focus.layer,
+            ['coord'] = C(Project.focus.coord.x, Project.focus.coord.y - 1),
+        }
+    """ }}] },
+    { k = "j", f = [{ l = { s = """
+        Project.focus = {
+            ['layer'] = Project.focus.layer,
+            ['coord'] = C(Project.focus.coord.x + 1, Project.focus.coord.y),
+        }
+    """ }}] },
+    { k = "k", f = [{ l = { s = """
+        Project.focus = {
+            ['layer'] = Project.focus.layer,
+            ['coord'] = C(Project.focus.coord.x - 1, Project.focus.coord.y),
+        }
+    """ }}] },
+    { k = "l", f = [{ l = { s = """
+        Project.focus = {
+            ['layer'] = Project.focus.layer,
+            ['coord'] = C(Project.focus.coord.x, Project.focus.coord.y + 1),
+        }
+    """ } }] },
+
+    { k = "esc", f = [ "dns" ] }, # go back to default namespace
 ]
 
 # LAYER namespace

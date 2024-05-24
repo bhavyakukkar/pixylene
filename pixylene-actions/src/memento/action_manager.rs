@@ -12,7 +12,7 @@ struct TransformCanvas(
     /// The old canvas
     pub Canvas,
     /// The new canvas
-    pub Canvas
+    pub Canvas,
 );
 
 impl Edit for TransformCanvas {

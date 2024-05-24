@@ -12,6 +12,12 @@ pub struct UCoord {
 }
 
 impl UCoord {
+    /// The largest value allowed as a coordinate of a UCoord
+    pub const MAX: isize = u16::MAX as isize;
+
+    /// The smallest value allowed as a coordinate of a UCoord
+    pub const MIN: isize = 0;
+
 
     /// Returns a UCoord with coordinates (0,0)
     pub fn zero() -> UCoord {

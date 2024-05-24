@@ -1,13 +1,13 @@
 use crate::{
+    utils::BOXED_ERROR,
+    values::{ types::{ Coord, UCoord, PCoord }, project::{ Canvas } },
     Context,
-    values::{ types::{ Coord, UCoord, PCoord }, project::{ Canvas } }
 };
 
 use tealr::{
     mlu::{
         mlua::{
-            self,
-            UserData, UserDataFields, UserDataMethods,
+            self, UserData, UserDataFields, UserDataMethods, Error::ExternalError,
         },
         TealData, TealDataMethods, UserDataWrapper,
     },
@@ -16,7 +16,7 @@ use tealr::{
 use std::sync::Arc;
 use std::rc::Rc;
 use std::cell::RefCell;
-use libpixylene::{ Pixylene };
+use libpixylene::Pixylene;
 
 
 /// Lua interface to libpixylene's [`Project`][project::Project] type
@@ -43,39 +43,7 @@ impl TealData for Project {
     fn add_methods<'lua, T: TealDataMethods<'lua, Self>>(methods: &mut T) {
         methods.document_type("The absolute state of a Pixel Art project at any given instance.");
 
-        //Lua interface to new()
-        /*
-        {
-            mlua_create_named_parameters!(
-                ProjectArgs with
-                    canvas: Canvas,
-            );
-            methods.document("Creates a new empty Project containing the given Canvas");
-            methods.add_meta_method(MetaMethod::Call, |_, _, a: ProjectArgs| {
-                Ok(Project(project::Project::new(a.canvas.0)))
-            });
-        }
-        */
-
-        //Lua interface to render_layer()
-        //this isn't usual for an action to use
-        /*
-        {
-            methods.document("todo");
-            methods.add_method("render_layer", |_, this, _| {
-                use mlua::Error::{ ExternalError };
-                let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
-
-                match this.0.render_layer() {
-                    Ok(buffer) => Ok(
-                }
-                Ok(Scene(this.0.merged_scene(match a.background {
-                    Some(color) => Some(color.0),
-                    None => None
-                })))
-            });
-        }
-        */
+        //Project never needs to be constructed from lua
 
         //Lua inteface to is_cursor_at()
         {
@@ -87,38 +55,12 @@ impl TealData for Project {
             methods.document("Returns whether there is a cursor at the provided coordinate on the \
                              layer at given layer index");
             methods.add_method_mut("is_cursor_at", |_, this, a: ProjectIsCursorAtArgs| {
-                use mlua::Error::{ ExternalError };
-                let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
-
                 this.0.borrow().project.is_cursor_at(&(a.coord.0, a.layer))
-                    .map_err(|err| ExternalError(Arc::from(
-                        boxed_error(&err.to_string())
-                    )))
+                    .map_err(|err| ExternalError(Arc::from(BOXED_ERROR(&err.to_string()))))
             });
         }
 
-        //Lua inteface to set_out_mul()
-        {
-            mlua_create_named_parameters!(
-                ProjectSetMulArgs with
-                    new_mul: u8,
-            );
-            methods.document("Sets the output multiplier for this given Project, failing if 0 is \
-                             passed");
-            methods.add_method_mut("set_mul", |_, this, a: ProjectSetMulArgs| {
-                use mlua::Error::{ ExternalError };
-                let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
-
-                match this.0.borrow_mut().project.set_out_mul(a.new_mul) {
-                    Ok(()) => Ok(()),
-                    Err(err) => Err(ExternalError(Arc::from(
-                        boxed_error(&err.to_string())
-                    ))),
-                }
-            });
-        }
-
-        //todo: add more methods
+        //todo: add interfaces to methods toggle_cursor_at & clear_cursors
 
         methods.generate_help();
     }
@@ -126,6 +68,10 @@ impl TealData for Project {
     fn add_fields<'lua, F: tealr::mlu::TealDataFields<'lua, Self>>(fields: &mut F) {
         fields.document("the Output-Multiplier of the Project");
         fields.add_field_method_get("mul", |_, this| Ok(this.0.borrow().project.get_out_mul()));
+        fields.add_field_method_set("mul", |_, this, value: u8| 
+            this.0.borrow_mut().project.set_out_mul(value)
+                .map_err(|err| ExternalError(Arc::from(BOXED_ERROR(&err.to_string()))))
+        );
 
         fields.document("the Output-Dimensions of the Project (not to be confused with the \
                         Canvas's dimensions)");
@@ -148,10 +94,9 @@ impl TealData for Project {
             Ok(Canvas(Context::Linked(this.0.clone(), ()))));
 
         fields.add_field_method_set("canvas", |_, this, canvas: Canvas| {
-            this.0.borrow_mut().project.canvas = canvas.0.do_imt(
-                |canvas| canvas.clone(),
-                |pixylene, _| pixylene.project.canvas.clone()
-            );
+            this.0.borrow_mut().project.canvas = canvas.0.do_imt
+                (|canvas| canvas.clone())
+                (|pixylene, _| pixylene.project.canvas.clone());
             Ok(())
         });
 
@@ -184,14 +129,6 @@ impl TealData for Project {
             this.0.borrow_mut().project.focus = (coord.0, value.get("layer")?);
             Ok(())
         });
-            //Ok(this.0.borrow().project.cursors()
-            //   .map(|(coord, layer)| lua_ctx.create_table()
-            //           .map(|table| => {
-            //               table.set("coord", UCoord(coord.clone()));
-            //               table.set("layer", *layer);
-            //           })
-            //   })
-            //   .collect::<Vec<(UCoord, u16)>>()));
     }
 }
 

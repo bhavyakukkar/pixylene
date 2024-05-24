@@ -1,4 +1,4 @@
-use super::Pixel;
+use super::TruePixel;
 
 use std::fmt;
 use serde::{ Serialize, Deserialize };
@@ -27,13 +27,14 @@ pub enum BlendMode {
 
 impl BlendMode {
 
-    /// Blends two RGBA [`Pixels`](Pixel) using self's blend-mode variant & return the resultant
-    /// [`Pixel`]
+    /// Blends two [`RGBA colors`](TruePixel) using self's blend-mode variant & returns the
+    /// resultant color
     ///
-    /// `Note`: This method may fail with the [`FractionsDoNotSumToWhole`][fd] error variant only.
+    /// `Note`: This method may fail with the [`FractionsDoNotSumToWhole`][fd] error variant only,
+    /// which can only occur when self is the [`Composite`](BlendMode::Composite) variant.
     ///
     /// [fd]: BlendError::FractionsDoNotSumToWhole
-    pub fn blend(&self, a: Pixel, b: Pixel) -> Result<Pixel, BlendError> {
+    pub fn blend(&self, a: TruePixel, b: TruePixel) -> Result<TruePixel, BlendError> {
         use BlendError::{ FractionsDoNotSumToWhole };
 
         match self {
@@ -58,7 +59,7 @@ impl BlendMode {
                                 .checked_div(255).unwrap() //Clearly dividing by 255 not 0
                                 .try_into().unwrap(); //guaranteed to be in range (0,255)
 
-                Ok(Pixel { r: red, g: green, b: blue, a: alpha })
+                Ok(TruePixel { r: red, g: green, b: blue, a: alpha })
             },
             Self::Normal => Ok(
                 BlendMode::Composite(a.a, 255 - a.a).blend(a, b)

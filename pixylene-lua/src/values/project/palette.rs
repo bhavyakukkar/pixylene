@@ -1,6 +1,7 @@
 use crate::{
+    utils::BOXED_ERROR,
+    values::{ types::{ TruePixel } },
     Context,
-    values::{ types::{ Pixel } }
 };
 
 use tealr::{
@@ -9,6 +10,7 @@ use tealr::{
             self,
             prelude::{ LuaValue },
             FromLua, Lua, Result, UserData, UserDataFields, UserDataMethods, MetaMethod,
+            Error::ExternalError,
         },
         TealData, TealDataMethods, UserDataWrapper,
     },
@@ -46,9 +48,6 @@ impl TealData for Palette {
                              indexes and hex-strings, \
                              e.g.: Palette{{1, \"#ffffff\"}, {2, \"#000000\"}}");
             methods.add_meta_method(MetaMethod::Call, |_, _, a: mlua::Table| {
-                use mlua::Error::{ ExternalError };
-                let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
-
                 let mut palette = project::Palette::new();
 
                 for color_pair in a.pairs::<u8, String>() {
@@ -56,7 +55,7 @@ impl TealData for Palette {
                     match palette.set_color(index, &color) {
                         Ok(()) => (),
                         Err(err) => {
-                            return Err(ExternalError(Arc::from(boxed_error(&err.to_string()))));
+                            return Err(ExternalError(Arc::from(BOXED_ERROR(&err.to_string()))));
                         },
                     }
                 }
@@ -73,75 +72,46 @@ impl TealData for Palette {
                 PaletteGetArgs with
                     index: Option<u8>,
             );
-            methods.add_method("get", |_, this, a: PaletteGetArgs| {
-                use mlua::Error::{ ExternalError };
-                let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
-
-                match a.index {
-                    Some(index) => match this.0.do_imt(
-                        //todo: remove clone()'s when adding context to Pixel as well
-                        |palette| palette.get_color(index).map(|p| p.clone()),
-                        |pixylene, _| pixylene.project.canvas.palette.get_color(index).map(|p| p.clone()),
-                    ) {
-                        Ok(pixel) => Ok(Pixel(pixel)),
-                        Err(err) => Err(ExternalError(Arc::from(
-                            boxed_error(&err.to_string())
-                        ))),
-                    },
-                    None => Ok(Pixel(this.0.do_imt(
-                        //todo: remove clone()'s when adding context to Pixel as well
-                        |palette| palette.get_equipped().clone(),
-                        |pixylene, _| pixylene.project.canvas.palette.get_equipped().clone(),
-                    ))),
-                }
-            });
+            methods.add_method("get", |_, this, a: PaletteGetArgs| Ok(TruePixel(match a.index {
+                Some(index) => this.0.do_imt
+                    (|palette| palette.get_color(index)
+                        .map(|p| p.clone()))
+                    (|pixylene, _| pixylene.project.canvas.palette.get_color(index)
+                        .map(|p| p.clone()))
+                    .map_err(|err| ExternalError(Arc::from(BOXED_ERROR(&err.to_string())))),
+                None => Ok(this.0.do_imt
+                    (|palette| palette.get_equipped().clone())
+                    (|pixylene, _| pixylene.project.canvas.palette.get_equipped().clone())),
+            }?)));
         }
 
-        //Lua interface to Palette::equip()
-        {
-            mlua_create_named_parameters!(
-                PaletteEquipArgs with
-                    index: u8,
-            );
-            methods.document("Equip the color at a particular index of the Palette");
-            methods.add_method_mut("equip", |_, this, a: PaletteEquipArgs| {
-                use mlua::Error::{ ExternalError };
-                let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
-
-                match this.0.do_mut(
-                    |palette| palette.equip(a.index),
-                    |mut pixylene, _| pixylene.project.canvas.palette.equip(a.index)
-                ) {
-                    Ok(()) => Ok(()),
-                    Err(err) => Err(ExternalError(Arc::from(
-                        boxed_error(&err.to_string())
-                    ))),
-                }
-            });
-        }
+        //Lua interface to Palette::equip() - replaced by setter to field 'equipped'
+        //{
+        //    mlua_create_named_parameters!(
+        //        PaletteEquipArgs with
+        //            index: u8,
+        //    );
+        //    methods.document("Equip the color at a particular index of the Palette");
+        //    methods.add_method_mut("equip", |_, this, a: PaletteEquipArgs| this.0.do_mut
+        //        (|palette| palette.equip(a.index))
+        //        (|mut pixylene, _| pixylene.project.canvas.palette.equip(a.index))
+        //        .map_err(|err| ExternalError(Arc::from(BOXED_ERROR(&err.to_string()))))
+        //    );
+        //}
 
         //Lua interface to Palette::set_color()
         {
             mlua_create_named_parameters!(
-                PaletteSetColorArgs with
+                PaletteSetArgs with
                     index: u8,
                     color: String,
             );
             methods.document("Set the color at a particular index of the Palette");
-            methods.add_method_mut("set_color", |_, this, a: PaletteSetColorArgs| {
-                use mlua::Error::{ ExternalError };
-                let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
-
-                match this.0.do_mut(
-                    |palette| palette.set_color(a.index, &a.color),
-                    |mut pixylene, _| pixylene.project.canvas.palette.set_color(a.index, &a.color)
-                ) {
-                    Ok(()) => Ok(()),
-                    Err(err) => Err(ExternalError(Arc::from(
-                        boxed_error(&err.to_string())
-                    ))),
-                }
-            });
+            methods.add_method_mut("set", |_, this, a: PaletteSetArgs| this.0.do_mut
+                (|palette| palette.set_color(a.index, &a.color))
+                (|mut pixylene, _| pixylene.project.canvas.palette.set_color(a.index, &a.color))
+                .map_err(|err| ExternalError(Arc::from(BOXED_ERROR(&err.to_string()))))
+            );
         }
 
         //Lua interface to Palette::unset_color()
@@ -151,24 +121,27 @@ impl TealData for Palette {
                     index: u8,
             );
             methods.document("Unset the color at a particular index of the Palette");
-            methods.add_method_mut("unset_color", |_, this, a: PaletteUnsetColorArgs| {
-                Ok(this.0.do_mut(
-                    |palette| palette.unset_color(a.index),
-                    |mut pixylene, _| pixylene.project.canvas.palette.unset_color(a.index),
-                ))
-            });
+            methods.add_method_mut("unset", |_, this, a: PaletteUnsetColorArgs| Ok(this.0.do_mut
+                (|palette| palette.unset_color(a.index))
+                (|mut pixylene, _| pixylene.project.canvas.palette.unset_color(a.index))
+            ));
         }
 
         methods.generate_help();
     }
 
     fn add_fields<'lua, F: tealr::mlu::TealDataFields<'lua, Self>>(fields: &mut F) {
-        //Lua interface to Palette::get_equipped_index()
-        fields.document("the equipped index of this Canvas");
-        fields.add_field_method_get("equipped", |_, this| Ok(this.0.do_imt(
-            |palette| palette.get_equipped_index(),
-            |pixylene, _| pixylene.project.canvas.palette.get_equipped_index(),
-        )));
+        //Lua interface to Canvas field palette
+        fields.document("the equipped index of the Palette");
+        fields.add_field_method_get("equipped", |_, this| Ok(this.0.do_imt
+            (|palette| palette.equipped())
+            (|pixylene, _| pixylene.project.canvas.palette.equipped())
+        ));
+        fields.add_field_method_set("equipped", |_, this, index: u8| this.0.do_mut
+            (|palette| palette.equip(index))
+            (|mut pixylene, _| pixylene.project.canvas.palette.equip(index))
+            .map_err(|err| ExternalError(Arc::from(BOXED_ERROR(&err.to_string()))))
+        );
     }
 }
 
