@@ -69,6 +69,7 @@ impl LuaActionManager {
         self.ctx.globals().set("Project", project_lua).unwrap();
         self.ctx.globals().set("Console", Console(console)).unwrap();
         self.ctx.load(format!("actions.{0}.perform(actions.{0}, Project, Console)", action_name))
+            .set_name("action invocation")
             .exec()?;
         self.ctx.globals().set("Project", Value::Nil)?;
         self.ctx.globals().set("Console", Value::Nil)?;
@@ -84,7 +85,9 @@ impl LuaActionManager {
         let project_lua = Project(pixylene);
         self.ctx.globals().set("Project", project_lua).unwrap();
         self.ctx.globals().set("Console", Console(console)).unwrap();
-        self.ctx.load(statement).exec()?;
+        self.ctx.load(statement)
+            .set_name("console-input")
+            .exec()?;
         //self.ctx.globals().set("Project", Value::Nil)?;
         //self.ctx.globals().set("Console", Value::Nil)?;
 
@@ -112,7 +115,9 @@ impl LuaActionManager {
         }
 
         //Load script containing 1 or more actions
-        error = lua_ctx.load(user_lua).exec().err();
+        error = lua_ctx.load(user_lua)
+            .set_name("actions.lua")
+            .exec().err();
         if let Some(err) = error {
             return LuaActionManager{ ctx: lua_ctx, error: Some(ConfigError(err)) };
         }
