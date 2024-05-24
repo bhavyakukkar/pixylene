@@ -62,7 +62,8 @@ impl memento::Action for Pencil {
                         None => *project.canvas.palette.get_equipped(),
                     })),
                     LayersType::Indexed(_) =>
-                        Indexed(self.palette_index.map(|index| IndexedPixel(index))),
+                        Indexed(Some(IndexedPixel(self.palette_index
+                            .unwrap_or(project.canvas.palette.equipped())))),
                 },
                 BlendMode::Normal,
             ).perform(project, console)?;
