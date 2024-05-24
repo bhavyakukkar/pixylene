@@ -18,7 +18,7 @@ actions['greet'] = {
 -- go to the next layer
 actions['layernext'] = {
     perform = function(self, project, console)
-        if (project.focus.layer < project.canvas.num_layers - 1) then
+        if (project.focus.layer < project.canvas.len - 1) then
             project.focus = { ['layer'] = project.focus.layer + 1, ['coord'] = project.focus.coord }
         else
             console:cmdout("this is the last layer", LogType.WARNING)
@@ -40,7 +40,7 @@ actions['layerprev'] = {
 -- zooms in, i.e., increments the project multiplier by 1
 actions['zoomin'] = {
     perform = function(self, project, console)
-        project:set_mul(project.mul + 1)
+        project.mul = project.mul + 1
         console:cmdout("zoomed in")
     end
 }
@@ -49,7 +49,7 @@ actions['zoomin'] = {
 actions['zoomout'] = {
     perform = function(self, project, console)
         if (project.mul > 1) then
-            project:set_mul(project.mul - 1)
+            project.mul = project.mul - 1
             console:cmdout("zoomed out")
         end
     end
@@ -58,23 +58,34 @@ actions['zoomout'] = {
 -- duplicates the Current Layer & moves focus to it
 actions['dupcurlayer'] = {
     perform = function(self, project, console)
-        project.canvas:add(project.canvas:layer(project.focus.layer))
+        if project.canvas.indexed then
+            layers = project.canvas.layers.indexed
+            layers:add(layers:get(project.focus.layer))
+        else
+            layers = project.canvas.layers['true']
+            layers:add(layers:get(project.focus.layer))
+        end
         project.focus = { ['coord'] = project.focus.coord, ['layer'] = project.focus.layer + 1 }
     end
 }
 
 actions['noise'] = {
     perform = function(self, project, console)
+        if project.canvas.indexed then
+            console:cmdout("sorry, this action only works on true-color canvases", LogType.ERROR)
+            return
+        end
+
         local f = tonumber(console:cmdin("Noise Factor (0.00 - 1.00): "))
+        if f == nil then return end
+
         local d = project.canvas.dim
         for i=0, (d.x - 1) do
             for j=0, (d.y - 1) do
                 if (math.random() < f) then
-                    local c = project.canvas:layer(project.focus.layer).scene:get(UC(i, j))
-                    project.canvas:layer(project.focus.layer).scene:set(
-                        UC(i, j), 
-                        BlendMode.NORMAL:blend(P.hex("#ffffff66"), c)
-                    )
+                    local layer = project.canvas.layers['true']:get(project.focus.layer)
+                    local c = layer.scene:get(UC(i, j))
+                    layer.scene:set(UC(i, j), BlendMode.NORMAL:blend(TP.hex("#ffffff66"), c))
                 end
             end
         end
@@ -95,15 +106,21 @@ actions['circularoutline'] = {
             return
         end
 
-        local col = project.canvas.palette:get()
-
+        local indexed = project.canvas.indexed
         local cen = project.cursors[1]
+
+        local col = indexed
+            and IP(project.canvas.palette.equipped)
+            or  project.canvas.palette:get()
+        local layer = indexed
+            and project.canvas.layers['indexed']:get(cen.layer)
+            or  project.canvas.layers['true']:get(cen.layer)
+
         local plot = function(x, y)
             if (x >= 0 and x < project.canvas.dim.x and y >= 0 and y < project.canvas.dim.y) then
-                project.canvas:layer(cen.layer).scene:set(
-                    UC(x, y),
-                    BlendMode.NORMAL:blend(col, project.canvas:layer(cen.layer).scene:get(UC(x, y)))
-                )
+                layer.scene:set(UC(x, y), indexed
+                    and col
+                    or BlendMode.NORMAL:blend(col, layer.scene:get(UC(x, y))))
             end
         end
 
@@ -146,12 +163,20 @@ actions['equip'] = {
         if (input == "" or input == nil) then
             return
         end
-        project.canvas.palette:equip(tonumber(input))
+        project.canvas.palette.equipped = tonumber(input)
     end
 }
 
 actions['fill'] = {
     -- https://www.geeksforgeeks.org/flood-fill-algorithm-implement-fill-paint
+    equal = function(c1, c2)
+        if c1.red ~= nil then
+            return c1.red == c2.red and c1.green == c2.green and c1.blue == c2.blue and c1.alpha == c2.alpha
+        else
+            return c1.index == c2.index
+        end
+    end,
+
     floodFillUtil = function(self, scene, point, prevC, newC)
         local x = point.x
         local y = point.y
@@ -160,10 +185,12 @@ actions['fill'] = {
             return nil
         end
         local color = scene:get(point)
-        if (color.red ~= prevC.red or color.green ~= prevC.green or color.blue ~= prevC.blue or color.alpha ~= prevC.alpha) then
+        if not self.equal(color, prevC) then
+        --if (color.red ~= prevC.red or color.green ~= prevC.green or color.blue ~= prevC.blue or color.alpha ~= prevC.alpha) then
             return nil
         end
-        if (color.red == newC.red and color.green == newC.green and color.blue == newC.blue and color.alpha == newC.alpha) then
+        if self.equal(color, newC) then
+        --if (color.red == newC.red and color.green == newC.green and color.blue == newC.blue and color.alpha == newC.alpha) then
             return nil
         end
         scene:set(point, newC)
@@ -186,31 +213,61 @@ actions['fill'] = {
 
     perform = function(self, project, console)
         local start = project.cursors[1]
-        self:floodFill(
-            project.canvas:layer(start.layer).scene,
-            start.coord,
-            project.canvas.palette:get()
-        )
+        if project.canvas.indexed then
+            self:floodFill(
+                project.canvas.layers['indexed']:get(start.layer).scene,
+                start.coord,
+                IP(project.canvas.palette.equipped)
+            )
+        else
+            self:floodFill(
+                project.canvas.layers['true']:get(start.layer).scene,
+                start.coord,
+                project.canvas.palette:get()
+            )
+        end
     end
 }
 
 actions['grayscale'] = {
     grayScale = function(col)
         avg = (col.red + col.green + col.blue)/3
-        return P(avg, avg, avg, 255)
+        return TP(avg, avg, avg, 255)
     end,
 
-    perform = function(self, project, console)
-        scene = project.canvas:layer(project.focus.layer).scene
-        for i=0, (scene.dim.x - 1) do
-            for j=0, (scene.dim.y - 1) do
-                scene:set(UC(i,j), self.grayScale(scene:get(UC(i,j))))
+    perform = function(self, Project, Console)
+        if Project.canvas.indexed then
+            Console:cmdout("sorry, this action only works on true-color canvases", LogType.ERROR)
+            return
+        end
+
+        input = Console:cmdin("1: All cursors, 2: Focussed scene > ")
+
+        if tonumber(input) == 1 then
+            -- Iterate over all Project cursors (which may be across different layers)
+            for _, cursor in pairs(Project.cursors) do
+                -- Convert to grayscale and replace
+                scene = Project.canvas.layers['true']:get(cursor.layer).scene
+                scene:set(cursor.coord, self.grayScale(scene:get(cursor.coord)))
+            end
+
+        elseif tonumber(input) == 2 then
+            scene = Project.canvas.layers['true']:get(Project.focus.layer).scene
+
+            -- Iterate over all Scene rows
+            for i=0, (scene.dim.x - 1) do
+                -- Iterate over all row cells
+                for j=0, (scene.dim.y - 1) do
+                    -- Convert to grayscale and replace
+                    scene:set(UC(i,j), self.grayScale(scene:get(UC(i,j))))
+                end
             end
         end
     end
 }
 
-actions['crop'] = {
+--deprecated until TrueLayers.from and IndexedLayers.from
+--[[actions['crop'] = {
     start = nil,
     perform = function(self, project, console)
         local ncurs = project.num_cursors
@@ -258,10 +315,12 @@ actions['crop'] = {
                 )
 
                 local layers = {}
-                for k=0, (project.canvas.num_layers - 1) do
-                    layers[k+1] = project.canvas:layer(k)
+                for k=1, project.canvas.len do
+                    layers[k] = project.canvas.indexed
+                        and project.canvas.layers['indexed']:get(k)
+                        or  project.canvas.layers['true']:get(k)
                 end
-                for k=1, project.canvas.num_layers do
+                for k=1, project.canvas.len do
                     local newgrid = {}
                     for i=topleft.x, bottomright.x do
                         for j=topleft.y, bottomright.y do
@@ -270,7 +329,9 @@ actions['crop'] = {
                     end
                     layers[k].scene = Scene(newdim, newgrid)
                 end
-                project.canvas = Canvas(newdim, layers, project.canvas.palette)
+                project.canvas = project.canvas.indexed
+                    and Canvas.indexed(newdim, layers, project.canvas.palette)
+                    or  Canvas.true(newdim, layers, project.canvas.palette)
             else
                 console:cmdout("Need at least 1 cursor for context")
             end
@@ -283,4 +344,4 @@ actions['crop'] = {
             end
         end
     end
-}
+}--]]
