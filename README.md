@@ -51,14 +51,20 @@ All executables will be built to `target/release/`
 
 # Usage
 ```sh
-# new project
-pixylenetui new
+# new project with 16x16 true canvas
+pixylenetui new 16 16
 
-# new project from png
-pixylenetui import test.png
+# new project with 16x16 indexed canvas
+pixylenetui new 16 16 -i
 
-# open saved project
-pixylenetui open ~/project.pi
+# new project from png downscaled to 32x32
+pixylenetui import test.png 32 32
+
+# open saved canvas file (plaintext)
+pixylenetui canvas ~/canvas.json
+
+# open saved project file (binary)
+pixylenetui project ~/project.pixylene
 ```
 
 
