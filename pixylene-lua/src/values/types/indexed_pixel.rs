@@ -48,40 +48,16 @@ impl TealData for IndexedPixel {
         methods.generate_help();
     }
 
-    /*
     fn add_fields<'lua, F: tealr::mlu::TealDataFields<'lua, Self>>(fields: &mut F) {
 
-        //todo: add constants RED, GREEN, BLUE, etc.
-
-        fields.document("the red level of the IndexedPixel");
-        fields.add_field_method_get("red", |_, this| Ok(this.0.r));
-        fields.add_field_method_set("red", |_, this, value| {
-            this.0.r = value;
-            Ok(())
-        });
-
-        fields.document("the green level of the IndexedPixel");
-        fields.add_field_method_get("green", |_, this| Ok(this.0.g));
-        fields.add_field_method_set("green", |_, this, value| {
-            this.0.g = value;
-            Ok(())
-        });
-
-        fields.document("the blue level of the IndexedPixel");
-        fields.add_field_method_get("blue", |_, this| Ok(this.0.b));
-        fields.add_field_method_set("blue", |_, this, value| {
-            this.0.b = value;
-            Ok(())
-        });
-
-        fields.document("the alpha level of the IndexedPixel");
-        fields.add_field_method_get("alpha", |_, this| Ok(this.0.a));
-        fields.add_field_method_set("alpha", |_, this, value| {
-            this.0.a = value;
+        //Lua interface to IndexedPixel.0
+        fields.document("the index of the IndexedPixel");
+        fields.add_field_method_get("index", |_, this| Ok(this.0.0));
+        fields.add_field_method_set("index", |_, this, value| {
+            this.0.0 = value;
             Ok(())
         });
     }
-    */
 }
 
 impl ToTypename for IndexedPixel {

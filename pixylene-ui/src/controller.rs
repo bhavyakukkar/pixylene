@@ -1,4 +1,5 @@
 use crate::{
+    utils::{parse_cmd, deparse},
     ui::{ UserInterface, Rectangle, Statusline, KeyInfo, Key, KeySer, KeyMap, ReqUiFnMap, UiFn },
     config::{ Config },
     actions::{ ActionLocation, add_my_native_actions },
@@ -6,8 +7,8 @@ use crate::{
 
 use libpixylene::{
     Pixylene, PixyleneDefaults,
-    project::{ OPixel, Layer, Palette },
-    types::{ UCoord, PCoord, Coord, Pixel },
+    project::{ OPixel, Layer, LayersType, Palette },
+    types::{ UCoord, PCoordContainer, PCoord, Coord, TruePixel },
 };
 use pixylene_actions::{ memento::{ ActionManager }, Console, LogType };
 use pixylene_lua::{ LuaActionManager, ErrorType };
@@ -18,8 +19,7 @@ use std::{
     rc::Rc,
     path::PathBuf,
 };
-use serde::{ Deserialize, Serialize };
-use clap::{ Subcommand, Parser };
+use clap::Subcommand;
 
 use dirs::config_dir;
 use std::fs::read_to_string;
@@ -51,59 +51,6 @@ const SPLASH_LOGO: &str = r#"
 // type  :e foo.json                - to edit a previously saved canvas file 'foo.json'
 // type  :ep foo.pixylene           - to edit a previously saved project file 'foo.pixylene'
 
-fn parse_cmd(string: &str) -> Result<UiFn, String> {
-    #[derive(Debug, Parser)]
-    struct Container {
-        #[command(subcommand)]
-        u: UiFn
-    }
-    Container::try_parse_from(
-        shlex::split(&(": ".to_owned() + string)).ok_or("malformed input".to_owned())?)
-        .map(|container: Container| container.u)
-        .map_err(|err| err.to_string())
-}
-
-fn _parse_toml(string: &str) -> Result<UiFn, toml::de::Error> {
-    #[derive(Deserialize)]
-    struct Container {
-        #[allow(dead_code)]
-        u: UiFn,
-    }
-
-    let mut string = String::from(string);
-    if string.find("{").is_none() {
-        string.insert(0, '"');
-        string.push('"');
-    } else {
-        string.insert(0, '{');
-        string.push('}');
-    }
-
-    toml::from_str(&format!("u = {}", string))
-        .map(|container: Container| container.u)
-}
-
-fn deparse(uifns: &Vec<UiFn>) -> String {
-    #[derive(Serialize)]
-    struct Container {
-        u: UiFn,
-    }
-
-    "[".to_owned() +
-    &uifns.iter()
-        .map(|uifn| {
-            let mut value = String::new();
-            Container{ u: uifn.clone() }.serialize(toml::ser::ValueSerializer::new(&mut value)).unwrap_or(());
-            value[6..(value.len() - 2)].to_owned()
-        })
-        .reduce(|a, b| a + ", " + &b).unwrap_or(" ".to_owned()) +
-    "]"
-    //"[".to_owned() + &uifns.iter()
-    //    .map(|uifn| toml::to_string(&Container { u: uifn.clone() })
-    //        .map(|ser| ser/*.replace("\n", " ")[4..(ser.len()-1)].to_owned()*/)
-    //        .expect("Failed to serialize UiFn"))
-    //    .reduce(|a, b| a + ", " + &b).unwrap_or(" ".to_owned()) + "]"
-}
 
 #[derive(Subcommand)]
 pub enum StartType {
@@ -113,6 +60,8 @@ pub enum StartType {
     New {
         width: Option<u16>,
         height: Option<u16>,
+        #[clap(long, short, action)]
+        indexed: bool,
         /*/*todo*/colorscheme: Option<Colorscheme>,*/
     },
     Canvas {
@@ -122,7 +71,9 @@ pub enum StartType {
         path: PathBuf
     },
     Import {
-        path: PathBuf
+        path: PathBuf,
+        width: Option<u32>,
+        height: Option<u32>,
         /*/*todo*/colorscheme: Option<Colorscheme>,*/
     },
 }
@@ -142,33 +93,6 @@ pub struct PixyleneSession {
     lua_action_manager: LuaActionManager,
 }
 
-/*
-pub struct ConsoleCell {
-    pub b_console: Option<Rectangle>,
-}
-
-impl ConsoleCell {
-    pub fn get_console<'a>(&'a self, target: Rc<RefCell<dyn Target + 'static>>,
-                           rev_keymap: &ReqUiFnMap)
-        -> Console
-    {
-        Console {
-            cmdin: Box::new(|message: String| -> Option<String> {
-                    target.borrow().console_in(&message,
-                                               &rev_keymap.get(&ReqUiFn::DiscardCommand)
-                                               .unwrap().clone(),
-                                               &self.b_console.unwrap())
-            }),
-            cmdout: Box::new(|message: String, log_type: &LogType| {
-                    target.borrow().console_out(&message, log_type, &self.b_console.unwrap());
-            }),
-        }
-    }
-}
-*/
-
-//pub struct Controller<T: UserInterface + Console> {
-//    target: Rc<RefCell<T>>,
 pub struct Controller {
     target: Rc<RefCell<dyn UserInterface>>,
 
@@ -186,7 +110,7 @@ pub struct Controller {
     rev_keymap: ReqUiFnMap,
     every_frame: Vec<UiFn>,
 
-    //Window boundaries
+    //window boundaries
     b_console: Option<Rectangle>,
     b_camera: Option<Rectangle>,
     b_statusline: Option<Rectangle>,
@@ -411,7 +335,7 @@ impl Controller {
         add_my_native_actions(&mut action_map);
 
         match start_type {
-            StartType::New { width, height } => {
+            StartType::New { width, height, indexed } => {
                 let mut defaults = self.defaults.clone();
                 if let Some(width) = width {
                     if let Some(height) = height {
@@ -430,10 +354,17 @@ impl Controller {
                         }
                     }
                 }
-                let mut pixylene = Pixylene::new(&defaults);
+                let mut pixylene = Pixylene::new(&defaults, *indexed);
                 pixylene.project.out_dim = self.b_camera.unwrap().size;
-                let dim = pixylene.project.canvas.dim();
-                pixylene.project.canvas.add_layer(Layer::new_with_solid_color(dim, None)).unwrap();
+                let dim = pixylene.project.canvas.layers.dim();
+                match &mut pixylene.project.canvas.layers {
+                    LayersType::True(ref mut layers) => {
+                        layers.add_layer(Layer::new_with_solid_color(dim, None)).unwrap();
+                    },
+                    LayersType::Indexed(ref mut layers) => {
+                        layers.add_layer(Layer::new_with_solid_color(dim, None)).unwrap();
+                    },
+                }
                 initialize_project(&mut pixylene);
 
                 native_action_manager = ActionManager::new(&pixylene.project.canvas);
@@ -515,8 +446,26 @@ impl Controller {
                     },
                 }
             },
-            StartType::Import{ path } => {
-                match Pixylene::import(&path, &self.defaults) {
+            StartType::Import{ path, width, height } => {
+                let mut resize = None;
+                if let Some(width) = width {
+                    if let Some(height) = height {
+                        if let Ok(dim) = PCoord::new(*height, *width) {
+                            resize = Some(dim);
+                        } else {
+                            if !from_args {
+                                self.console_out("invalid dimensions, cannot have 0", 
+                                                 &LogType::Error);
+                                return;
+                            } else {
+                                self.target.borrow_mut().finalize();
+                                eprintln!("invalid dimensions, cannot have 0");
+                                exit(1);
+                            }
+                        }
+                    }
+                }
+                match Pixylene::import(&path, resize, &self.defaults) {
                     Ok(mut pixylene) => {
                         pixylene.project.out_dim = self.b_camera.unwrap().size;
                         initialize_project(&mut pixylene);
@@ -624,8 +573,11 @@ impl Controller {
 
         match func {
             //Sessions
-            New{ width, height } => {
-                self.new_session(&StartType::New{ width: *width, height: *height }, false);
+            New{ width, height, indexed } => {
+                self.new_session(
+                    &StartType::New{ width: *width, height: *height, indexed: *indexed },
+                    false
+                );
             },
 
             OpenCanvas{ path } => {
@@ -652,18 +604,21 @@ impl Controller {
                     None => (),
                 }
             },
-            Import{ path } => {
-                self.new_session(&StartType::Import{ path: path.clone() }, false);
+            Import{ path, width, height } => {
+                self.new_session(
+                    &StartType::Import{ path: path.clone(), width: *width, height: *height },
+                    false
+                );
             },
-            ImportSpecify => {
-                let input = self.console_in("import: ");
-                match input {
-                    Some(input) => { 
-                        _ = self.perform_ui(&Import{ path: PathBuf::from(input) });
-                    },
-                    None => (),
-                }
-            },
+            //ImportSpecify => {
+            //    let input = self.console_in("import: ");
+            //    match input {
+            //        Some(input) => { 
+            //            _ = self.perform_ui(&Import{ path: PathBuf::from(input) });
+            //        },
+            //        None => (),
+            //    }
+            //},
 
             Quit => {
                 if self.sessions.len() > 0
@@ -851,14 +806,31 @@ impl Controller {
             },
             Export => {
                 let s = self.sel_session()?;
-                match self.console_in("export path: ") {
+                //todo: instead of taking scaling factor, let user know canvas dimensions and then
+                //ask for both export width and height
+                match self.console_in("export path (.png): ") {
                     Some(path) => match self.console_in("scaling factor: ") {
                         Some(input) => match str::parse::<u16>(&input) {
                             Ok(scale_up) => {
+                                let resize = PCoord::new(scale_up as u32, scale_up as u32)
+                                    .map(|scale| PCoordContainer::<u32>::from(
+                                        self.sessions[s].pixylene.borrow().project.canvas.layers
+                                        .dim()
+                                    ).0.mul(scale))
+                                    .map_err(|_| self.console_out(
+                                        "scaling factor cannot be 0",
+                                        &LogType::Error
+                                    ))?
+                                    .map_err(|_| self.console_out(
+                                        "scaling factor too large",
+                                        &LogType::Error
+                                    ))?;
                                 let mut path = PathBuf::from(path.clone());
                                 path.set_extension("png");
                                 self.console_out("exporting...", &LogType::Info);
-                                match self.sessions[s].pixylene.borrow().export(&path, scale_up) {
+                                match self.sessions[s].pixylene.borrow().export(Some(resize),
+                                                                                &path)
+                                {
                                     Ok(()) => {
                                         self.console_out(
                                             &format!("exported to {}", path.display()),
@@ -968,7 +940,7 @@ impl Controller {
                     .unwrap_or_else(|err| {
                         self.console_out(&format!("{}", err.lines()
                             .filter(|s| s.len() > 0)
-                            .take_while(|s| !s.contains("Usage") && !s.contains("--help") &&
+                            .take_while(|s| !s.contains("--help") &&
                                         !s.contains("Commands:"))
                             .map(|s| s.trim().to_owned()).reduce(|a, b| a + ", " + &b)
                             .unwrap_or("".to_owned())
@@ -1299,7 +1271,7 @@ impl Controller {
 
                 let session = &self.sessions[s];
                 let mut statusline: Statusline = Vec::new();
-                let padding = "     ".on_truecolor(60,60,60);
+                let padding = " ".on_truecolor(60,60,60);
                 let spacing = "  ".on_truecolor(60,60,60);
                 let divider = "｜".on_truecolor(60,60,60).truecolor(100,100,100);
 
@@ -1323,7 +1295,7 @@ impl Controller {
 
                     //Session dimensions
                     statusline.push(
-                        format!("{}", session.pixylene.borrow().project.canvas.dim())
+                        format!("{}", session.pixylene.borrow().project.canvas.layers.dim())
                         .on_truecolor(60,60,60).bright_white()
                     );
                     statusline.push(spacing.clone());
@@ -1344,7 +1316,7 @@ impl Controller {
                     statusline.push(
                         format!("Layer {}/{}",
                                 session.pixylene.borrow().project.focus.1 + 1,
-                                session.pixylene.borrow().project.canvas.num_layers())
+                                session.pixylene.borrow().project.canvas.layers.len())
                         .on_truecolor(60,60,60).bright_white()
                     );
                     statusline.push(spacing.clone());
@@ -1352,20 +1324,28 @@ impl Controller {
                     //Layer opacity
                     statusline.push(
                         format!("{:.2}%",
-                            session.pixylene.borrow().project.canvas.get_layer(
-                                session.pixylene.borrow().project.focus.1
-                            )
-                            .map(|layer| (f32::from(layer.opacity)/2.55))
-                            .unwrap_or(0.0)
+                            match &session.pixylene.borrow().project.canvas.layers {
+                                LayersType::True(ref layers) => layers.get_layer(
+                                    session.pixylene.borrow().project.focus.1)
+                                    .map(|layer| (f32::from(layer.opacity)/2.55)),
+                                LayersType::Indexed(ref layers) => layers.get_layer(
+                                    session.pixylene.borrow().project.focus.1)
+                                    .map(|layer| (f32::from(layer.opacity)/2.55)),
+                            }
+                            .unwrap_or(0.0),
                         )
                         .on_truecolor(60,60,60).bright_white()
                     );
 
                     //Layer mute
-                    if session.pixylene.borrow().project.canvas.get_layer(
-                        session.pixylene.borrow().project.focus.1
-                    )
-                    .map(|layer| layer.mute)
+                    if match &session.pixylene.borrow().project.canvas.layers {
+                        LayersType::True(ref layers) => layers.get_layer(
+                            session.pixylene.borrow().project.focus.1)
+                            .map(|layer| layer.mute),
+                        LayersType::Indexed(ref layers) => layers.get_layer(
+                            session.pixylene.borrow().project.focus.1)
+                            .map(|layer| layer.mute),
+                    }
                     .unwrap_or(false) {
                         statusline.push(spacing.clone());
                         statusline.push("muted".on_truecolor(60,60,60).bright_white());
@@ -1403,7 +1383,7 @@ impl Controller {
                     let mut colors_summary = session.pixylene.borrow().project.canvas.palette.colors()
                         .map(|(a,b,c)| (a.clone(), b.clone(), c))
                         .take(16)
-                        .collect::<Vec<(u8, Pixel, bool)>>();
+                        .collect::<Vec<(u8, TruePixel, bool)>>();
                     colors_summary.sort_by_key(|(index, ..)| *index);
                     for (index, color, is_equipped) in colors_summary {
                         statusline.push(
@@ -1461,7 +1441,7 @@ impl pixylene_actions::memento::Action for Echo {
 }
 
 fn initialize_project(pixylene: &mut Pixylene) {
-    let dim = pixylene.project.canvas.dim();
+    let dim = pixylene.project.canvas.layers.dim();
 
     //move focus to center
     pixylene.project.focus.0 = Coord {

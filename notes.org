@@ -5,12 +5,13 @@
 *** DONE you are now ready to serialize commands with clap instead of toml
 *** DONE dimensions should show on statusline
 *** DONE PrintCommandList to print possible commands. can be done simply with parse_cmd("--help")
-*** TODO IndexedScene for use with indexed images
-*** TODO exporting console_out does not indicate that .png will be added
+*** DONE IndexedScene for use with indexed images
+*** DONE exporting console_out does not indicate that .png will be added
+*** TODO fn paint_pixel(&mut self, coord: UCoord, new_pixel: Option<T>, opacity: u8) -> Result<(), SceneError>
 *** TODO command history (check if problems can be solved with default implementation, if not, use flags to determine whether target wants provide implementation for console_out or use default implementation)
 *** TODO rename UiFn to Cmd
 *** TODO like every_frame, have entry initialize to run uifns on startup
-*** TODO downscaling of artwork while importing (1280x1280 "/10" = 128x128)
+*** DONE downscaling of artwork while importing (1280x1280 "/10" = 128x128)
 *** TODO Makefile
 *** TODO defined palette contains 10 colors, foreground+background+eight defined colors. switchForeground is a wrapper that performs Palette.changeTo(1, <input>). switchBackground is a wrapper that performs Palette.changeTo(2, <input>)
 *** TODO (pixylenetui) refresh on terminal resize for both targets [[https://docs.rs/crossterm/latest/crossterm/event/enum.Event.html#variant.Resize][Resize]]. b_console/b_camera/b_statusline should then be loaded from a fn rather than attributes on Controller
@@ -20,7 +21,7 @@
 *** TODO new actions 'GoTo' (to get something like vim's 'gg' and 0) and 'ClearAllCursors'
 *** TODO use image source bit-depth/color-type or from config.toml
 *** TODO dont let exported or saved files overwrite existing files
-*** TODO Clap parses PathBuf instead of path string for png file or config file [[https://www.rustadventure.dev/introducing-clap/clap-v4/accepting-file-paths-as-arguments-in-clap][Tutorial]]
+*** DONE Clap parses PathBuf instead of path string for png file or config file [[https://www.rustadventure.dev/introducing-clap/clap-v4/accepting-file-paths-as-arguments-in-clap][Tutorial]]
 
 ** Documentation
 *** TODO "Dependency Justification" for paper like done on crossterm's github

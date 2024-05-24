@@ -1,4 +1,4 @@
-use libpixylene::{ types::{ Coord, UCoord, Pixel, BlendMode } };
+use libpixylene::{ types::{ Coord } };
 use pixylene_actions::{
     memento::Action, utils::Direction,
     std_actions::{ scene, cursors, layer }
@@ -21,9 +21,6 @@ fn insert<T: Action + 'static>(action_map: &mut HashMap<String, ActionLocation>,
 
 pub fn add_my_native_actions(am: &mut HashMap<String, ActionLocation>) {
     // Insert Your Actions Here
-    insert(am, "draw",
-           scene::Draw::new((UCoord{ x: 0, y: 0 }, 0), Some(Pixel::BLACK), BlendMode::Overwrite));
-
     insert(am, "pencil", scene::Pencil::new(None));
     for i in 1..9 {
         insert(am, &format!("pencil{}", i), scene::Pencil::new(Some(i)));

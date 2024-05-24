@@ -44,6 +44,8 @@ impl TealData for IndexedLayers {
     fn add_methods<'lua, T: TealDataMethods<'lua, Self>>(methods: &mut T) {
         methods.document_type("A set of Layers with uniform dimensions and a Palette.");
 
+        //todo: Lua interface to Layers::try_from
+
         {
             mlua_create_named_parameters!(
                 IndexedLayersArgs with
