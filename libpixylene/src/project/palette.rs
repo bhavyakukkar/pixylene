@@ -77,6 +77,11 @@ impl Palette {
         }
     }
 
+    /// Returns the equipped index, returning 0 if nothing is equipped yet
+    pub fn equipped(&self) -> u8 {
+        self.equipped.unwrap_or(0)
+    }
+
     /// Equips a particular index (see [`Palette`] documentation), fails if no pixels correspond to
     /// specified index
     ///
