@@ -155,20 +155,20 @@ impl PngFile {
             //over here
             (Indexed, _) => Err(Unsupported(self.color_type, self.bit_depth)),
             (Rgba, Eight) => {
-                for i in 0..scene.dim().x() {
-                    for j in 0..scene.dim().y() {
+                for i in 0..scene.dim().x() as usize {
+                    for j in 0..scene.dim().y() as usize {
                         scene
                             .set_pixel(
-                                UCoord { x: i, y: j },
+                                UCoord { x: i as u16, y: j as u16 },
                                 Some(TruePixel {
                                     r: self.bytes
-                                        [((4 * i * scene.dim().y()) + (4 * j) + 0) as usize],
+                                        [(4 * i * scene.dim().y() as usize) + (4 * j) + 0],
                                     g: self.bytes
-                                        [((4 * i * scene.dim().y()) + (4 * j) + 1) as usize],
+                                        [(4 * i * scene.dim().y() as usize) + (4 * j) + 1],
                                     b: self.bytes
-                                        [((4 * i * scene.dim().y()) + (4 * j) + 2) as usize],
+                                        [(4 * i * scene.dim().y() as usize) + (4 * j) + 2],
                                     a: self.bytes
-                                        [((4 * i * scene.dim().y()) + (4 * j) + 3) as usize],
+                                        [(4 * i * scene.dim().y() as usize) + (4 * j) + 3],
                                 }),
                             )
                             .unwrap();
