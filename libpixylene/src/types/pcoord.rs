@@ -44,7 +44,7 @@ impl PCoord<u32> {
 }
 
 
-impl<T: Into<u128> + Copy> PCoord<T> {
+impl<T: Into<u128> + TryFrom<u128> + Copy> PCoord<T> {
 
     /// Tries to construct & return a new PCoord with the given 'x' and 'y' coordinates, failing if
     /// any of the coordinates are 0
@@ -77,6 +77,29 @@ impl<T: Into<u128> + Copy> PCoord<T> {
         } else {
             Err(())
         }
+    }
+
+    pub fn mul(self, other: Self) -> Result<Self, ()> {
+        Ok(Self {
+            x: T::try_from(self.x.into() * other.x.into())
+                .map_err(|_| ())?,
+            y: T::try_from(self.x.into() * other.x.into())
+                .map_err(|_| ())?,
+        })
+    }
+}
+
+/// Contains a PCoord, because compiler won't let me impl From<PCoord<S>> for PCoord<T> without
+/// this
+pub struct PCoordContainer<T: Into<u128> + Copy>(pub PCoord<T>);
+
+impl<S, T> From<PCoord<S>> for PCoordContainer<T>
+where
+    S: Into<u128> + Copy,
+    T: Into<u128> + Copy + From<S>,
+{
+    fn from(item: PCoord<S>) -> PCoordContainer<T> {
+        PCoordContainer(PCoord{ x: T::from(item.x), y: T::from(item.y) })
     }
 }
 
