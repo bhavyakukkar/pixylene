@@ -78,7 +78,7 @@ class Test_Cli:
                 assert len(canvas['layers'][0]['scene']['grid']) == i*j
     
     def test_cursors(self):
-        args = Start._import('assets/images/mushroom.png')
+        args = Start._import('assets/images/rgb_8bit_16x16.png')
         cu, cd, cl, cr = "cursors_up", "cursors_down", "cursors_left", "cursors_right"
         cdu, cdd, cdl, cdr = "cursors_dup_up", "cursors_dup_down", "cursors_dup_left", "cursors_dup_right"
         p1 = "pencil1"

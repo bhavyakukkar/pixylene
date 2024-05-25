@@ -70,21 +70,10 @@ impl Pixylene {
         if let Some(resize) = resize {
             png.resize(resize)?;
         }
-        let scene = png.to_scene()?;
-        let mut layers = Layers::<TruePixel>::new(scene.dim());
-        layers
-            .add_layer(Layer {
-                scene,
-                opacity: 255,
-                mute: false,
-                blend_mode: BlendMode::Normal,
-            })
-            .unwrap(); //cant fail because layers was constructed on same scene's dim
-        let canvas = Canvas {
-            layers: LayersType::True(layers),
+        let mut project = Project::new(Canvas {
+            layers: png.to_scene()?,
             palette: defaults.palette.clone(),
-        };
-        let mut project = Project::new(canvas);
+        });
         project.out_repeat = defaults.repeat;
 
         Ok(Pixylene { project })

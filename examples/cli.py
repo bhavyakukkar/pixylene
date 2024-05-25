@@ -46,7 +46,7 @@ def draw(canvas):
         print()
 
 def run(commands):
-    process = Popen(['target/debug/pixylenecli', 'import', 'assets/images/mushroom.png'], stdin=PIPE, stdout=PIPE, stderr=PIPE, text=True)
+    process = Popen(['target/debug/pixylenecli', 'import', 'assets/images/rgb_8bit_16x16.png'], stdin=PIPE, stdout=PIPE, stderr=PIPE, text=True)
     out = process.communicate(input="".join(map(lambda s: s + "\n", commands)))[0]
     try:
         canvas = json.loads(out)

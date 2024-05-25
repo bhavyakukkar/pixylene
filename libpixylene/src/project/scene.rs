@@ -1,10 +1,10 @@
 use crate::{
-    types::{Coord, PCoord, UCoord, Pixel, TruePixel},
+    types::{Coord, PCoord, UCoord, Pixel, TruePixel, IndexedPixel},
     utils::messages::U32TOUSIZE,
 };
 
 use serde::{ Serialize, Deserialize };
-use std::slice::Iter;
+use std::{fmt, slice::Iter};
 
 /// A two-dimensional grid of pixels that are of a generic type T.
 ///
@@ -234,6 +234,41 @@ impl Scene<TruePixel> {
         return grid;
     }
 }
+
+impl fmt::Display for Scene<TruePixel> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut iter = self.grid();
+        for _ in 0..self.dim().x() {
+            for _ in 0..self.dim().y() {
+                write!(
+                    f,
+                    "{} ",
+                    iter.next().unwrap().map(|p| format!("{}", p)).unwrap_or("       ".to_owned())
+                )?;
+            }
+            write!(f, "\n")?;
+        }
+        Ok(())
+    }
+}
+
+impl fmt::Display for Scene<IndexedPixel> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut iter = self.grid();
+        for _ in 0..self.dim().x() {
+            for _ in 0..self.dim().y() {
+                write!(
+                    f,
+                    "{} ",
+                    iter.next().unwrap().map(|p| format!("{}", p)).unwrap_or("   ".to_owned())
+                )?;
+            }
+            write!(f, "\n")?;
+        }
+        Ok(())
+    }
+}
+
 
 /// An `O`utput `Pixel` as rendered by [`render`](Scene::render)
 ///

@@ -1,6 +1,6 @@
 use crate::{
-    project::Scene,
-    types::{PCoord, Pixel, TruePixel, UCoord},
+    project::{Layer, Scene, LayersType},
+    types::{UCoord, PCoord, Pixel, IndexedPixel, TruePixel, BlendMode},
 };
 
 use png::{BitDepth, ColorType, Decoder};
@@ -116,7 +116,7 @@ impl PngFile {
         })
     }
 
-    pub fn to_scene(&self) -> Result<Scene<TruePixel>, PngFileError> {
+    pub fn to_scene(&self) -> Result<LayersType, PngFileError> {
         use BitDepth::*;
         use ColorType::*;
         use PngFileError::{SceneSizeError, Unsupported};
@@ -128,53 +128,97 @@ impl PngFile {
         )
         .unwrap(); //wont fail because check_dimensions
 
-        let mut scene = Scene::<TruePixel>::new(dim, vec![None; dim.area() as usize]).unwrap();
-
         match (self.color_type, self.bit_depth) {
             (Rgb, Eight) => {
+                let mut scene =
+                    Scene::<TruePixel>::new(dim, vec![None; dim.area() as usize]).unwrap(); //wont fail because same dim used in both parameters
                 for i in 0..scene.dim().x() as usize {
                     for j in 0..scene.dim().y() as usize {
                         scene
                             .set_pixel(
-                                UCoord { x: i as u16, y: j as u16 },
+                                UCoord {
+                                    x: i as u16,
+                                    y: j as u16,
+                                },
                                 Some(TruePixel {
-                                    r: self.bytes
-                                        [(3 * i * scene.dim().y() as usize) + (3 * j) + 0],
-                                    g: self.bytes
-                                        [(3 * i * scene.dim().y() as usize) + (3 * j) + 1],
-                                    b: self.bytes
-                                        [(3 * i * scene.dim().y() as usize) + (3 * j) + 2],
+                                    r: self.bytes[(3 * i * scene.dim().y() as usize) + (3 * j) + 0],
+                                    g: self.bytes[(3 * i * scene.dim().y() as usize) + (3 * j) + 1],
+                                    b: self.bytes[(3 * i * scene.dim().y() as usize) + (3 * j) + 2],
                                     a: 255,
                                 }),
                             )
                             .unwrap();
                     }
                 }
-                Ok(scene)
+                Ok(LayersType::True(
+                    vec![Layer::<TruePixel>{
+                        scene,
+                        opacity: 255,
+                        mute: false,
+                        blend_mode: BlendMode::Normal,
+                    }]
+                    .try_into()
+                    .unwrap(),
+                ))
             }
-            //over here
-            (Indexed, _) => Err(Unsupported(self.color_type, self.bit_depth)),
             (Rgba, Eight) => {
+                let mut scene =
+                    Scene::<TruePixel>::new(dim, vec![None; dim.area() as usize]).unwrap(); //wont fail because same dim used in both parameters
                 for i in 0..scene.dim().x() as usize {
                     for j in 0..scene.dim().y() as usize {
                         scene
                             .set_pixel(
-                                UCoord { x: i as u16, y: j as u16 },
+                                UCoord {
+                                    x: i as u16,
+                                    y: j as u16,
+                                },
                                 Some(TruePixel {
-                                    r: self.bytes
-                                        [(4 * i * scene.dim().y() as usize) + (4 * j) + 0],
-                                    g: self.bytes
-                                        [(4 * i * scene.dim().y() as usize) + (4 * j) + 1],
-                                    b: self.bytes
-                                        [(4 * i * scene.dim().y() as usize) + (4 * j) + 2],
-                                    a: self.bytes
-                                        [(4 * i * scene.dim().y() as usize) + (4 * j) + 3],
+                                    r: self.bytes[(4 * i * scene.dim().y() as usize) + (4 * j) + 0],
+                                    g: self.bytes[(4 * i * scene.dim().y() as usize) + (4 * j) + 1],
+                                    b: self.bytes[(4 * i * scene.dim().y() as usize) + (4 * j) + 2],
+                                    a: self.bytes[(4 * i * scene.dim().y() as usize) + (4 * j) + 3],
                                 }),
                             )
                             .unwrap();
                     }
                 }
-                Ok(scene)
+                Ok(LayersType::True(
+                    vec![Layer::<TruePixel>{
+                        scene,
+                        opacity: 255,
+                        mute: false,
+                        blend_mode: BlendMode::Normal,
+                    }]
+                    .try_into()
+                    .unwrap(),
+                ))
+            }
+            (Indexed, Eight) => {
+                let mut scene =
+                    Scene::<IndexedPixel>::new(dim, vec![None; dim.area() as usize]).unwrap(); //wont fail because same dim used in both parameters
+                for i in 0..scene.dim().x() as usize {
+                    for j in 0..scene.dim().y() as usize {
+                        scene
+                            .set_pixel(
+                                UCoord {
+                                    x: i as u16,
+                                    y: j as u16,
+                                },
+                                Some(IndexedPixel(self.bytes[(i * scene.dim().y() as usize) + j])),
+                            )
+                            .unwrap();
+                    }
+                }
+                Ok(LayersType::Indexed(
+                    vec![Layer::<IndexedPixel>{
+                        scene,
+                        opacity: 255,
+                        mute: false,
+                        blend_mode: BlendMode::Normal,
+                    }]
+                    .try_into()
+                    .unwrap(),
+                ))
             }
             (_, _) => Err(Unsupported(self.color_type, self.bit_depth)),
         }
@@ -253,12 +297,13 @@ impl PngFile {
         ) {
             Err(1) => {
                 panic!("Png dimensions cannot be multiplied in a usize on this architecture");
-            },
+            }
             Err(3) => {
                 panic!("Something went wrong with Png in-memory bytes management");
-            },
-            _ => { //Includes Ok(()) and Err(2)
-                   //Err(2) can't happen because we have check_dimensions'ed
+            }
+            _ => {
+                //Includes Ok(()) and Err(2)
+                //Err(2) can't happen because we have check_dimensions'ed
                 _ = replace(
                     &mut self.bytes,
                     folded_bytes.into_iter().flatten().collect(),
@@ -266,7 +311,7 @@ impl PngFile {
                 self.width = new_width;
                 self.height = new_height;
                 Ok(())
-            },
+            }
         }
     }
 
@@ -279,14 +324,15 @@ impl PngFile {
         use std::mem::replace;
         let mut enlarged: Vec<T> = Vec::new();
 
-        _ = matrix.get(
-            (height as usize)
-                .checked_mul(width as usize)
-                .ok_or(1)?
-                .checked_sub(1)
-                .ok_or(2)? as usize,
-        )
-        .ok_or(3)?;
+        _ = matrix
+            .get(
+                (height as usize)
+                    .checked_mul(width as usize)
+                    .ok_or(1)?
+                    .checked_sub(1)
+                    .ok_or(2)? as usize,
+            )
+            .ok_or(3)?;
         for i in 0..height {
             for _ in 0..factor.1 {
                 for j in 0..width {
@@ -351,10 +397,7 @@ impl PngFile {
                     .map_err(|err| ResizeError(err))?;
                 _ = replace(
                     &mut self.bytes,
-                    out.iter()
-                        .map(|p| vec![p.r, p.g, p.b])
-                        .flatten()
-                        .collect(),
+                    out.iter().map(|p| vec![p.r, p.g, p.b]).flatten().collect(),
                 );
                 self.width = new_width;
                 self.height = new_height;
@@ -509,7 +552,6 @@ impl PngFile {
         }
     }
 }
-
 
 // Error Types
 
