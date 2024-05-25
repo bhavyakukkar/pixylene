@@ -136,6 +136,11 @@ impl Palette {
         }
     }
 
+    /// Returns the equipped index if an index has been equipped, None otherwise
+    pub fn get_equipped_index(&self) -> Option<u8> {
+        self.equipped
+    }
+
     /// Returns an iterator to the palette colors with each entry of the iterator being a tuple of
     /// the index, the color, and whether or not it is the equipped color in the palette
     pub fn colors(&self) -> impl Iterator<Item = (&u8, &TruePixel, bool)> {

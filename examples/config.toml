@@ -44,6 +44,8 @@ keys = [
     { k = "8", f = [{ a = { n = "pencil8" } }] },
 
     { k = "e", f = [{ a = { n = "equip" } }] },
+    { k = "c", f = [{ a = { n = "palette_equipped_color" } }] },
+    { k = "s", f = [{ a = { n = "hex_at_cursors" } }] },
     { k = "?", f = [ "lc" ] },
 
     # go to View namespace

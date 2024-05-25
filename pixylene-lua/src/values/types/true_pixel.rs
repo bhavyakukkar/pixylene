@@ -112,6 +112,12 @@ impl TealData for TruePixel {
             });
         }
 
+        {
+            methods.add_meta_method(MetaMethod::ToString, |_, this, _: ()| {
+                Ok(this.0.to_string())
+            });
+        }
+
         methods.generate_help();
     }
 

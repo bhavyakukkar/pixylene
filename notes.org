@@ -55,6 +55,7 @@
 
 ** Optimizations / Best Practices / Refactors / Ease of Use
 *** TODO cargo feature flag to load no std-actions
+*** TODO native action layer/new should have option not to prompt user but directly used equipped color
 *** TODO cli option in pixyleneui to disable Lua VM entirely
 *** TODO check if good practice to use globals Project and Console in lua rather than passing same to perform
 *** TODO maybe better to make CanvasFile, ProjectFile traits impl'd by Canvas & Project respectively. then you can do Canvas.read, Canvas.write
