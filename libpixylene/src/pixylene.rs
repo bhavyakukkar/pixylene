@@ -1,7 +1,7 @@
 use crate::{
     file::{CanvasFile, CanvasFileError, PngFile, PngFileError, ProjectFile, ProjectFileError},
-    project::{Canvas, Layer, Layers, LayersType, Palette, Project, SceneError},
-    types::{BlendMode, IndexedPixel, PCoord, TruePixel},
+    project::{Canvas, Layers, LayersType, Palette, Project, SceneError},
+    types::{IndexedPixel, PCoord, TruePixel},
 };
 use std::path::PathBuf;
 
@@ -70,10 +70,10 @@ impl Pixylene {
         if let Some(resize) = resize {
             png.resize(resize)?;
         }
-        let mut project = Project::new(Canvas {
-            layers: png.to_scene()?,
-            palette: defaults.palette.clone(),
-        });
+        let mut project = Project::new(png.to_scene()?);
+        if matches!(project.canvas.layers, LayersType::True(_)) {
+            project.canvas.palette = defaults.palette.clone();
+        }
         project.out_repeat = defaults.repeat;
 
         Ok(Pixylene { project })

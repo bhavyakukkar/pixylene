@@ -1,5 +1,5 @@
 use crate::{
-    project::{Layer, Scene, LayersType},
+    project::{Layer, Scene, LayersType, Palette, Canvas},
     types::{UCoord, PCoord, Pixel, IndexedPixel, TruePixel, BlendMode},
 };
 
@@ -12,6 +12,7 @@ pub struct PngFile {
     color_type: ColorType,
     bit_depth: BitDepth,
     bytes: Vec<u8>,
+    palette: Option<Vec<u8>>,
 }
 
 impl PngFile {
@@ -35,6 +36,7 @@ impl PngFile {
             color_type: info.color_type,
             bit_depth: info.bit_depth,
             bytes,
+            palette: reader.info().palette.clone().map(|p| Vec::from(p)),
         })
     }
 
@@ -113,13 +115,16 @@ impl PngFile {
             color_type,
             bit_depth,
             bytes,
+            //over here (when from_canvas)
+            palette: None,
         })
     }
 
-    pub fn to_scene(&self) -> Result<LayersType, PngFileError> {
+    pub fn to_scene(&self) -> Result<Canvas, PngFileError> {
         use BitDepth::*;
         use ColorType::*;
         use PngFileError::{SceneSizeError, Unsupported};
+        use itertools::Itertools;
 
         self.check_dimensions()?;
         let dim = PCoord::new(
@@ -150,16 +155,19 @@ impl PngFile {
                             .unwrap();
                     }
                 }
-                Ok(LayersType::True(
-                    vec![Layer::<TruePixel>{
-                        scene,
-                        opacity: 255,
-                        mute: false,
-                        blend_mode: BlendMode::Normal,
-                    }]
-                    .try_into()
-                    .unwrap(),
-                ))
+                Ok(Canvas{
+                    layers: LayersType::True(
+                        vec![Layer::<TruePixel>{
+                            scene,
+                            opacity: 255,
+                            mute: false,
+                            blend_mode: BlendMode::Normal,
+                        }]
+                        .try_into()
+                        .unwrap(),
+                    ),
+                    palette: Palette::new(),
+                })
             }
             (Rgba, Eight) => {
                 let mut scene =
@@ -182,16 +190,19 @@ impl PngFile {
                             .unwrap();
                     }
                 }
-                Ok(LayersType::True(
-                    vec![Layer::<TruePixel>{
-                        scene,
-                        opacity: 255,
-                        mute: false,
-                        blend_mode: BlendMode::Normal,
-                    }]
-                    .try_into()
-                    .unwrap(),
-                ))
+                Ok(Canvas{
+                    layers: LayersType::True(
+                        vec![Layer::<TruePixel>{
+                            scene,
+                            opacity: 255,
+                            mute: false,
+                            blend_mode: BlendMode::Normal,
+                        }]
+                        .try_into()
+                        .unwrap(),
+                    ),
+                    palette: Palette::new(),
+                })
             }
             (Indexed, Eight) => {
                 let mut scene =
@@ -209,16 +220,30 @@ impl PngFile {
                             .unwrap();
                     }
                 }
-                Ok(LayersType::Indexed(
-                    vec![Layer::<IndexedPixel>{
-                        scene,
-                        opacity: 255,
-                        mute: false,
-                        blend_mode: BlendMode::Normal,
-                    }]
-                    .try_into()
-                    .unwrap(),
-                ))
+                Ok(Canvas{
+                    layers: LayersType::Indexed(
+                        vec![Layer::<IndexedPixel>{
+                            scene,
+                            opacity: 255,
+                            mute: false,
+                            blend_mode: BlendMode::Normal,
+                        }]
+                        .try_into()
+                        .unwrap(),
+                    ),
+                    palette: <Palette as From<&Vec<TruePixel>>>::from(
+                        &self.palette.clone().unwrap().iter()
+                            .chunks(3)
+                            .into_iter()
+                            .map(|mut p| TruePixel {
+                                r: *p.next().unwrap_or(&0),
+                                g: *p.next().unwrap_or(&0),
+                                b: *p.next().unwrap_or(&0),
+                                a: 255,
+                            })
+                            .collect::<Vec<TruePixel>>()
+                    ),
+                })
             }
             (_, _) => Err(Unsupported(self.color_type, self.bit_depth)),
         }

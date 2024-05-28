@@ -85,11 +85,11 @@ mod tests {
     fn indexed_eight_to_scene() {
         let png = file::PngFile::read(
             &std::path::PathBuf::from("../assets/images/indexed_8bit_33x33.png")).unwrap();
-        let layers_type = png.to_scene().unwrap();
-        if let project::LayersType::Indexed(layers) = layers_type {
+        let canvas = png.to_scene().unwrap();
+        if let project::LayersType::Indexed(layers) = canvas.layers {
             assert_eq!(layers.len(), 1);
             let project::Layer { scene, .. } = &layers[0];
-            //println!("{}", scene);
+            println!("{}", scene);
         } else {
             assert!(false);
         }
