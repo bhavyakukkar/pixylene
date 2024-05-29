@@ -82,16 +82,50 @@ mod tests {
     //}
 
     #[test]
-    fn indexed_eight_to_scene() {
+    fn import_rgb_eight() {
+        let png = file::PngFile::read(
+            &std::path::PathBuf::from("../assets/images/rgb_8bit_16x16.png")).unwrap();
+        let canvas = png.to_canvas().unwrap();
+        if let project::LayersType::True(ref layers) = &canvas.layers {
+            assert_eq!(layers.len(), 1);
+            println!("{}", canvas.merged_scene(None));
+            png.write(&std::path::PathBuf::from("/tmp/rgb_8bit_16x16_new.png")).unwrap();
+        } else {
+            assert!(false);
+        }
+    }
+
+    #[test]
+    fn import_indexed_eight() {
         let png = file::PngFile::read(
             &std::path::PathBuf::from("../assets/images/indexed_8bit_33x33.png")).unwrap();
-        let canvas = png.to_scene().unwrap();
+        let canvas = png.to_canvas().unwrap();
         if let project::LayersType::Indexed(layers) = canvas.layers {
             assert_eq!(layers.len(), 1);
             let project::Layer { scene, .. } = &layers[0];
             println!("{}", scene);
+            png.write(&std::path::PathBuf::from("/tmp/indexed_8bit_33x33_new.png")).unwrap();
         } else {
             assert!(false);
         }
+    }
+
+    #[test]
+    fn export_true_canvas() {
+        import_rgb_eight();
+        let canvas = file::PngFile::read(
+            &std::path::PathBuf::from("../assets/images/rgb_8bit_16x16.png")).unwrap().to_canvas().unwrap();
+        let png = file::PngFile::from_canvas(&canvas).unwrap();
+        png.write(&std::path::PathBuf::from("/tmp/rgb_8bit_16x16_new2.png")).unwrap();
+    }
+
+    //over here 1.2
+    #[test]
+    fn export_indexed_canvas() {
+        import_indexed_eight();
+        let canvas = file::PngFile::read(
+            &std::path::PathBuf::from("../assets/images/indexed_8bit_33x33.png")).unwrap().to_canvas().unwrap();
+        let png = file::PngFile::from_canvas(&canvas).unwrap();
+        png.write(&std::path::PathBuf::from("/tmp/indexed_8bit_33x33_new.png")).unwrap();
     }
 }

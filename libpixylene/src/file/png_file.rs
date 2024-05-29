@@ -49,6 +49,9 @@ impl PngFile {
         encoder.set_color(self.color_type);
         encoder.set_depth(self.bit_depth);
         encoder.set_source_gamma(png::ScaledFloat::from_scaled(45455));
+        if let Some(palette) = &self.palette {
+            encoder.set_palette(palette);
+        }
 
         let mut writer = encoder
             .write_header()
@@ -59,68 +62,67 @@ impl PngFile {
             .map_err(|err| EncodingError(path.clone(), err))
     }
 
-    pub fn from_scene(
-        scene: &Scene<TruePixel>,
-        color_type: ColorType,
-        bit_depth: BitDepth,
-    ) -> Result<Self, PngFileError> {
-        use BitDepth::*;
-        use ColorType::*;
-        use PngFileError::Unsupported;
-
+    pub fn from_canvas(canvas: &Canvas) -> Result<Self, PngFileError> {
         let mut bytes;
-        match (color_type, bit_depth) {
-            (Rgb, Eight) => {
-                bytes = vec![0; scene.dim().area() as usize * 3];
-                for x in 0..scene.dim().x() {
-                    for y in 0..scene.dim().y() {
-                        let TruePixel { r, g, b, .. } = scene
-                            .get_pixel(UCoord { x, y })
+        let dim = canvas.layers.dim();
+        match &canvas.layers {
+            LayersType::True(_) => {
+                bytes = vec![0; dim.area() as usize * 4];
+                for x in 0..dim.x() {
+                    for y in 0..dim.y() {
+                        let TruePixel { r, g, b, a } = canvas.merged_scene(None)
+                            .get_pixel(UCoord{ x, y })
                             .unwrap() //cant fail because iterating over same scene's dim
                             .unwrap_or(TruePixel::empty());
-                        let index = (x * scene.dim().y() + y) as usize;
-                        bytes[index * 3 + 0] = r;
-                        bytes[index * 3 + 1] = g;
-                        bytes[index * 3 + 2] = b;
-                    }
-                }
-            }
-            (Rgba, Eight) => {
-                bytes = vec![0; scene.dim().area() as usize * 4];
-                for x in 0..scene.dim().x() {
-                    for y in 0..scene.dim().y() {
-                        let TruePixel { r, g, b, a } = scene
-                            .get_pixel(UCoord { x, y })
-                            .unwrap() //cant fail because iterating over same scene's dim
-                            .unwrap_or(TruePixel::empty());
-                        let index = (x * scene.dim().y() + y) as usize;
+                        let index = (x * dim.y() + y) as usize;
                         bytes[index * 4 + 0] = r;
                         bytes[index * 4 + 1] = g;
                         bytes[index * 4 + 2] = b;
                         bytes[index * 4 + 3] = a;
                     }
                 }
-            }
-            (Indexed, _) => {
-                return Err(Unsupported(color_type, bit_depth));
-            }
-            (_, _) => {
-                return Err(Unsupported(color_type, bit_depth));
-            }
-        }
 
-        Ok(Self {
-            height: scene.dim().x().into(),
-            width: scene.dim().y().into(),
-            color_type,
-            bit_depth,
-            bytes,
-            //over here (when from_canvas)
-            palette: None,
-        })
+                Ok(Self {
+                    height: dim.x().into(),
+                    width: dim.y().into(),
+                    color_type: ColorType::Rgba,
+                    bit_depth: BitDepth::Eight,
+                    bytes,
+                    palette: None,
+                })
+            },
+            LayersType::Indexed(layers) => {
+                bytes = vec![0; dim.area() as usize * 4];
+                for x in 0..dim.x() {
+                    for y in 0..dim.y() {
+                        //over here 1.3
+                        //using placeholder layers[0]
+                        //create merged_scene_indexed that just overwrites top layer on bottom
+                        //layer where not None
+                        //let IndexedPixel(p) = canvas.merged_scene_indexed(
+                        let IndexedPixel(p) = layers[0].scene
+                            .get_pixel(UCoord{ x, y })
+                            .unwrap() //cant fail because iterating over same scene's dim
+                            .unwrap_or(IndexedPixel::empty());
+                        bytes[(x * dim.y() + y) as usize] = p;
+                    }
+                }
+
+                Ok(Self {
+                    height: dim.x().into(),
+                    width: dim.y().into(),
+                    color_type: ColorType::Indexed,
+                    bit_depth: BitDepth::Eight,
+                    bytes,
+                    //over here 1.1
+                    //parse and add the palette, can't test this fn for indexed images until
+                    palette: None,
+                })
+            },
+        }
     }
 
-    pub fn to_scene(&self) -> Result<Canvas, PngFileError> {
+    pub fn to_canvas(&self) -> Result<Canvas, PngFileError> {
         use BitDepth::*;
         use ColorType::*;
         use PngFileError::{SceneSizeError, Unsupported};

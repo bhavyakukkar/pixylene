@@ -70,7 +70,7 @@ impl Pixylene {
         if let Some(resize) = resize {
             png.resize(resize)?;
         }
-        let mut project = Project::new(png.to_scene()?);
+        let mut project = Project::new(png.to_canvas()?);
         if matches!(project.canvas.layers, LayersType::True(_)) {
             project.canvas.palette = defaults.palette.clone();
         }
@@ -82,15 +82,9 @@ impl Pixylene {
     pub fn export(
         &self,
         resize: Option<PCoord<u32>>,
-        path: &PathBuf, /*, scale_up: u16*/
+        path: &PathBuf,
     ) -> Result<(), PixyleneError> {
-        let mut png = PngFile::from_scene(
-            &self.project.canvas.merged_scene(None),
-            //todo: use from Pixylene struct instead of defaults
-            png::ColorType::Rgba,
-            png::BitDepth::Eight,
-            //scale_up,
-        )?;
+        let mut png = PngFile::from_canvas(&self.project.canvas)?;
         if let Some(resize) = resize {
             png.resize(resize)?;
         }
