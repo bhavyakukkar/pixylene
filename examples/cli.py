@@ -25,8 +25,9 @@ commands = [
 
     action("pencil1"),              #draw with pencil1 at focus
 
-    #action("noise"),               #draw noise with a factor of 0.3 (requires lua action 'noise' present in examples/actions.lua)
-    #"0.3",
+    #action("noise"),               #draw noise with a factor of 0.3 
+    #"0.3",                         # (requires lua action 'noise' from examples/actions.lua
+                                    # present in XDG_CONFIG_DIR/pixylene/actions.lua)
 
     canvas(),                       #print canvas json
 
@@ -34,19 +35,23 @@ commands = [
 ]
 
 def draw(canvas):
-    scene = canvas['layers'][0]['scene']
+    if "True" in canvas['layers']:
+        scene = canvas['layers']['True']['layers'][0]['scene']
+        color = lambda pixel: rgb2short(f"{(hex(pixel['r']) + '00')[2:4]}{(hex(pixel['g']) + '00')[2:4]}{(hex(pixel['b']) + '00')[2:4]}")[0]
+    else:
+        scene = canvas['layers']['Indexed']['layers'][0]['scene']
+        color = lambda pixel: pixel
     grid = numpy.reshape(scene['grid'], (scene['dim']['x'], scene['dim']['y']))
     for row in grid:
         for pixel in row:
             if pixel != None:
-                color = rgb2short(f"{(hex(pixel['r']) + '00')[2:4]}{(hex(pixel['g']) + '00')[2:4]}{(hex(pixel['b']) + '00')[2:4]}")
-                print(f"\x1b[48;5;{color[0]}m  \x1b[0m", end="")
+                print(f"\x1b[48;5;{color(pixel)}m  \x1b[0m", end="")
             else:
                 print("  ", end="")
         print()
 
-def run(commands):
-    process = Popen(['target/debug/pixylenecli', 'import', 'assets/images/rgb_8bit_16x16.png'], stdin=PIPE, stdout=PIPE, stderr=PIPE, text=True)
+def run(commands, png):
+    process = Popen(['target/debug/pixylenecli', 'import', png], stdin=PIPE, stdout=PIPE, stderr=PIPE, text=True)
     out = process.communicate(input="".join(map(lambda s: s + "\n", commands)))[0]
     try:
         canvas = json.loads(out)
@@ -57,5 +62,6 @@ def run(commands):
     #draw(print(json.loads()))
 
 print()
-run(commands)
+run(commands, 'assets/images/rgb_8bit_16x16.png')
+run(commands, 'assets/images/indexed_8bit_33x33.png')
 print()
