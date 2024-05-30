@@ -119,13 +119,12 @@ mod tests {
         png.write(&std::path::PathBuf::from("/tmp/rgb_8bit_16x16_new2.png")).unwrap();
     }
 
-    //over here 1.2
     #[test]
     fn export_indexed_canvas() {
         import_indexed_eight();
         let canvas = file::PngFile::read(
             &std::path::PathBuf::from("../assets/images/indexed_8bit_33x33.png")).unwrap().to_canvas().unwrap();
         let png = file::PngFile::from_canvas(&canvas).unwrap();
-        png.write(&std::path::PathBuf::from("/tmp/indexed_8bit_33x33_new.png")).unwrap();
+        png.write(&std::path::PathBuf::from("/tmp/indexed_8bit_33x33_new2.png")).unwrap();
     }
 }

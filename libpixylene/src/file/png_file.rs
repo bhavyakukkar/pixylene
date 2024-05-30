@@ -4,7 +4,7 @@ use crate::{
 };
 
 use png::{BitDepth, ColorType, Decoder};
-use std::{fmt, fs::File, io::BufWriter, path::PathBuf};
+use std::{fmt, fs::File, io::BufWriter, path::PathBuf, collections::HashMap};
 
 pub struct PngFile {
     height: u32,
@@ -92,10 +92,10 @@ impl PngFile {
                 })
             },
             LayersType::Indexed(layers) => {
-                bytes = vec![0; dim.area() as usize * 4];
+                bytes = vec![0; dim.area() as usize];
                 for x in 0..dim.x() {
                     for y in 0..dim.y() {
-                        //over here 1.3
+                        //over here 1.1
                         //using placeholder layers[0]
                         //create merged_scene_indexed that just overwrites top layer on bottom
                         //layer where not None
@@ -104,7 +104,26 @@ impl PngFile {
                             .get_pixel(UCoord{ x, y })
                             .unwrap() //cant fail because iterating over same scene's dim
                             .unwrap_or(IndexedPixel::empty());
-                        bytes[(x * dim.y() + y) as usize] = p;
+                        bytes[x as usize * dim.y() as usize + y as usize] = p;
+                    }
+                }
+
+                let palette_map = canvas.palette.colors()
+                    .map(|(id, col, _)| (*id, *col))
+                    .collect::<HashMap<u8, TruePixel>>();
+                let palette_len = palette_map.iter()
+                    .map(|(id, _)| *id)
+                    .max()
+                    .unwrap_or(0);
+
+                let mut palette = Vec::new();
+                for i in 0..(palette_len + 1) {
+                    if let Some(TruePixel{ r, g, b, .. }) = palette_map.get(&i) {
+                        palette.push(*r);
+                        palette.push(*g);
+                        palette.push(*b);
+                    } else {
+                        palette.extend_from_slice(&[0, 0, 0]);
                     }
                 }
 
@@ -114,9 +133,7 @@ impl PngFile {
                     color_type: ColorType::Indexed,
                     bit_depth: BitDepth::Eight,
                     bytes,
-                    //over here 1.1
-                    //parse and add the palette, can't test this fn for indexed images until
-                    palette: None,
+                    palette: Some(palette),
                 })
             },
         }
