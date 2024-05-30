@@ -158,7 +158,7 @@ impl Project {
     /// [om]: Project::get_out_mul
     /// [or]: #structfield.out_repeat
     pub fn render(&self) -> Vec<OPixel> {
-        self.canvas.merged_scene(Some(TruePixel::BLACK)).render(
+        self.canvas.merged_true_scene(Some(TruePixel::BLACK)).render(
             self.out_dim, self.out_mul, self.out_repeat, self.focus.0
         )
     }

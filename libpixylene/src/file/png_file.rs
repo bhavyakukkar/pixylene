@@ -70,7 +70,7 @@ impl PngFile {
                 bytes = vec![0; dim.area() as usize * 4];
                 for x in 0..dim.x() {
                     for y in 0..dim.y() {
-                        let TruePixel { r, g, b, a } = canvas.merged_scene(None)
+                        let TruePixel { r, g, b, a } = canvas.merged_true_scene(None)
                             .get_pixel(UCoord{ x, y })
                             .unwrap() //cant fail because iterating over same scene's dim
                             .unwrap_or(TruePixel::empty());
@@ -91,7 +91,7 @@ impl PngFile {
                     palette: None,
                 })
             },
-            LayersType::Indexed(layers) => {
+            LayersType::Indexed(_) => {
                 bytes = vec![0; dim.area() as usize];
                 for x in 0..dim.x() {
                     for y in 0..dim.y() {
@@ -100,7 +100,8 @@ impl PngFile {
                         //create merged_scene_indexed that just overwrites top layer on bottom
                         //layer where not None
                         //let IndexedPixel(p) = canvas.merged_scene_indexed(
-                        let IndexedPixel(p) = layers[0].scene
+                        let IndexedPixel(p) = canvas.merged_indexed_scene(None)
+                            .unwrap() //cant fail because this is an indexed canvas
                             .get_pixel(UCoord{ x, y })
                             .unwrap() //cant fail because iterating over same scene's dim
                             .unwrap_or(IndexedPixel::empty());

@@ -88,7 +88,7 @@ mod tests {
         let canvas = png.to_canvas().unwrap();
         if let project::LayersType::True(ref layers) = &canvas.layers {
             assert_eq!(layers.len(), 1);
-            println!("{}", canvas.merged_scene(None));
+            println!("{}", canvas.merged_true_scene(None));
             png.write(&std::path::PathBuf::from("/tmp/rgb_8bit_16x16_new.png")).unwrap();
         } else {
             assert!(false);
