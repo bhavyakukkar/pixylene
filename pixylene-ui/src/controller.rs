@@ -1293,6 +1293,13 @@ impl Controller {
                     statusline.push(session.name.on_truecolor(60,60,60).bright_white());
                     statusline.push(spacing.clone());
 
+                    //Session canvas-type (true|indexed)
+                    statusline.push(match session.pixylene.borrow().project.canvas.layers {
+                        LayersType::True(_) => "rgba",
+                        LayersType::Indexed(_) => "indexed",
+                    }.on_truecolor(60,60,60));
+                    statusline.push(spacing.clone());
+
                     //Session dimensions
                     statusline.push(
                         format!("{}", session.pixylene.borrow().project.canvas.layers.dim())
@@ -1425,18 +1432,6 @@ impl Controller {
             size: PCoord::new(1, window.y() - 2*self.padding as u16).unwrap()
         }
         )
-    }
-}
-
-struct Echo;
-impl pixylene_actions::memento::Action for Echo {
-    fn perform(&mut self, _project: &mut libpixylene::project::Project, console: &dyn Console)
-    -> pixylene_actions::memento::ActionResult {
-        console.cmdout("heyyy :3 :3 :3", &LogType::Error);
-        Ok(())
-    }
-    fn has_ended(&self) -> bool {
-        true
     }
 }
 

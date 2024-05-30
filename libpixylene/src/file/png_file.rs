@@ -1,10 +1,10 @@
 use crate::{
-    project::Scene,
-    types::{PCoord, Pixel, TruePixel, UCoord},
+    project::{Layer, Scene, LayersType, Palette, Canvas},
+    types::{UCoord, PCoord, Pixel, IndexedPixel, TruePixel, BlendMode},
 };
 
 use png::{BitDepth, ColorType, Decoder};
-use std::{fmt, fs::File, io::BufWriter, path::PathBuf};
+use std::{fmt, fs::File, io::BufWriter, path::PathBuf, collections::HashMap};
 
 pub struct PngFile {
     height: u32,
@@ -12,6 +12,7 @@ pub struct PngFile {
     color_type: ColorType,
     bit_depth: BitDepth,
     bytes: Vec<u8>,
+    palette: Option<Vec<u8>>,
 }
 
 impl PngFile {
@@ -35,6 +36,7 @@ impl PngFile {
             color_type: info.color_type,
             bit_depth: info.bit_depth,
             bytes,
+            palette: reader.info().palette.clone().map(|p| Vec::from(p)),
         })
     }
 
@@ -47,6 +49,9 @@ impl PngFile {
         encoder.set_color(self.color_type);
         encoder.set_depth(self.bit_depth);
         encoder.set_source_gamma(png::ScaledFloat::from_scaled(45455));
+        if let Some(palette) = &self.palette {
+            encoder.set_palette(palette);
+        }
 
         let mut writer = encoder
             .write_header()
@@ -57,69 +62,89 @@ impl PngFile {
             .map_err(|err| EncodingError(path.clone(), err))
     }
 
-    pub fn from_scene(
-        scene: &Scene<TruePixel>,
-        color_type: ColorType,
-        bit_depth: BitDepth,
-    ) -> Result<Self, PngFileError> {
-        use BitDepth::*;
-        use ColorType::*;
-        use PngFileError::Unsupported;
-
+    pub fn from_canvas(canvas: &Canvas) -> Result<Self, PngFileError> {
         let mut bytes;
-        match (color_type, bit_depth) {
-            (Rgb, Eight) => {
-                bytes = vec![0; scene.dim().area() as usize * 3];
-                for x in 0..scene.dim().x() {
-                    for y in 0..scene.dim().y() {
-                        let TruePixel { r, g, b, .. } = scene
-                            .get_pixel(UCoord { x, y })
+        let dim = canvas.layers.dim();
+        match &canvas.layers {
+            LayersType::True(_) => {
+                bytes = vec![0; dim.area() as usize * 4];
+                for x in 0..dim.x() {
+                    for y in 0..dim.y() {
+                        let TruePixel { r, g, b, a } = canvas.merged_true_scene(None)
+                            .get_pixel(UCoord{ x, y })
                             .unwrap() //cant fail because iterating over same scene's dim
                             .unwrap_or(TruePixel::empty());
-                        let index = (x * scene.dim().y() + y) as usize;
-                        bytes[index * 3 + 0] = r;
-                        bytes[index * 3 + 1] = g;
-                        bytes[index * 3 + 2] = b;
-                    }
-                }
-            }
-            (Rgba, Eight) => {
-                bytes = vec![0; scene.dim().area() as usize * 4];
-                for x in 0..scene.dim().x() {
-                    for y in 0..scene.dim().y() {
-                        let TruePixel { r, g, b, a } = scene
-                            .get_pixel(UCoord { x, y })
-                            .unwrap() //cant fail because iterating over same scene's dim
-                            .unwrap_or(TruePixel::empty());
-                        let index = (x * scene.dim().y() + y) as usize;
+                        let index = (x * dim.y() + y) as usize;
                         bytes[index * 4 + 0] = r;
                         bytes[index * 4 + 1] = g;
                         bytes[index * 4 + 2] = b;
                         bytes[index * 4 + 3] = a;
                     }
                 }
-            }
-            (Indexed, _) => {
-                return Err(Unsupported(color_type, bit_depth));
-            }
-            (_, _) => {
-                return Err(Unsupported(color_type, bit_depth));
-            }
-        }
 
-        Ok(Self {
-            height: scene.dim().x().into(),
-            width: scene.dim().y().into(),
-            color_type,
-            bit_depth,
-            bytes,
-        })
+                Ok(Self {
+                    height: dim.x().into(),
+                    width: dim.y().into(),
+                    color_type: ColorType::Rgba,
+                    bit_depth: BitDepth::Eight,
+                    bytes,
+                    palette: None,
+                })
+            },
+            LayersType::Indexed(_) => {
+                bytes = vec![0; dim.area() as usize];
+                for x in 0..dim.x() {
+                    for y in 0..dim.y() {
+                        //over here 1.1
+                        //using placeholder layers[0]
+                        //create merged_scene_indexed that just overwrites top layer on bottom
+                        //layer where not None
+                        //let IndexedPixel(p) = canvas.merged_scene_indexed(
+                        let IndexedPixel(p) = canvas.merged_indexed_scene(None)
+                            .unwrap() //cant fail because this is an indexed canvas
+                            .get_pixel(UCoord{ x, y })
+                            .unwrap() //cant fail because iterating over same scene's dim
+                            .unwrap_or(IndexedPixel::empty());
+                        bytes[x as usize * dim.y() as usize + y as usize] = p;
+                    }
+                }
+
+                let palette_map = canvas.palette.colors()
+                    .map(|(id, col, _)| (*id, *col))
+                    .collect::<HashMap<u8, TruePixel>>();
+                let palette_len = palette_map.iter()
+                    .map(|(id, _)| *id)
+                    .max()
+                    .unwrap_or(0);
+
+                let mut palette = Vec::new();
+                for i in 0..(palette_len + 1) {
+                    if let Some(TruePixel{ r, g, b, .. }) = palette_map.get(&i) {
+                        palette.push(*r);
+                        palette.push(*g);
+                        palette.push(*b);
+                    } else {
+                        palette.extend_from_slice(&[0, 0, 0]);
+                    }
+                }
+
+                Ok(Self {
+                    height: dim.x().into(),
+                    width: dim.y().into(),
+                    color_type: ColorType::Indexed,
+                    bit_depth: BitDepth::Eight,
+                    bytes,
+                    palette: Some(palette),
+                })
+            },
+        }
     }
 
-    pub fn to_scene(&self) -> Result<Scene<TruePixel>, PngFileError> {
+    pub fn to_canvas(&self) -> Result<Canvas, PngFileError> {
         use BitDepth::*;
         use ColorType::*;
         use PngFileError::{SceneSizeError, Unsupported};
+        use itertools::Itertools;
 
         self.check_dimensions()?;
         let dim = PCoord::new(
@@ -128,53 +153,117 @@ impl PngFile {
         )
         .unwrap(); //wont fail because check_dimensions
 
-        let mut scene = Scene::<TruePixel>::new(dim, vec![None; dim.area() as usize]).unwrap();
-
         match (self.color_type, self.bit_depth) {
             (Rgb, Eight) => {
+                let mut scene =
+                    Scene::<TruePixel>::new(dim, vec![None; dim.area() as usize]).unwrap(); //wont fail because same dim used in both parameters
                 for i in 0..scene.dim().x() as usize {
                     for j in 0..scene.dim().y() as usize {
                         scene
                             .set_pixel(
-                                UCoord { x: i as u16, y: j as u16 },
+                                UCoord {
+                                    x: i as u16,
+                                    y: j as u16,
+                                },
                                 Some(TruePixel {
-                                    r: self.bytes
-                                        [(3 * i * scene.dim().y() as usize) + (3 * j) + 0],
-                                    g: self.bytes
-                                        [(3 * i * scene.dim().y() as usize) + (3 * j) + 1],
-                                    b: self.bytes
-                                        [(3 * i * scene.dim().y() as usize) + (3 * j) + 2],
+                                    r: self.bytes[(3 * i * scene.dim().y() as usize) + (3 * j) + 0],
+                                    g: self.bytes[(3 * i * scene.dim().y() as usize) + (3 * j) + 1],
+                                    b: self.bytes[(3 * i * scene.dim().y() as usize) + (3 * j) + 2],
                                     a: 255,
                                 }),
                             )
                             .unwrap();
                     }
                 }
-                Ok(scene)
+                Ok(Canvas{
+                    layers: LayersType::True(
+                        vec![Layer::<TruePixel>{
+                            scene,
+                            opacity: 255,
+                            mute: false,
+                            blend_mode: BlendMode::Normal,
+                        }]
+                        .try_into()
+                        .unwrap(),
+                    ),
+                    palette: Palette::new(),
+                })
             }
-            //over here
-            (Indexed, _) => Err(Unsupported(self.color_type, self.bit_depth)),
             (Rgba, Eight) => {
+                let mut scene =
+                    Scene::<TruePixel>::new(dim, vec![None; dim.area() as usize]).unwrap(); //wont fail because same dim used in both parameters
                 for i in 0..scene.dim().x() as usize {
                     for j in 0..scene.dim().y() as usize {
                         scene
                             .set_pixel(
-                                UCoord { x: i as u16, y: j as u16 },
+                                UCoord {
+                                    x: i as u16,
+                                    y: j as u16,
+                                },
                                 Some(TruePixel {
-                                    r: self.bytes
-                                        [(4 * i * scene.dim().y() as usize) + (4 * j) + 0],
-                                    g: self.bytes
-                                        [(4 * i * scene.dim().y() as usize) + (4 * j) + 1],
-                                    b: self.bytes
-                                        [(4 * i * scene.dim().y() as usize) + (4 * j) + 2],
-                                    a: self.bytes
-                                        [(4 * i * scene.dim().y() as usize) + (4 * j) + 3],
+                                    r: self.bytes[(4 * i * scene.dim().y() as usize) + (4 * j) + 0],
+                                    g: self.bytes[(4 * i * scene.dim().y() as usize) + (4 * j) + 1],
+                                    b: self.bytes[(4 * i * scene.dim().y() as usize) + (4 * j) + 2],
+                                    a: self.bytes[(4 * i * scene.dim().y() as usize) + (4 * j) + 3],
                                 }),
                             )
                             .unwrap();
                     }
                 }
-                Ok(scene)
+                Ok(Canvas{
+                    layers: LayersType::True(
+                        vec![Layer::<TruePixel>{
+                            scene,
+                            opacity: 255,
+                            mute: false,
+                            blend_mode: BlendMode::Normal,
+                        }]
+                        .try_into()
+                        .unwrap(),
+                    ),
+                    palette: Palette::new(),
+                })
+            }
+            (Indexed, Eight) => {
+                let mut scene =
+                    Scene::<IndexedPixel>::new(dim, vec![None; dim.area() as usize]).unwrap(); //wont fail because same dim used in both parameters
+                for i in 0..scene.dim().x() as usize {
+                    for j in 0..scene.dim().y() as usize {
+                        scene
+                            .set_pixel(
+                                UCoord {
+                                    x: i as u16,
+                                    y: j as u16,
+                                },
+                                Some(IndexedPixel(self.bytes[(i * scene.dim().y() as usize) + j])),
+                            )
+                            .unwrap();
+                    }
+                }
+                Ok(Canvas{
+                    layers: LayersType::Indexed(
+                        vec![Layer::<IndexedPixel>{
+                            scene,
+                            opacity: 255,
+                            mute: false,
+                            blend_mode: BlendMode::Normal,
+                        }]
+                        .try_into()
+                        .unwrap(),
+                    ),
+                    palette: <Palette as From<&Vec<TruePixel>>>::from(
+                        &self.palette.clone().unwrap().iter()
+                            .chunks(3)
+                            .into_iter()
+                            .map(|mut p| TruePixel {
+                                r: *p.next().unwrap_or(&0),
+                                g: *p.next().unwrap_or(&0),
+                                b: *p.next().unwrap_or(&0),
+                                a: 255,
+                            })
+                            .collect::<Vec<TruePixel>>()
+                    ),
+                })
             }
             (_, _) => Err(Unsupported(self.color_type, self.bit_depth)),
         }
@@ -253,12 +342,13 @@ impl PngFile {
         ) {
             Err(1) => {
                 panic!("Png dimensions cannot be multiplied in a usize on this architecture");
-            },
+            }
             Err(3) => {
                 panic!("Something went wrong with Png in-memory bytes management");
-            },
-            _ => { //Includes Ok(()) and Err(2)
-                   //Err(2) can't happen because we have check_dimensions'ed
+            }
+            _ => {
+                //Includes Ok(()) and Err(2)
+                //Err(2) can't happen because we have check_dimensions'ed
                 _ = replace(
                     &mut self.bytes,
                     folded_bytes.into_iter().flatten().collect(),
@@ -266,7 +356,7 @@ impl PngFile {
                 self.width = new_width;
                 self.height = new_height;
                 Ok(())
-            },
+            }
         }
     }
 
@@ -279,14 +369,15 @@ impl PngFile {
         use std::mem::replace;
         let mut enlarged: Vec<T> = Vec::new();
 
-        _ = matrix.get(
-            (height as usize)
-                .checked_mul(width as usize)
-                .ok_or(1)?
-                .checked_sub(1)
-                .ok_or(2)? as usize,
-        )
-        .ok_or(3)?;
+        _ = matrix
+            .get(
+                (height as usize)
+                    .checked_mul(width as usize)
+                    .ok_or(1)?
+                    .checked_sub(1)
+                    .ok_or(2)? as usize,
+            )
+            .ok_or(3)?;
         for i in 0..height {
             for _ in 0..factor.1 {
                 for j in 0..width {
@@ -351,10 +442,7 @@ impl PngFile {
                     .map_err(|err| ResizeError(err))?;
                 _ = replace(
                     &mut self.bytes,
-                    out.iter()
-                        .map(|p| vec![p.r, p.g, p.b])
-                        .flatten()
-                        .collect(),
+                    out.iter().map(|p| vec![p.r, p.g, p.b]).flatten().collect(),
                 );
                 self.width = new_width;
                 self.height = new_height;
@@ -509,7 +597,6 @@ impl PngFile {
         }
     }
 }
-
 
 // Error Types
 

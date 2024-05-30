@@ -67,7 +67,6 @@ impl TealData for IndexedLayers {
             );
             methods.document("Adds a Layer to the back of the IndexedLayers");
             methods.add_method_mut("add", |_, this, a: IndexedLayersAddArgs| {
-                //over here
                 let layer = a.layer.0.do_imt::<_, _, CanvasMismatch<ContextExpired<
                     project::Layer<types::IndexedPixel>
                 >>>

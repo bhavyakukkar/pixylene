@@ -1,8 +1,8 @@
 use crate::{
     utils::{CanvasMismatch, CANVAS_MISMATCH_TRUE, CANVAS_MISMATCH_INDEXED, BOXED_ERROR},
     values::{
-        project::{TrueScene, TrueLayers, IndexedLayers, Palette},
-        types::{PCoord, TruePixel},
+        project::{TrueScene, IndexedScene, TrueLayers, IndexedLayers, Palette},
+        types::{PCoord, TruePixel, IndexedPixel},
     },
     Context,
 };
@@ -103,20 +103,42 @@ impl TealData for Canvas {
             });
         }
 
-        //Lua interface to merged_scene()
+        //Lua interface to merged_true_scene()
         {
             mlua_create_named_parameters!(
                 CanvasMergeArgs with
                     background: Option<TruePixel>,
             );
             methods.document(
-                "Merges the layers of the Canvas into a Scene with an optional background color",
+                "Merges the layers of the Canvas into a TrueScene with an optional background \
+                color",
             );
-            methods.add_method("merge", |_, this, a: CanvasMergeArgs| {
+            methods.add_method("merge_true", |_, this, a: CanvasMergeArgs| {
                 let color = a.background.map(|color| color.0);
                 Ok(TrueScene(Context::Solo(this.0.do_imt
-                    (|canvas| canvas.merged_scene(color))
-                    (|pixylene, _| pixylene.project.canvas.merged_scene(color))
+                    (|canvas| canvas.merged_true_scene(color))
+                    (|pixylene, _| pixylene.project.canvas.merged_true_scene(color))
+                )))
+            });
+        }
+
+
+        //Lua interface to merged_indexed_scene()
+        {
+            mlua_create_named_parameters!(
+                CanvasMergeArgs with
+                    background: Option<IndexedPixel>,
+            );
+            methods.document(
+                "Merges the layers of the Canvas into a IndexedScene with an optional background \
+                color",
+            );
+            methods.add_method("merge_indexed", |_, this, a: CanvasMergeArgs| {
+                let color = a.background.map(|color| color.0);
+                Ok(IndexedScene(Context::Solo(this.0.do_imt
+                    (|canvas| canvas.merged_indexed_scene(color))
+                    (|pixylene, _| pixylene.project.canvas.merged_indexed_scene(color))
+                    .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(CANVAS_MISMATCH_INDEXED))))?
                 )))
             });
         }

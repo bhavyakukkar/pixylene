@@ -62,7 +62,9 @@ pub struct Canvas {
 }
 
 impl Canvas {
-    pub fn merged_scene(&self, background: Option<TruePixel>) -> Scene<TruePixel> {
+    /// Merges the Layers of this Canvas into a single true-color [`Scene`] with the provided
+    /// background [`true-pixel`](TruePixel)
+    pub fn merged_true_scene(&self, background: Option<TruePixel>) -> Scene<TruePixel> {
         let mut net_layer = Layer::<TruePixel>::new_with_solid_color(self.layers.dim(), background);
         let layer_conv;
         let layers_true: &Layers<TruePixel> = match &self.layers {
@@ -87,5 +89,29 @@ impl Canvas {
             };
         }
         net_layer.scene
+    }
+
+    /// Merges the Layers of an Indexed Canvas into a single indexed-color [`Scene`] with the
+    /// provided background [`indexed-pixel`](IndexedPixel), failing if this Canvas is not Indexed
+    pub fn merged_indexed_scene(&self, background: Option<IndexedPixel>)
+    -> Result<Scene<IndexedPixel>, ()>
+    {
+        match &self.layers {
+            LayersType::Indexed(layers) => {
+                let mut new_buf = vec![background; self.layers.dim().area() as usize];
+
+                for k in 0..layers.len() {
+                    if layers[k].mute { continue; }
+                    _ = layers[k].scene.grid().enumerate().map(|(i, p)| {
+                        if let Some(p) = p {
+                            new_buf[i] = Some(*p);
+                        }
+                    })
+                    .collect::<()>();
+                }
+                Ok(Scene::new(self.layers.dim(), new_buf).unwrap())
+            },
+            LayersType::True(_) => Err(()),
+        }
     }
 }

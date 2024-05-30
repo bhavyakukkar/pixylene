@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use serde::{ Serialize, Deserialize };
 
 
-/// A `Palette` containing a set of [`true-color pixels`](TruePixel)
+/// A `Palette` containing a set of [`true-color pixels`](TruePixel) (maximum 256)
 ///
 /// The palette works by using a hashmap of u8 indexes to pixel definitions, and the most
 /// significant color at any time can be chosen by its index and picked.
@@ -147,6 +147,19 @@ impl Palette {
         self.colors.iter().map(|(index, color)| {
             return (index, color, self.equipped.is_some() && *index == self.equipped.unwrap());
         })
+    }
+}
+
+impl From<&Vec<TruePixel>> for Palette {
+    fn from(item: &Vec<TruePixel>) -> Palette {
+        let colors = item.iter()
+            .take(u8::MAX.into())
+            .map(|p| p.clone())
+            .enumerate()
+            .map(|(i, p)| (i as u8, p.clone()))
+            .collect::<HashMap<u8, TruePixel>>();
+
+        Palette{ equipped: if item.len() > 0 { Some(0) } else { None }, colors }
     }
 }
 

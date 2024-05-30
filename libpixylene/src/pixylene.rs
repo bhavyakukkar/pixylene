@@ -1,7 +1,7 @@
 use crate::{
     file::{CanvasFile, CanvasFileError, PngFile, PngFileError, ProjectFile, ProjectFileError},
-    project::{Canvas, Layer, Layers, LayersType, Palette, Project, SceneError},
-    types::{BlendMode, IndexedPixel, PCoord, TruePixel},
+    project::{Canvas, Layers, LayersType, Palette, Project, SceneError},
+    types::{IndexedPixel, PCoord, TruePixel},
 };
 use std::path::PathBuf;
 
@@ -70,21 +70,10 @@ impl Pixylene {
         if let Some(resize) = resize {
             png.resize(resize)?;
         }
-        let scene = png.to_scene()?;
-        let mut layers = Layers::<TruePixel>::new(scene.dim());
-        layers
-            .add_layer(Layer {
-                scene,
-                opacity: 255,
-                mute: false,
-                blend_mode: BlendMode::Normal,
-            })
-            .unwrap(); //cant fail because layers was constructed on same scene's dim
-        let canvas = Canvas {
-            layers: LayersType::True(layers),
-            palette: defaults.palette.clone(),
-        };
-        let mut project = Project::new(canvas);
+        let mut project = Project::new(png.to_canvas()?);
+        if matches!(project.canvas.layers, LayersType::True(_)) {
+            project.canvas.palette = defaults.palette.clone();
+        }
         project.out_repeat = defaults.repeat;
 
         Ok(Pixylene { project })
@@ -93,15 +82,9 @@ impl Pixylene {
     pub fn export(
         &self,
         resize: Option<PCoord<u32>>,
-        path: &PathBuf, /*, scale_up: u16*/
+        path: &PathBuf,
     ) -> Result<(), PixyleneError> {
-        let mut png = PngFile::from_scene(
-            &self.project.canvas.merged_scene(None),
-            //todo: use from Pixylene struct instead of defaults
-            png::ColorType::Rgba,
-            png::BitDepth::Eight,
-            //scale_up,
-        )?;
+        let mut png = PngFile::from_canvas(&self.project.canvas)?;
         if let Some(resize) = resize {
             png.resize(resize)?;
         }
