@@ -26,8 +26,9 @@ commands = [
     action("pencil1"),              #draw with pencil1 at focus
 
     #action("noise"),               #draw noise with a factor of 0.3 
-    #"0.3",                         # (requires lua action 'noise' from examples/actions.lua
-                                    # present in XDG_CONFIG_DIR/pixylene/actions.lua)
+    #"0.3",                         # (requires lua action 'noise' from
+                                    # pixylene-ui/src/std-actions.lua present in
+                                    # config at XDG_CONFIG_DIR/pixylene/actions.lua)
 
     canvas(),                       #print canvas json
 

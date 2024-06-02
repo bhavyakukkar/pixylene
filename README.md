@@ -75,7 +75,7 @@ Pixylene is configured in 2 different ways:
 ## Custom Actions [Lua]
 - Custom Actions can be written using Pixylene's Lua API.
 - The file containing these custom actions must be named `actions.lua` and located in your [configuration directory](https://docs.rs/dirs/latest/dirs/fn.config_dir.html)
-- [Example File](./examples/actions.lua)
+- [Examples](./pixylene-ui/src/std-actions.lua)
 
 ### Build Lua API Docs
 - The Lua API documentation can be created using [tealr_doc_gen](https://github.com/lenscas/tealr_doc_gen):
@@ -98,4 +98,4 @@ cargo install tealr_doc_gen
 ## Static Editor Configuration [TOML]
 - Static Configuration of the editor, including all keybindings & modes, can be written in TOML.
 - The config file must be named `config.toml` and located in your [configuration directory](https://docs.rs/dirs/latest/dirs/fn.config_dir.html)
-- [Example File](./examples/config.toml)
+- [Example](./examples/config.toml)

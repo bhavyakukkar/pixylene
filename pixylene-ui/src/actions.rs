@@ -50,11 +50,6 @@ pub fn add_my_native_actions(amp: &mut HashMap<String, ActionLocation>) {
 }
 
 pub fn add_my_lua_actions(am: &mut LuaActionManager) {
-    let _ = am.load(r#"
-        actions['echo'] = {
-            perform = function(self, p, c)
-                c:cmdout(c:cmdin("echo "))
-            end
-        }
-    "#);
+    let std_actions = std::include_str!("std-actions.lua");
+    let _ = am.load(std_actions);
 }

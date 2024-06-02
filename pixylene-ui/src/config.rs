@@ -1,8 +1,12 @@
 use crate::ui::{ UiFn, Key, ReqUiFnMap };
 
-use crossterm::{ event };
+use crossterm::{event::{KeyEvent as K, KeyModifiers as KM, KeyCode::*}};
 use serde::{ Deserialize };
 use toml::{ from_str, de::Error };
+
+type KUE = KeyXUiFnEntry;
+type NKE = NamespaceXKeysEntry;
+type PCE = PaletteColorEntry;
 
 
 #[derive(Debug, Deserialize)]
@@ -54,13 +58,6 @@ impl Config {
 
 impl Default for Config {
     fn default() -> Config {
-        use event::{ KeyCode::*, KeyModifiers };
-        type KM = KeyModifiers;
-        type KUE = KeyXUiFnEntry;
-        type NKE = NamespaceXKeysEntry;
-        type PCE = PaletteColorEntry;
-        type K = event::KeyEvent;
-
         Config {
             required_keys: ReqUiFnMap {
                 start_command: K::new(Char(':'), KM::empty()).into(),
