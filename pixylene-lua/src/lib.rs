@@ -60,7 +60,7 @@ impl LuaActionManager {
     }
 
     //Load script containing 0 or more actions
-    pub fn load(&mut self, user_lua: &String) -> Result<(), mlua::Error> {
+    pub fn load(&mut self, user_lua: &str) -> Result<(), mlua::Error> {
         self.0.load(user_lua).set_name("actions.lua").exec()?;
         Ok(())
     }
