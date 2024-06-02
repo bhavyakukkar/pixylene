@@ -27,12 +27,12 @@ impl TealData for Console {
         {
             mlua_create_named_parameters!(
                 ConsoleCmdinArgs with
-                    message: String,
+                    message: Option<String>,
             );
             methods.document("Asks the user to reply to a passed message and returns the user's \
                              input, nil if the user didn't reply.");
             methods.add_method("cmdin", |_, this, a: ConsoleCmdinArgs| {
-                match (*this.0).cmdin(&a.message) {
+                match (*this.0).cmdin(&a.message.unwrap_or("".to_owned())) {
                     Some(reply) => Ok(Some(reply)),
                     None => Ok(None),
                 }
@@ -43,13 +43,13 @@ impl TealData for Console {
         {
             mlua_create_named_parameters!(
                 ConsoleCmdoutArgs with
-                    message: String,
+                    message: Option<String>,
                     log_type: Option<LogType>,
             );
             methods.document("Sends a message to the user, with an optional LogType.");
             methods.add_method("cmdout", |_, this, a: ConsoleCmdoutArgs| {
                 Ok((*this.0).cmdout(
-                    &a.message,
+                    &a.message.unwrap_or("".to_owned()),
                     &a.log_type.map(|l| l.0).unwrap_or(pixylene_actions::LogType::Info)
                 ))
             });
