@@ -95,11 +95,6 @@ impl PngFile {
                 bytes = vec![0; dim.area() as usize];
                 for x in 0..dim.x() {
                     for y in 0..dim.y() {
-                        //over here 1.1
-                        //using placeholder layers[0]
-                        //create merged_scene_indexed that just overwrites top layer on bottom
-                        //layer where not None
-                        //let IndexedPixel(p) = canvas.merged_scene_indexed(
                         let IndexedPixel(p) = canvas.merged_indexed_scene(None)
                             .unwrap() //cant fail because this is an indexed canvas
                             .get_pixel(UCoord{ x, y })

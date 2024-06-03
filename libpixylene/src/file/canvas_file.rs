@@ -5,7 +5,6 @@ use serde_json::{ to_string, from_str };
 
 
 impl Canvas {
-    //todo: remove after shifting filing responsibility to pixylene-ui
     pub fn to_json(&self) -> Result<String, serde_json::Error> {
         to_string(self)
     }

@@ -2,7 +2,7 @@ use crate::{
     utils::{parse_cmd, deparse},
     ui::{ UserInterface, Rectangle, Statusline, KeyInfo, Key, KeySer, KeyMap, ReqUiFnMap, UiFn },
     config::{ Config },
-    actions::{ ActionLocation, add_my_native_actions },
+    actions::{ ActionLocation, add_my_native_actions, add_my_lua_actions },
 };
 
 use libpixylene::{
@@ -11,7 +11,7 @@ use libpixylene::{
     types::{ UCoord, PCoordContainer, PCoord, Coord, TruePixel },
 };
 use pixylene_actions::{ memento::{ ActionManager }, Console, LogType };
-use pixylene_lua::{ LuaActionManager, ErrorType };
+use pixylene_lua::LuaActionManager;
 use std::{
     collections::HashMap,
     process::exit,
@@ -90,7 +90,7 @@ pub struct PixyleneSession {
 
     action_map: HashMap<String, ActionLocation>,
     native_action_manager: ActionManager,
-    lua_action_manager: LuaActionManager,
+    lua_action_manager: Option<LuaActionManager>,
 }
 
 pub struct Controller {
@@ -296,41 +296,54 @@ impl Controller {
             }
         }
 
-        let native_action_manager;
-
-        let lua_action_manager = LuaActionManager::setup(
-            &match config_dir() {
-                Some(mut path) => {
-                    path.push("pixylene");
-                    path.push("actions");
-                    path.set_extension("lua");
-                    match read_to_string(path) {
-                        Ok(contents) => contents,
-                        //actions file not present
-                        Err(_) => String::new(),
-                    }
-                },
-                None => String::new(),
-            }
-        );
-
-        if let Some(ref err) = lua_action_manager.error {
-            match err {
-                ErrorType::LuaError(err) => {
-                    self.console_out(&format!("Critical Lua error, cannot create tables: {err}"),
-                                     &LogType::Error);
-                },
-                ErrorType::ConfigError(err) => {
-                    self.console_out(&format!("Lua error in user config: {err}"),
-                                     &LogType::Error);
-                }
-            }
-        }
-
         let mut action_map: HashMap<String, ActionLocation> = HashMap::new();
-        _ = lua_action_manager.list_actions().iter().map(|action_name| {
-            action_map.insert(action_name.clone(), ActionLocation::Lua);
-        }).collect::<Vec<()>>();
+
+        //Create the Lua Action-Manager
+        let lua_action_manager = match LuaActionManager::new() {
+            Ok(mut m) => {
+                //Add Lua actions defined in source-code
+                add_my_lua_actions(&mut m);
+
+                //Add Lua actions defined in user-config
+                let _ = m.load(&match config_dir() {
+                    Some(mut path) => {
+                        path.push("pixylene");
+                        path.push("actions");
+                        path.set_extension("lua");
+                        match read_to_string(path) {
+                            Ok(contents) => contents,
+                            //actions file not present
+                            Err(_) => String::new(),
+                        }
+                    },
+                    None => String::new(),
+                })
+                .map_err(|err| {
+                    self.console_out(
+                        &format!("Error in user lua config: {err}"),
+                        &LogType::Error,
+                    );
+                });
+
+                //Get names of all Lua actions and store them
+                let _ = m.list_actions()
+                    .iter()
+                    .map(|action_name| {
+                        action_map.insert(action_name.clone(), ActionLocation::Lua);
+                    })
+                    .collect::<()>();
+                Some(m)
+            },
+            Err(err) => {
+                self.console_out(
+                    &format!("Critical Lua error, cannot create tables:\n{err}\nYou might not have \
+                        enough memory. You can still use Pixylene but any Lua modules will not \
+                        function."),
+                    &LogType::Error,
+                );
+                None
+            },
+        };
 
         add_my_native_actions(&mut action_map);
 
@@ -367,7 +380,7 @@ impl Controller {
                 }
                 initialize_project(&mut pixylene);
 
-                native_action_manager = ActionManager::new(&pixylene.project.canvas);
+                let native_action_manager = ActionManager::new(&pixylene.project.canvas);
                 self.sessions.push(PixyleneSession {
                     name: String::from("new"),
                     pixylene: Rc::new(RefCell::new(pixylene)),
@@ -386,7 +399,7 @@ impl Controller {
                     Ok(mut pixylene) => {
                         pixylene.project.out_dim = self.b_camera.unwrap().size;
                         initialize_project(&mut pixylene);
-                        native_action_manager = ActionManager::new(&pixylene.project.canvas);
+                        let native_action_manager = ActionManager::new(&pixylene.project.canvas);
                         self.sessions.push(PixyleneSession {
                             name: path.display().to_string(),
                             pixylene: Rc::new(RefCell::new(pixylene)),
@@ -418,7 +431,7 @@ impl Controller {
                 match Pixylene::open_project(&path) {
                     Ok(mut pixylene) => {
                         pixylene.project.out_dim = self.b_camera.unwrap().size;
-                        native_action_manager = ActionManager::new(&pixylene.project.canvas);
+                        let native_action_manager = ActionManager::new(&pixylene.project.canvas);
                         self.sessions.push(PixyleneSession {
                             name: path.display().to_string(),
                             pixylene: Rc::new(RefCell::new(pixylene)),
@@ -469,7 +482,7 @@ impl Controller {
                     Ok(mut pixylene) => {
                         pixylene.project.out_dim = self.b_camera.unwrap().size;
                         initialize_project(&mut pixylene);
-                        native_action_manager = ActionManager::new(&pixylene.project.canvas);
+                        let native_action_manager = ActionManager::new(&pixylene.project.canvas);
                         self.sessions.push(PixyleneSession {
                             name: path.display().to_string(),
                             pixylene: Rc::new(RefCell::new(pixylene)),
@@ -986,8 +999,15 @@ impl Controller {
                         target.borrow_mut().clear(&b_console.unwrap());
                         match action_location {
                             ActionLocation::Lua => {
-                                match lua_action_manager.invoke_action(&name, pixylene.clone(),
-                                                                Rc::new(self_clone)) {
+                                match lua_action_manager.as_mut().unwrap() //cant fail because if
+                                                                            //lua_action_manager
+                                                                            //doesn't exist, no
+                                                                            //actions can have
+                                                                            //location Lua (check
+                                                                            //action_map in fn
+                                                                            //new_session)
+                                    .invoke_action(&name, pixylene.clone(), Rc::new(self_clone))
+                                {
                                     Ok(()) => {
                                         if native_action_manager
                                             .commit(&pixylene.borrow().project.canvas)
@@ -1099,8 +1119,18 @@ impl Controller {
                     ..
                 } = &mut sessions[s];
 
+                _ = lua_action_manager.as_ref().ok_or_else(|| {
+                    target.borrow_mut().console_out(
+                        &format!("This command cannot be used as Lua modules are disabled."),
+                        &LogType::Error,
+                        &b_console.unwrap(),
+                    );
+                })?;
+
                 target.borrow_mut().clear(&b_console.unwrap());
-                match lua_action_manager.invoke(statement, pixylene.clone(), Rc::new(self_clone)) {
+                match lua_action_manager.as_mut().unwrap() //cant fail because checked like 2 lines ago
+                    .invoke(statement, pixylene.clone(), Rc::new(self_clone))
+                {
                     Ok(()) => {
                         if native_action_manager.commit(&pixylene.borrow().project.canvas) {
                             *modified = true;
