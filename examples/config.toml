@@ -30,9 +30,6 @@ keys = [
     { k = "k", f = [{ a = { n = "cursors_up" } }] },
     { k = "l", f = [{ a = { n = "cursors_right" } }] },
 
-    { k = "i", f = [{ a = { n = "zoomin" } }] },
-    { k = "o", f = [{ a = { n = "zoomout" } }] },
-    
     { k = "enter", f = [{ a = { n = "pencil" } }] },
     { k = "1", f = [{ a = { n = "pencil1" } }] },
     { k = "2", f = [{ a = { n = "pencil2" } }] },
@@ -48,6 +45,8 @@ keys = [
     { k = "s", f = [{ a = { n = "hex_at_cursors" } }] },
     { k = "?", f = [ "lc" ] },
 
+    # go to Ooze namespace
+    { k = "shift-o", f = [{ ns = { n = "Ooze" } }] },
     # go to View namespace
     { k = "shift-v", f = [{ ns = { n = "View" } }] },
     # go to Layer namespace
@@ -56,6 +55,34 @@ keys = [
     { k = "shift-c", f = [{ ns = { n = "Cursors" } }] },
     # go to Shapes namespace
     { k = "shift-s", f = [{ ns = { n = "Shapes" } }] },
+]
+
+[[keys]]
+name = "Ooze"
+keys = [
+    # navigation
+    { k = "u", f = [{a={ n="cursors_up" }}, {a={ n="cursors_left" }}, {a={ n="pencil" }}] },
+    { k = "k", f = [{a={ n="cursors_up" }}, {a={ n="pencil" }}] },
+    { k = "p", f = [{a={ n="cursors_up" }}, {a={ n="cursors_right" }}, {a={ n="pencil" }}] },
+
+    { k = "h", f = [{a={ n="cursors_left" }}, {a={ n="pencil" }}] },
+    { k = "l", f = [{a={ n="cursors_right" }}, {a={ n="pencil" }}] },
+
+    { k = "n", f = [{a={ n="cursors_down" }}, {a={ n="cursors_left" }}, {a={ n="pencil" }}] },
+    { k = "j", f = [{a={ n="cursors_down" }}, {a={ n="pencil" }}] },
+    { k = "m", f = [{a={ n="cursors_down" }}, {a={ n="cursors_right" }}, {a={ n="pencil" }}] },
+
+    # change equipped color
+    { k = "1", f = [{l={ s="actions.equip.index = 1" }}, {a={ n="equip" }}, {l={ s="actions['equip'].index = nil" }}] },
+    { k = "2", f = [{l={ s="actions.equip.index = 2" }}, {a={ n="equip" }}, {l={ s="actions['equip'].index = nil" }}] },
+    { k = "3", f = [{l={ s="actions.equip.index = 3" }}, {a={ n="equip" }}, {l={ s="actions['equip'].index = nil" }}] },
+    { k = "4", f = [{l={ s="actions.equip.index = 4" }}, {a={ n="equip" }}, {l={ s="actions['equip'].index = nil" }}] },
+    { k = "5", f = [{l={ s="actions.equip.index = 5" }}, {a={ n="equip" }}, {l={ s="actions['equip'].index = nil" }}] },
+    { k = "6", f = [{l={ s="actions.equip.index = 6" }}, {a={ n="equip" }}, {l={ s="actions['equip'].index = nil" }}] },
+    { k = "7", f = [{l={ s="actions.equip.index = 7" }}, {a={ n="equip" }}, {l={ s="actions['equip'].index = nil" }}] },
+    { k = "8", f = [{l={ s="actions.equip.index = 8" }}, {a={ n="equip" }}, {l={ s="actions['equip'].index = nil" }}] },
+
+    { k = "esc", f = [ "dns" ] }, # go back to default namespace
 ]
 
 [[keys]]
@@ -87,6 +114,9 @@ keys = [
             ['coord'] = C(Project.focus.coord.x, Project.focus.coord.y + 1),
         }
     """ } }] },
+
+    { k = "i", f = [{ a = { n = "zoomin" } }] },
+    { k = "o", f = [{ a = { n = "zoomout" } }] },
 
     { k = "esc", f = [ "dns" ] }, # go back to default namespace
 ]

@@ -158,12 +158,17 @@ actions['circularoutline'] = {
 }
 
 actions['equip'] = {
+    index = nil,
     perform = function(self, project, console)
-        local input = console:cmdin("id: ")
-        if (input == "" or input == nil) then
-            return
+        if self.index then
+            project.canvas.palette.equipped = self.index
+        else
+            local input = console:cmdin("id: ")
+            if (input == "" or input == nil) then
+                return
+            end
+            project.canvas.palette.equipped = tonumber(input)
         end
-        project.canvas.palette.equipped = tonumber(input)
     end
 }
 
