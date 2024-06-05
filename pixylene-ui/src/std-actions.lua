@@ -92,6 +92,60 @@ actions['noise'] = {
     end
 }
 
+actions['circularfill'] = {
+    radius = nil,
+    color = nil,
+
+    -- https://www.redblobgames.com/grids/circle-drawing (very good article)
+    isInCircle = function(radius, center, tile)
+        local radius = radius + 0.5
+        local dx = center.x - tile.x
+        local dy = center.y - tile.y
+        local distance = dx*dx + dy*dy
+        return distance <= (radius*radius)
+    end,
+
+    perform = function(self, project, console)
+        if project.num_cursors ~= 1 then
+            console:cmdout("need exactly one cursor at center of circle", LogType.ERROR)
+            return
+        end
+
+        local rad
+        if not self.radius then
+            rad = tonumber(console:cmdin("Radius? "))
+            if rad < 0 then
+                console:cmdout("radius cannot be negative", LogType.ERROR)
+                return
+            end
+        else
+            rad = tonumber(self.radius)
+        end
+
+        local cen = project.cursors[1]
+        local scene
+        local color
+        if project.canvas.indexed then
+            scene = project.canvas.layers['indexed']:get(cen.layer).scene
+            color = IP(project.canvas.palette.equipped)
+        else
+            scene = project.canvas.layers['true']:get(cen.layer).scene
+            color = project.canvas.palette:get()
+        end
+        for i = -rad, rad do
+            for j = -rad, rad do
+                local x = cen.coord.x + i
+                local y = cen.coord.y + j
+                if not (x < 0 or x >= scene.dim.x or y < 0 or y >= scene.dim.y) then
+                    if self.isInCircle(rad, cen.coord, UC(x, y)) then
+                        scene:set(UC(x, y), color)
+                    end
+                end
+            end
+        end
+    end
+}
+
 actions['circularoutline'] = {
     -- https://rosettacode.org/wiki/Bitmap/Midpoint_circle_algorithm?oldid=358330
     perform = function(self, project, console)
@@ -101,8 +155,8 @@ actions['circularoutline'] = {
         end
 
         local rad = tonumber(console:cmdin("Radius? "))
-        if (rad == 0) then
-            console:cmdout("radius cannot be 0", LogType.ERROR)
+        if (rad < 0) then
+            console:cmdout("radius cannot be negative", LogType.ERROR)
             return
         end
 
@@ -185,17 +239,14 @@ actions['fill'] = {
     floodFillUtil = function(self, scene, point, prevC, newC)
         local x = point.x
         local y = point.y
-        --Console:cmdin("x: " .. x .. ", y: " .. y .. ", dx: " .. scene.dim.x .. ", dy: " .. scene.dim.y)
         if (x < 0 or x >= scene.dim.x or y < 0 or y >= scene.dim.y) then
             return nil
         end
         local color = scene:get(point)
         if not self.equal(color, prevC) then
-        --if (color.red ~= prevC.red or color.green ~= prevC.green or color.blue ~= prevC.blue or color.alpha ~= prevC.alpha) then
             return nil
         end
         if self.equal(color, newC) then
-        --if (color.red == newC.red and color.green == newC.green and color.blue == newC.blue and color.alpha == newC.alpha) then
             return nil
         end
         scene:set(point, newC)

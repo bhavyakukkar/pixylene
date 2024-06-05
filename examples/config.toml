@@ -156,7 +156,8 @@ keys = [
 [[keys]]
 name = "Shapes"
 keys = [
-    { k = "c", f = [{ a = { n = "circularoutline" } }, "dns"] },
+    { k = "c", f = [{ a = { n = "circularfill" } }, "dns"] },
+    { k = "C", f = [{ a = { n = "circularoutline" } }, "dns"] },
     { k = "f", f = [{ a = { n = "fill" } }, "dns"] },
 
     { k = "esc", f = [ "dns" ] }, # go back to default namespace
