@@ -113,7 +113,9 @@ actions['circularfill'] = {
 
         local rad
         if not self.radius then
-            rad = tonumber(console:cmdin("Radius? "))
+            rad = console:cmdin("Radius? ")
+            if (rad == "" or rad == nil) then return end
+            rad = tonumber(rad)
             if rad < 0 then
                 console:cmdout("radius cannot be negative", LogType.ERROR)
                 return
@@ -154,7 +156,9 @@ actions['circularoutline'] = {
             return
         end
 
-        local rad = tonumber(console:cmdin("Radius? "))
+        local rad = console:cmdin("Radius? ")
+        if (rad == "" or rad == nil) then return end
+        rad = tonumber(rad)
         if (rad < 0) then
             console:cmdout("radius cannot be negative", LogType.ERROR)
             return

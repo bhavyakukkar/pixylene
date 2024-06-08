@@ -1,6 +1,9 @@
 #+title: Pixylene Notes
 #+author: Bhavya Kukkar
 * TASKS
+** Usable
+*** TODO layer operations still not given reasonable keybinds
+*** TODO can't export any indexed images because resize() not implemented for indexed pngs and resize() is always called by Pixylene::export
 ** Aspects
 *** Compatibility for PyQT GUI
 **** Questions
