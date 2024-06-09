@@ -1,6 +1,9 @@
 # whether the default keys should be emptied before considering the ones defined in the config
 new_keys = false
 
+# padding to use in the editor
+padding = 1
+
 # sequence of commands that should run after every frame
 every_frame = [
     "dl", #draw layer

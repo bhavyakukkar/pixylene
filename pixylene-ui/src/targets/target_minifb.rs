@@ -1,5 +1,5 @@
 use pixylene_ui::{
-    Cli, controller::Controller,
+    Cli, config::Config, controller::Controller,
     ui::{ UserInterface, self, Rectangle, Statusline, Color, KeyInfo },
 };
 
@@ -432,15 +432,17 @@ impl UserInterface for TargetMinifb {
 }
 
 
-fn main() {
+fn main() -> Result<(), ()> {
+    let cli = Cli::parse();
     let target = TargetMinifb::new();
+    let mut config = Config::from_config_toml()
+        .map_err(|err| eprintln!("{}", err))?;
+    config.defaults.repeat = PCoord::new(1, 1).unwrap();
 
-    match Controller::new(Rc::new(RefCell::new(target))) {
-        Ok(mut pixylene_ui) => {
-            let cli = Cli::parse();
-
-            pixylene_ui.start(&cli.command);
-        },
-        Err(error) => eprintln!("{}", error)
+    let mut pixylene_gui = Controller::new(Rc::new(RefCell::new(target)), config);
+    if let Some(command) = cli.command {
+        pixylene_gui.new_session(&command, true);
     }
+    pixylene_gui.run();
+    Ok(())
 }

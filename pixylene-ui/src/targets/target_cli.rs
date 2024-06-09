@@ -1,5 +1,5 @@
 use pixylene_ui::{
-    Cli, controller::Controller,
+    Cli, config::Config, controller::Controller,
     ui::{ UserInterface, Key, Rectangle, Statusline, UiFn, KeyInfo },
 };
 
@@ -52,15 +52,16 @@ impl UserInterface for TargetCLI {
 }
 
 
-fn main() {
+fn main() -> Result<(), ()> {
+    let cli = Cli::parse();
     let target = TargetCLI;
+    let config = Config::from_config_toml()
+        .map_err(|err| eprintln!("{}", err))?;
 
-    match Controller::new(Rc::new(RefCell::new(target))) {
-        Ok(mut pixylene_ui) => {
-            let cli = Cli::parse();
-
-            pixylene_ui.start(&cli.command);
-        },
-        Err(error) => eprintln!("{}", error)
+    let mut pixylene_cli = Controller::new(Rc::new(RefCell::new(target)), config);
+    if let Some(command) = cli.command {
+        pixylene_cli.new_session(&command, true);
     }
+    pixylene_cli.run();
+    Ok(())
 }

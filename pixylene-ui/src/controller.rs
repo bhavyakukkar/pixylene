@@ -1,18 +1,20 @@
 use crate::{
     utils::{parse_cmd, deparse},
-    ui::{ UserInterface, Rectangle, Statusline, KeyInfo, Key, KeyMap, ReqUiFnMap, UiFn },
-    config::{ Config, PixyleneDefaultsConfig, NamespaceXKeysEntry },
+    ui::{ UserInterface, Rectangle, Statusline, KeyInfo, Key, ReqUiFnMap, UiFn },
+    config::Config,
     actions::{ ActionLocation, add_my_native_actions, add_my_lua_actions },
 };
 
 use libpixylene::{
-    Pixylene, PixyleneDefaults,
-    project::{ OPixel, Layer, LayersType, Palette },
+    Pixylene,
+    project::{ OPixel, Layer, LayersType },
     types::{ UCoord, PCoordContainer, PCoord, Coord, TruePixel },
 };
 use pixylene_actions::{ memento::{ ActionManager }, Console, LogType };
 use pixylene_lua::LuaActionManager;
+use dirs::config_dir;
 use std::{
+    fs::read_to_string,
     collections::HashMap,
     process::exit,
     cell::RefCell,
@@ -21,11 +23,7 @@ use std::{
 };
 use clap::Subcommand;
 
-use dirs::config_dir;
-use std::fs::read_to_string;
 
-
-const PADDING: u8 = 1;
 const SPLASH_LOGO: &str = r#"
 
     ____  _ ___  ____  _ _     _____ _      _____
@@ -95,26 +93,17 @@ pub struct PixyleneSession {
 
 pub struct Controller {
     target: Rc<RefCell<dyn UserInterface>>,
-
-    sessions: Vec<PixyleneSession>,
-    //this index is 1-based
-    sel_session: u8,
-
-    //config
-    defaults: PixyleneDefaults,
-    keymap_show_command_names: bool,
-
-    possible_namespaces: HashMap<String, ()>,
+    config: Config,
     namespace: Option<String>,
-    keymap: KeyMap,
-    required_keys: ReqUiFnMap,
-    every_frame: Vec<UiFn>,
+
+    //sessions
+    sessions: Vec<PixyleneSession>,
+    sel_session: u8, //1-based index
 
     //window boundaries
-    b_console: Option<Rectangle>,
-    b_camera: Option<Rectangle>,
-    b_statusline: Option<Rectangle>,
-    padding: u8,
+    b_console: Rectangle,
+    b_camera: Rectangle,
+    b_statusline: Rectangle,
 }
 
 impl Console for Controller {
@@ -126,31 +115,97 @@ impl Console for Controller {
     }
 }
 
-//impl<T: UserInterface + Console> Controller<T> {
 impl Controller {
 
+    pub fn new(target: Rc<RefCell<dyn UserInterface>>, config: Config) -> Self {
+        target.borrow_mut().initialize();
+
+        let window_size = target.borrow().get_size();
+        let (b_camera, b_statusline, b_console) = compute_boundaries(&window_size, config.padding);
+
+        //clear entire screen
+        let current_dim = target.borrow().get_size();
+        target.borrow_mut().clear(&Rectangle {
+            start: UCoord{ x: 0, y: 0 },
+            size: current_dim,
+        });
+
+        Self {
+            target,
+            config,
+            namespace: None,
+
+            sessions: Vec::new(),
+            sel_session: 0,
+
+            b_console,
+            b_camera,
+            b_statusline,
+        }
+    }
+
+    pub fn run(&mut self) {
+        use UiFn::{ RunKey, ForceQuit };
+
+        if self.sessions.len() > 0 {
+            for func in self.config.every_frame.clone() {
+                _ = self.perform_ui(&func);
+            }
+        } else {
+            //welcome screen
+            self.target.borrow_mut()
+                .draw_paragraph(vec![String::from(SPLASH_LOGO).into()], &self.b_console);
+        }
+
+        loop {
+            //sleep(Duration::from_millis(1));
+
+            if !self.target.borrow_mut().refresh() {
+                _ = self.perform_ui(&ForceQuit);
+            }
+            let key_info = self.target.borrow().get_key();
+            if let Some(key_info) = key_info {
+                match key_info {
+                    KeyInfo::Key(key) => {
+                        _ = self.perform_ui(&RunKey{ key: Key::from(key).into() });
+                    },
+                    KeyInfo::UiFn(ui_fn) => {
+                        _ = self.perform_ui(&ui_fn);
+                    },
+                }
+
+                if self.sessions.len() > 0 {
+                    for func in self.config.every_frame.clone() {
+                        _ = self.perform_ui(&func);
+                    }
+                } else {
+                    //welcome screen
+                    self.target.borrow_mut()
+                        .draw_paragraph(vec![String::from(SPLASH_LOGO).into()], &self.b_console);
+                }
+            }
+        }
+    }
+
     fn set_boundaries(&mut self, boundaries: (Rectangle, Rectangle, Rectangle)) {
-        self.b_camera = Some(boundaries.0);
-        self.b_statusline = Some(boundaries.1);
-        self.b_console = Some(boundaries.2);
+        self.b_camera = boundaries.0;
+        self.b_statusline = boundaries.1;
+        self.b_console = boundaries.2;
     }
 
     fn console_in(&self, message: &str) -> Option<String> {
-        let input = self.target.borrow_mut().console_in(message,
-                                                        &self.required_keys.discard_command,
-                                                        &self.b_console.unwrap());
+        let input = self.target.borrow_mut()
+            .console_in(message, &self.config.required_keys.discard_command, &self.b_console);
         self.console_clear();
         input
     }
 
     fn console_out(&self, message: &str, log_type: &LogType) {
-        self.target.borrow_mut().console_out(message,
-                                         log_type,
-                                         &self.b_console.unwrap());
+        self.target.borrow_mut().console_out(message, log_type, &self.b_console);
     }
 
     fn console_clear(&self) {
-        self.target.borrow_mut().clear(&self.b_console.unwrap());
+        self.target.borrow_mut().clear(&self.b_console);
     }
 
     fn sel_session(&self) -> Result<usize, ()> {
@@ -163,56 +218,7 @@ impl Controller {
         }
     }
 
-    pub fn new(target: Rc<RefCell<dyn UserInterface>>) -> Result<Self, String> {
-        let config = match parse_config() {
-            Some(c) => Some(c?),
-            None => None,
-        };
-        let Config{
-            mut required_keys,
-            mut every_frame,
-            mut keymap_show_command_names,
-            mut defaults,
-            keys,
-            ..
-        } =
-            Config::default();
-
-        let (keymap, possible_namespaces) = get_keys_from_config(&config, keys);
-
-        if let Some(config) = config {
-            required_keys = config.required_keys;
-            every_frame = config.every_frame;
-            keymap_show_command_names = config.keymap_show_command_names;
-            defaults = config.defaults;
-        }
-
-        let defaults = parse_defaults(defaults)?;
-
-        Ok(Self {
-            target,
-
-            sessions: Vec::new(),
-            sel_session: 0,
-
-            defaults,
-            keymap_show_command_names,
-
-            possible_namespaces,
-            namespace: None,
-
-            keymap,
-            required_keys,
-            every_frame,
-
-            b_console: None,
-            b_camera: None,
-            b_statusline: None,
-            padding: PADDING,
-        })
-    }
-
-    fn new_session(&mut self, start_type: &StartType, from_args: bool) {
+    pub fn new_session(&mut self, start_type: &StartType, from_args: bool) {
         if self.sessions.len() > 255 {
             if !from_args {
                 self.console_out("cannot have more than 256 sessions open", &LogType::Error);
@@ -276,7 +282,7 @@ impl Controller {
 
         match start_type {
             StartType::New { width, height, indexed } => {
-                let mut defaults = self.defaults.clone();
+                let mut defaults = self.config.defaults.clone();
                 if let Some(width) = width {
                     if let Some(height) = height {
                         if let Ok(dim) = PCoord::new(*height, *width) {
@@ -295,7 +301,7 @@ impl Controller {
                     }
                 }
                 let mut pixylene = Pixylene::new(&defaults, *indexed);
-                pixylene.project.out_dim = self.b_camera.unwrap().size;
+                pixylene.project.out_dim = self.b_camera.size;
                 let dim = pixylene.project.canvas.layers.dim();
                 match &mut pixylene.project.canvas.layers {
                     LayersType::True(ref mut layers) => {
@@ -322,9 +328,9 @@ impl Controller {
                 self.sel_session += 1;
             },
             StartType::Canvas{ path } => {
-                match Pixylene::open_canvas(&path, &self.defaults) {
+                match Pixylene::open_canvas(&path, &self.config.defaults) {
                     Ok(mut pixylene) => {
-                        pixylene.project.out_dim = self.b_camera.unwrap().size;
+                        pixylene.project.out_dim = self.b_camera.size;
                         initialize_project(&mut pixylene);
                         let native_action_manager = ActionManager::new(&pixylene.project.canvas);
                         self.sessions.push(PixyleneSession {
@@ -357,7 +363,7 @@ impl Controller {
             StartType::Project{ path } => {
                 match Pixylene::open_project(&path) {
                     Ok(mut pixylene) => {
-                        pixylene.project.out_dim = self.b_camera.unwrap().size;
+                        pixylene.project.out_dim = self.b_camera.size;
                         let native_action_manager = ActionManager::new(&pixylene.project.canvas);
                         self.sessions.push(PixyleneSession {
                             name: path.display().to_string(),
@@ -405,9 +411,9 @@ impl Controller {
                         }
                     }
                 }
-                match Pixylene::import(&path, resize, &self.defaults) {
+                match Pixylene::import(&path, resize, &self.config.defaults) {
                     Ok(mut pixylene) => {
-                        pixylene.project.out_dim = self.b_camera.unwrap().size;
+                        pixylene.project.out_dim = self.b_camera.size;
                         initialize_project(&mut pixylene);
                         let native_action_manager = ActionManager::new(&pixylene.project.canvas);
                         self.sessions.push(PixyleneSession {
@@ -452,61 +458,6 @@ impl Controller {
         }
     }
 
-    pub fn start(&mut self, start_type: &Option<StartType>) {
-        use UiFn::{ RunKey, ForceQuit };
-
-        self.target.borrow_mut().initialize();
-
-        let window_size = self.target.borrow().get_size();
-
-        self.set_boundaries(self.compute_boundaries(&window_size));
-
-        //clear entire screen
-        let current_dim = self.target.borrow().get_size();
-        self.target.borrow_mut().clear(&Rectangle{
-            start: UCoord{ x: 0, y: 0 },
-            size: current_dim,
-        });
-
-        if let Some(start_type) = start_type {
-            self.new_session(start_type, true);
-
-            for func in self.every_frame.clone() {
-                _ = self.perform_ui(&func);
-            }
-        }
-        else {
-            //splash screen
-            self.target.borrow_mut().draw_paragraph(vec![String::from(SPLASH_LOGO).into()], &self.b_console.unwrap());
-            //self.console_out("", &LogType::Info);
-        }
-
-        loop {
-            //sleep(Duration::from_millis(1));
-
-            if !self.target.borrow_mut().refresh() {
-                _ = self.perform_ui(&ForceQuit);
-            }
-            let key_info = self.target.borrow().get_key();
-            if let Some(key_info) = key_info {
-                match key_info {
-                    KeyInfo::Key(key) => {
-                        _ = self.perform_ui(&RunKey{ key: Key::from(key).into() });
-                    },
-                    KeyInfo::UiFn(ui_fn) => {
-                        _ = self.perform_ui(&ui_fn);
-                    },
-                }
-                if self.sessions.len() > 0 {
-                    for func in self.every_frame.clone() {
-                        _ = self.perform_ui(&func);
-                    }
-                } else {
-                    self.target.borrow_mut().draw_paragraph(vec![String::from(SPLASH_LOGO).into()], &self.b_console.unwrap());
-                }
-            }
-        }
-    }
 
     fn perform_ui(&mut self, func: &UiFn) -> Result<(), ()> {
         use UiFn::*;
@@ -822,7 +773,7 @@ impl Controller {
 
             EnterNamespace{ name } => {
                 if let Some(name) = name {
-                    if let Some(_) = self.possible_namespaces.get(name) {
+                    if let Some(_) = self.config.possible_namespaces.get(name) {
                         self.namespace = Some(name.clone());
                     } else {
                         self.console_out(&format!("namespace '{}' doesn't exist", name),
@@ -837,16 +788,16 @@ impl Controller {
             },
             RunKey{ key } => {
                 //special required keys
-                if *key == self.required_keys.force_quit {
+                if *key == self.config.required_keys.force_quit {
                     _ = self.perform_ui(&ForceQuit);
                 }
-                else if *key == self.required_keys.start_command {
+                else if *key == self.config.required_keys.start_command {
                     _ = self.perform_ui(&RunCommandSpecify);
                 }
 
                 //other keys
                 else {
-                    if let Some(funcs) = self.keymap
+                    if let Some(funcs) = self.config.keymap
                         .get(&self.namespace).unwrap() //wont fail because only source of
                                                        //modification for self.namespace is
                                                        //EnterNamespace which sets only from
@@ -898,10 +849,10 @@ impl Controller {
             },
             RunAction{ name } => {
                 let s = self.sel_session()?;
-                let mut self_clone = Controller::new(self.target.clone()).unwrap();
-                self_clone.set_boundaries((self.b_camera.unwrap(),
-                                           self.b_statusline.unwrap(),
-                                           self.b_console.unwrap()));
+                let mut self_clone = Controller::new(self.target.clone(), Config::empty());
+                self_clone.set_boundaries((self.b_camera,
+                                           self.b_statusline,
+                                           self.b_console));
 
                 let Self {
                     sessions,
@@ -923,7 +874,7 @@ impl Controller {
 
                 match action_map.get(&name.clone()) {
                     Some(action_location) => {
-                        target.borrow_mut().clear(&b_console.unwrap());
+                        target.borrow_mut().clear(&b_console);
                         match action_location {
                             ActionLocation::Lua => {
                                 match lua_action_manager.as_mut().unwrap() //cant fail because if
@@ -952,16 +903,16 @@ impl Controller {
                                                 .map(|s| s.to_string().replace("\t", " "))
                                                 .collect::<Vec<String>>().join(", ")
                                         );
-                                        if error.len() <= b_console.unwrap().size.y().into() {
+                                        if error.len() <= b_console.size.y().into() {
                                             target.borrow_mut().console_out(
                                                 &error,
                                                 &LogType::Error,
-                                                &b_console.unwrap()
+                                                &b_console
                                             );
                                         } else {
                                             target.borrow_mut().draw_paragraph(
                                                 vec![error.red()],
-                                                &b_camera.unwrap()
+                                                &b_camera
                                             );
                                             self.console_in("press ENTER to close error");
                                         }
@@ -988,7 +939,7 @@ impl Controller {
                                             //&format!("failed to perform: {}", err.to_string()),
                                             &format!("{}", err.to_string()),
                                             &LogType::Error,
-                                            &b_console.unwrap()
+                                            &b_console
                                         );
                                     }
                                 }
@@ -1000,7 +951,7 @@ impl Controller {
                             &format!("action '{}' was not found in actions inserted into the \
                                      action-manager", name),
                             &LogType::Error,
-                            &b_console.unwrap()
+                            &b_console
                         );
                     }
                 }
@@ -1025,10 +976,10 @@ impl Controller {
             },
             RunLua{ statement } => {
                 let s = self.sel_session()?;
-                let mut self_clone = Controller::new(self.target.clone()).unwrap();
-                self_clone.set_boundaries((self.b_camera.unwrap(),
-                                           self.b_statusline.unwrap(),
-                                           self.b_console.unwrap()));
+                let mut self_clone = Controller::new(self.target.clone(), Config::empty());
+                self_clone.set_boundaries((self.b_camera,
+                                           self.b_statusline,
+                                           self.b_console));
 
                 let Self {
                     sessions,
@@ -1050,11 +1001,11 @@ impl Controller {
                     target.borrow_mut().console_out(
                         &format!("This command cannot be used as Lua modules are disabled."),
                         &LogType::Error,
-                        &b_console.unwrap(),
+                        &b_console,
                     );
                 })?;
 
-                target.borrow_mut().clear(&b_console.unwrap());
+                target.borrow_mut().clear(&b_console);
                 match lua_action_manager.as_mut().unwrap() //cant fail because checked like 2 lines ago
                     .invoke(statement, pixylene.clone(), Rc::new(self_clone))
                 {
@@ -1072,16 +1023,16 @@ impl Controller {
                                 .map(|s| s.to_string().replace("\t", " "))
                                 .collect::<Vec<String>>().join(", ")
                         );
-                        if error.len() <= b_console.unwrap().size.y().into() {
+                        if error.len() <= b_console.size.y().into() {
                             target.borrow_mut().console_out(
                                 &error,
                                 &LogType::Error,
-                                &b_console.unwrap()
+                                &b_console
                             );
                         } else {
                             target.borrow_mut().draw_paragraph(
                                 vec![error.red()],
-                                &b_camera.unwrap()
+                                &b_camera
                             );
                             self.console_in("press ENTER to close error");
                         }
@@ -1106,7 +1057,7 @@ impl Controller {
                             session.pixylene.borrow().project.out_dim.area() as usize],
                     },
                     true,
-                    &self.b_camera.unwrap(),
+                    &self.b_camera,
                 );
             },
 
@@ -1117,7 +1068,7 @@ impl Controller {
                     session.pixylene.borrow().project.out_dim,
                     session.pixylene.borrow().project.render(),
                     false,
-                    &self.b_camera.unwrap(),
+                    &self.b_camera,
                 );
                 self.console_in("press ENTER to stop previewing project");
             },
@@ -1128,7 +1079,7 @@ impl Controller {
                 self.target.borrow_mut().draw_paragraph(
                     vec![session.pixylene.borrow().project.canvas.to_json()
                         .unwrap_or_else(|err| err.to_string()).into()],
-                    &self.b_camera.unwrap()
+                    &self.b_camera
                 );
                 self.console_in("press ENTER to stop previewing canvas JSON");
             },
@@ -1146,7 +1097,7 @@ impl Controller {
                     let ReqUiFnMap {
                         ref force_quit,
                         ref start_command,
-                        ref discard_command } = self.required_keys;
+                        ref discard_command } = self.config.required_keys;
                     paragraph.push("".into());
                     paragraph.push("Required Keys".underline().bright_yellow());
                     paragraph.push(format!(
@@ -1157,8 +1108,8 @@ impl Controller {
 
                 //all namespaces & their keys
                 paragraph.extend(vec![
-                    vec![("Default Namespace".to_owned(), self.keymap.get(&None).unwrap())],
-                    self.keymap.iter().filter(|(namespace, _)| namespace.is_some())
+                    vec![("Default Namespace".to_owned(), self.config.keymap.get(&None).unwrap())],
+                    self.config.keymap.iter().filter(|(namespace, _)| namespace.is_some())
                         .map(|(n, k)| (format!("Namespace '{}'", n.clone().unwrap()), k)).collect()
                 ].iter().flatten()
                 .map(|(namespace, keys)| {
@@ -1175,7 +1126,7 @@ impl Controller {
                                     format!(
                                         "  {:<10} -> {}",
                                         format!("'{}'", key.to_string()),
-                                        if self.keymap_show_command_names { format!("{:?}", ui_fns) }
+                                        if self.config.keymap_show_command_names { format!("{:?}", ui_fns) }
                                         else { deparse(ui_fns) }
                                     )));
                         } else {
@@ -1185,7 +1136,7 @@ impl Controller {
                             line.push_str(&format!(
                                 "{:<10} -> {}",
                                 format!("'{}'", key.to_string()),
-                                if self.keymap_show_command_names { format!("{:?}", ui_fns) }
+                                if self.config.keymap_show_command_names { format!("{:?}", ui_fns) }
                                 else { deparse(ui_fns) }
                             ));
                             lines.push(line.into());
@@ -1198,7 +1149,7 @@ impl Controller {
                 }).flatten().collect::<Vec<ColoredString>>());
 
                 self.target.borrow_mut().draw_paragraph(paragraph,
-                    &self.b_camera.unwrap()
+                    &self.b_camera
                 );
                 self.console_in("press ENTER to exit listing keybindings");
                 self.target.borrow_mut().clear_all();
@@ -1214,7 +1165,7 @@ impl Controller {
                             .take_while(|line| !line.contains("  help"))
                             .map(|l| l.into()).collect::<Vec<ColoredString>>()
                     ].into_iter().flatten().collect(),
-                    &self.b_camera.unwrap()
+                    &self.b_camera
                 );
                 self.console_in("press ENTER to exit listing commands");
                 self.target.borrow_mut().clear_all();
@@ -1224,7 +1175,7 @@ impl Controller {
                 use colored::Colorize;
                 let s = self.sel_session()?;
 
-                self.target.borrow_mut().clear(&self.b_statusline.unwrap());
+                self.target.borrow_mut().clear(&self.b_statusline);
 
                 let session = &self.sessions[s];
                 let mut statusline: Statusline = Vec::new();
@@ -1364,32 +1315,32 @@ impl Controller {
                 }
 
                 self.target.borrow_mut().draw_statusline(&statusline,
-                                                         &self.b_statusline.unwrap());
+                                                         &self.b_statusline);
             },
         }
         Ok(())
     }
+}
 
-    // returns boundaries of camera, statusline and console respectively
-    fn compute_boundaries(&self, window: &PCoord) -> (Rectangle, Rectangle, Rectangle) {
-        (
-        /* camera: */Rectangle {
-            start: UCoord{ x: 0 + self.padding as u16, y: 0 + self.padding as u16 },
-            size: PCoord::new(
-                window.x() - 3 - 2*self.padding as u16,
-                window.y() - 2*self.padding as u16
-            ).unwrap()
-        },
-        /* statusline: */Rectangle {
-            start: UCoord{ x: window.x() - 2 - self.padding as u16, y: 0 + self.padding as u16 },
-            size: PCoord::new(1, window.y() - 2*self.padding as u16).unwrap()
-        },
-        /* console: */Rectangle {
-            start: UCoord{ x: window.x() - 1 - self.padding as u16, y: 0 + self.padding as u16 },
-            size: PCoord::new(1, window.y() - 2*self.padding as u16).unwrap()
-        }
-        )
+// returns boundaries of camera, statusline and console respectively
+fn compute_boundaries(window: &PCoord, padding: u8) -> (Rectangle, Rectangle, Rectangle) {
+    (
+    /* camera: */Rectangle {
+        start: UCoord{ x: 0 + padding as u16, y: 0 + padding as u16 },
+        size: PCoord::new(
+            window.x() - 3 - 2*padding as u16,
+            window.y() - 2*padding as u16
+        ).unwrap()
+    },
+    /* statusline: */Rectangle {
+        start: UCoord{ x: window.x() - 2 - padding as u16, y: 0 + padding as u16 },
+        size: PCoord::new(1, window.y() - 2*padding as u16).unwrap()
+    },
+    /* console: */Rectangle {
+        start: UCoord{ x: window.x() - 1 - padding as u16, y: 0 + padding as u16 },
+        size: PCoord::new(1, window.y() - 2*padding as u16).unwrap()
     }
+    )
 }
 
 fn initialize_project(pixylene: &mut Pixylene) {
@@ -1407,106 +1358,4 @@ fn initialize_project(pixylene: &mut Pixylene) {
         y: u16::from(dim.y()).checked_div(2).unwrap(),
     }, 0)).unwrap(); //cant fail because x,y less than dim and we know there is at
                      //least 1 layer because we created it
-}
-
-fn parse_config() -> Option<Result<Config, String>> {
-    match config_dir() {
-        Some(mut path) => {
-            path.push("pixylene");
-            path.push("config");
-            path.set_extension("toml");
-            match read_to_string(path) {
-                //config file present
-                Ok(contents) => Some(
-                    Config::from(&contents)
-                        .map_err(|err| format!("Error in config.toml:\n {}", err.to_string()))
-                ),
-                //config file not present
-                Err(_) => None,
-            }
-        },
-        //config dir not configured on user's OS
-        None => None,
-    }
-}
-
-fn parse_defaults(defaults: PixyleneDefaultsConfig) -> Result<PixyleneDefaults, String> {
-    use colored::Colorize;
-
-    Ok(PixyleneDefaults {
-        dim: UCoord{
-            x: defaults.dimensions.x,
-            y: defaults.dimensions.y,
-        }.try_into().map_err(|err| format!(
-            "{}{}{}",
-            "Config File Error: ".red().bold(),
-            "defaults.dimensions\n".yellow().italic(),
-            err,
-        ))?,
-        repeat: UCoord{
-            x: defaults.repeat.x,
-            y: defaults.repeat.y,
-        }.try_into().map_err(|err| format!(
-            "{}{}{}",
-            "Config File Error: ".red().bold(),
-            "defaults.repeat\n".italic(),
-            err,
-        ))?,
-        palette: Palette::from(&defaults.palette.iter()
-            .map(|entry| (entry.id, entry.c.as_str()))
-            .collect::<Vec<(u8, &str)>>()).map_err(|err| format!(
-                "{}{}{}",
-                "Config File Error: ".red().bold(),
-                "defaults.palette\n".italic(),
-                err,
-            ))?,
-    })
-}
-
-fn get_keys_from_config(config: &Option<Config>, default_keys: Vec<NamespaceXKeysEntry>)
--> (KeyMap, HashMap<String, ()>)
-{
-    let mut keymap = HashMap::new();
-    keymap.insert(None, HashMap::new());
-    let mut possible_namespaces = HashMap::new();
-
-    //if no user config or user config doesn't want new_keys
-    if !(config.is_some() && config.as_ref().unwrap().new_keys) {
-    //if !config.new_keys {
-        //we are constructing a new default Config here, just because keymap::KeyMap doesn't
-        //implement clone and we cannot clone it from an existing reference to a default config
-        _ = default_keys.into_iter()
-            .map(|group| {
-                if let Some(ref namespace) = group.name {
-                    possible_namespaces.insert(namespace.clone(), ());
-                }
-                let mut map = HashMap::new();
-                _ = group.keys.into_iter().map(|entry| {
-                    map.insert(entry.k, entry.f);
-                }).collect::<Vec<()>>();
-                keymap.insert(group.name.clone(), map);
-            })
-            .collect::<Vec<()>>();
-    }
-
-    if let Some(config) = config {
-        _ = config.keys.iter()
-            .map(|group| {
-                if let Some(ref namespace) = group.name {
-                    possible_namespaces.insert(namespace.clone(), ());
-                }
-                let mut map = HashMap::new();
-                _ = group.keys.iter().map(|entry| {
-                    map.insert(entry.k.clone(), entry.f.clone());
-                }).collect::<Vec<()>>();
-
-                if let Some(existing_group) = keymap.get_mut(&group.name) {
-                    existing_group.extend(map);
-                } else {
-                    keymap.insert(group.name.clone(), map);
-                }
-            }).collect::<Vec<()>>();
-    }
-
-    (keymap, possible_namespaces)
 }

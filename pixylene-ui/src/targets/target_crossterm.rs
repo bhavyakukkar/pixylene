@@ -1,5 +1,5 @@
 use pixylene_ui::{
-    Cli, controller::Controller,
+    Cli, config::Config, controller::Controller,
     ui::{ UserInterface, Key, KeyInfo, Rectangle, Statusline, Color },
 };
 
@@ -326,15 +326,16 @@ impl UserInterface for TargetCrossterm {
 }
 
 
-fn main() {
+fn main() -> Result<(), ()> {
+    let cli = Cli::parse();
     let target = TargetCrossterm;
+    let config = Config::from_config_toml()
+        .map_err(|err| eprintln!("{}", err))?;
 
-    match Controller::new(Rc::new(RefCell::new(target))) {
-        Ok(mut pixylene_ui) => {
-            let cli = Cli::parse();
-
-            pixylene_ui.start(&cli.command);
-        },
-        Err(error) => eprintln!("{}", error)
+    let mut pixylene_tui = Controller::new(Rc::new(RefCell::new(target)), config);
+    if let Some(command) = cli.command {
+        pixylene_tui.new_session(&command, true);
     }
+    pixylene_tui.run();
+    Ok(())
 }
