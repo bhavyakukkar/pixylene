@@ -43,16 +43,6 @@ pub enum KeyInfo {
     UiFn(UiFn),
 }
 
-/// A Real Key on a keyboard that can be mapped to execute a [`UiFn`](crate::keybinds::UiFn) or
-/// [`ReqUiFn`](crate::keybinds::ReqUiFn).
-///
-/// `Note`: This was made primarily with compatibility to [`crossterm`](crossterm) in mind and
-/// hence is simply a type alias to keymap-rs's [`KeyMap`](keymap::KeyMap) (not to be confused with
-/// this crate's [`KeyMap`](KeyMap)) which wraps around crossterm's
-/// [`KeyEvent`](crossterm::event::KeyEvent).
-///
-/// Other target implementations require manual association.
-pub type Key = keymap::KeyMap;
 
 // needed to serialize Key since KeyMap doesn't implement Serialize
 // all thanks to https://github.com/serde-rs/serde/issues/1316
@@ -80,29 +70,56 @@ mod string {
     }
 }
 
+/// A Real Key on a keyboard that can be mapped to trigger a [`UiFn`](crate::keybinds::UiFn) or
+/// associate with a [`ReqUiFn`](crate::keybinds::ReqUiFn).
+///
+/// `Note`: This was made primarily with compatibility to [`crossterm`](crossterm) in mind and
+/// hence is a wrapper around keymap-rs's [`KeyMap`](keymap::KeyMap) type (not to be confused with
+/// this crate's [`KeyMap`](KeyMap)), allowing easy conversion from the Key events of the
+/// [`crossterm`] & [`termion`] libraries.
+///
+/// Other target implementations require manual association.
 #[derive(Eq, Hash, Deserialize, PartialEq, Debug)]
-pub struct KeySer(
-    pub Key
+pub struct Key(
+    keymap::KeyMap
 );
 
-impl std::str::FromStr for KeySer {
+impl std::str::FromStr for Key {
     type Err = pom::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        keymap::backend::parse(s).map(|k| KeySer(k))
+        keymap::backend::parse(s).map(|k| Key(k))
     }
 }
 
-impl std::fmt::Display for KeySer {
+impl std::fmt::Display for Key {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
 }
 
-impl Clone for KeySer {
+impl Clone for Key {
     fn clone(&self) -> Self {
-        KeySer(keymap::backend::parse(&self.0.to_string()).unwrap())
+        Key(keymap::backend::parse(&self.0.to_string()).unwrap())
         //KeySer(Key::from(crossterm::event::KeyEvent::from(self.0)))
+    }
+}
+
+impl From<crossterm::event::KeyEvent> for Key {
+    fn from(item: crossterm::event::KeyEvent) -> Key {
+        Key(keymap::KeyMap::from(item))
+    }
+}
+
+impl From<keymap::KeyMap> for Key {
+    fn from(item: keymap::KeyMap) -> Key {
+        Key(item)
+    }
+}
+
+impl Into<keymap::KeyMap> for Key {
+    fn into(self) -> keymap::KeyMap {
+        self.0
     }
 }
 
@@ -222,7 +239,7 @@ pub enum UiFn {
     #[command(visible_alias = "key")]
     RunKey{
         #[serde(with = "string")]
-        key: KeySer,
+        key: Key,
     },
 
     #[serde(alias = "cmd")]

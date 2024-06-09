@@ -1,7 +1,7 @@
 use crate::{
     utils::{parse_cmd, deparse},
-    ui::{ UserInterface, Rectangle, Statusline, KeyInfo, Key, KeySer, KeyMap, ReqUiFnMap, UiFn },
-    config::{ Config },
+    ui::{ UserInterface, Rectangle, Statusline, KeyInfo, Key, KeyMap, ReqUiFnMap, UiFn },
+    config::{ Config, PixyleneDefaultsConfig, NamespaceXKeysEntry },
     actions::{ ActionLocation, add_my_native_actions, add_my_lua_actions },
 };
 
@@ -107,7 +107,7 @@ pub struct Controller {
     possible_namespaces: HashMap<String, ()>,
     namespace: Option<String>,
     keymap: KeyMap,
-    rev_keymap: ReqUiFnMap,
+    required_keys: ReqUiFnMap,
     every_frame: Vec<UiFn>,
 
     //window boundaries
@@ -137,7 +137,7 @@ impl Controller {
 
     fn console_in(&self, message: &str) -> Option<String> {
         let input = self.target.borrow_mut().console_in(message,
-                                                        &self.rev_keymap.discard_command,
+                                                        &self.required_keys.discard_command,
                                                         &self.b_console.unwrap());
         self.console_clear();
         input
@@ -164,103 +164,30 @@ impl Controller {
     }
 
     pub fn new(target: Rc<RefCell<dyn UserInterface>>) -> Result<Self, String> {
-        use colored::Colorize;
-        let mut is_default = false;
-
-        let config: Config = match config_dir() {
-            Some(mut path) => {
-                path.push("pixylene");
-                path.push("config");
-                path.set_extension("toml");
-                match read_to_string(path) {
-                    Ok(contents) => {
-                        Config::from(&contents).map_err(|err| {
-                            format!("Error in config.toml:\n {}", err.to_string())
-                        })?
-                    },
-                    //config file not present
-                    Err(_) => {
-                        is_default = true;
-                        Default::default()
-                    },
-                }
-            },
-            //config dir not configured on user's OS
-            None => {
-                is_default = true;
-                Default::default()
-            },
+        let config = match parse_config() {
+            Some(c) => Some(c?),
+            None => None,
         };
+        let Config{
+            mut required_keys,
+            mut every_frame,
+            mut keymap_show_command_names,
+            mut defaults,
+            keys,
+            ..
+        } =
+            Config::default();
 
-        let defaults = PixyleneDefaults {
-            dim: UCoord{
-                x: config.defaults.dimensions.x,
-                y: config.defaults.dimensions.y,
-            }.try_into().map_err(|err| format!(
-                    "{}{}{}",
-                    "Config File Error: ".red().bold(),
-                    "defaults.dimensions\n".yellow().italic(),
-                    err,
-            ))?,
-            repeat: UCoord{
-                x: config.defaults.repeat.x,
-                y: config.defaults.repeat.y,
-            }.try_into().map_err(|err| format!(
-                    "{}{}{}",
-                    "Config File Error: ".red().bold(),
-                    "defaults.repeat\n".italic(),
-                    err,
-            ))?,
-            palette: Palette::from(&config.defaults.palette.iter()
-                .map(|entry| (entry.id, entry.c.as_str()))
-                .collect::<Vec<(u8, &str)>>()).map_err(|err| format!(
-                    "{}{}{}",
-                    "Config File Error: ".red().bold(),
-                    "defaults.palette\n".italic(),
-                    err,
-                ))?,
-        };
+        let (keymap, possible_namespaces) = get_keys_from_config(&config, keys);
 
-        let mut keymap: KeyMap = HashMap::new();
-        keymap.insert(None, HashMap::new());
-        let mut possible_namespaces = HashMap::new();
-        if !config.new_keys {
-            _ = <Config as Default>::default().keys.into_iter()
-                .map(|group| {
-                    if let Some(ref namespace) = group.name {
-                        possible_namespaces.insert(namespace.clone(), ());
-                    }
-                    let mut map = HashMap::new();
-                    _ = group.keys.into_iter().map(|entry| {
-                        map.insert(entry.k, entry.f);
-                    }).collect::<Vec<()>>();
-                    keymap.insert(group.name.clone(), map);
-                })
-                .collect::<Vec<()>>();
+        if let Some(config) = config {
+            required_keys = config.required_keys;
+            every_frame = config.every_frame;
+            keymap_show_command_names = config.keymap_show_command_names;
+            defaults = config.defaults;
         }
 
-        if !is_default {
-            _ = config.keys.into_iter()
-                .map(|group| {
-                    if let Some(ref namespace) = group.name {
-                        possible_namespaces.insert(namespace.clone(), ());
-                    }
-                    let mut map = HashMap::new();
-                    _ = group.keys.into_iter().map(|entry| {
-                        map.insert(entry.k, entry.f);
-                    }).collect::<Vec<()>>();
-
-                    if let Some(existing_group) = keymap.get_mut(&group.name) {
-                        existing_group.extend(map);
-                    } else {
-                        keymap.insert(group.name.clone(), map);
-                    }
-                }).collect::<Vec<()>>();
-        }
-
-        let rev_keymap = config.required_keys;
-
-        let every_frame = config.every_frame;
+        let defaults = parse_defaults(defaults)?;
 
         Ok(Self {
             target,
@@ -269,13 +196,13 @@ impl Controller {
             sel_session: 0,
 
             defaults,
-            keymap_show_command_names: config.keymap_show_command_names,
+            keymap_show_command_names,
 
             possible_namespaces,
             namespace: None,
 
             keymap,
-            rev_keymap,
+            required_keys,
             every_frame,
 
             b_console: None,
@@ -564,7 +491,7 @@ impl Controller {
             if let Some(key_info) = key_info {
                 match key_info {
                     KeyInfo::Key(key) => {
-                        _ = self.perform_ui(&RunKey{ key: KeySer(Key::from(key)) });
+                        _ = self.perform_ui(&RunKey{ key: Key::from(key).into() });
                     },
                     KeyInfo::UiFn(ui_fn) => {
                         _ = self.perform_ui(&ui_fn);
@@ -910,10 +837,10 @@ impl Controller {
             },
             RunKey{ key } => {
                 //special required keys
-                if key.0 == self.rev_keymap.force_quit {
+                if *key == self.required_keys.force_quit {
                     _ = self.perform_ui(&ForceQuit);
                 }
-                else if key.0 == self.rev_keymap.start_command {
+                else if *key == self.required_keys.start_command {
                     _ = self.perform_ui(&RunCommandSpecify);
                 }
 
@@ -925,7 +852,7 @@ impl Controller {
                                                        //EnterNamespace which sets only from
                                                        //possible_namespaces corresponding to
                                                        //keymap
-                        .get(&key.0) {
+                        .get(&key) {
                         for func in (*funcs).clone() {
                             _ = self.perform_ui(&func);
                         }
@@ -1219,7 +1146,7 @@ impl Controller {
                     let ReqUiFnMap {
                         ref force_quit,
                         ref start_command,
-                        ref discard_command } = self.rev_keymap;
+                        ref discard_command } = self.required_keys;
                     paragraph.push("".into());
                     paragraph.push("Required Keys".underline().bright_yellow());
                     paragraph.push(format!(
@@ -1480,4 +1407,106 @@ fn initialize_project(pixylene: &mut Pixylene) {
         y: u16::from(dim.y()).checked_div(2).unwrap(),
     }, 0)).unwrap(); //cant fail because x,y less than dim and we know there is at
                      //least 1 layer because we created it
+}
+
+fn parse_config() -> Option<Result<Config, String>> {
+    match config_dir() {
+        Some(mut path) => {
+            path.push("pixylene");
+            path.push("config");
+            path.set_extension("toml");
+            match read_to_string(path) {
+                //config file present
+                Ok(contents) => Some(
+                    Config::from(&contents)
+                        .map_err(|err| format!("Error in config.toml:\n {}", err.to_string()))
+                ),
+                //config file not present
+                Err(_) => None,
+            }
+        },
+        //config dir not configured on user's OS
+        None => None,
+    }
+}
+
+fn parse_defaults(defaults: PixyleneDefaultsConfig) -> Result<PixyleneDefaults, String> {
+    use colored::Colorize;
+
+    Ok(PixyleneDefaults {
+        dim: UCoord{
+            x: defaults.dimensions.x,
+            y: defaults.dimensions.y,
+        }.try_into().map_err(|err| format!(
+            "{}{}{}",
+            "Config File Error: ".red().bold(),
+            "defaults.dimensions\n".yellow().italic(),
+            err,
+        ))?,
+        repeat: UCoord{
+            x: defaults.repeat.x,
+            y: defaults.repeat.y,
+        }.try_into().map_err(|err| format!(
+            "{}{}{}",
+            "Config File Error: ".red().bold(),
+            "defaults.repeat\n".italic(),
+            err,
+        ))?,
+        palette: Palette::from(&defaults.palette.iter()
+            .map(|entry| (entry.id, entry.c.as_str()))
+            .collect::<Vec<(u8, &str)>>()).map_err(|err| format!(
+                "{}{}{}",
+                "Config File Error: ".red().bold(),
+                "defaults.palette\n".italic(),
+                err,
+            ))?,
+    })
+}
+
+fn get_keys_from_config(config: &Option<Config>, default_keys: Vec<NamespaceXKeysEntry>)
+-> (KeyMap, HashMap<String, ()>)
+{
+    let mut keymap = HashMap::new();
+    keymap.insert(None, HashMap::new());
+    let mut possible_namespaces = HashMap::new();
+
+    //if no user config or user config doesn't want new_keys
+    if !(config.is_some() && config.as_ref().unwrap().new_keys) {
+    //if !config.new_keys {
+        //we are constructing a new default Config here, just because keymap::KeyMap doesn't
+        //implement clone and we cannot clone it from an existing reference to a default config
+        _ = default_keys.into_iter()
+            .map(|group| {
+                if let Some(ref namespace) = group.name {
+                    possible_namespaces.insert(namespace.clone(), ());
+                }
+                let mut map = HashMap::new();
+                _ = group.keys.into_iter().map(|entry| {
+                    map.insert(entry.k, entry.f);
+                }).collect::<Vec<()>>();
+                keymap.insert(group.name.clone(), map);
+            })
+            .collect::<Vec<()>>();
+    }
+
+    if let Some(config) = config {
+        _ = config.keys.iter()
+            .map(|group| {
+                if let Some(ref namespace) = group.name {
+                    possible_namespaces.insert(namespace.clone(), ());
+                }
+                let mut map = HashMap::new();
+                _ = group.keys.iter().map(|entry| {
+                    map.insert(entry.k.clone(), entry.f.clone());
+                }).collect::<Vec<()>>();
+
+                if let Some(existing_group) = keymap.get_mut(&group.name) {
+                    existing_group.extend(map);
+                } else {
+                    keymap.insert(group.name.clone(), map);
+                }
+            }).collect::<Vec<()>>();
+    }
+
+    (keymap, possible_namespaces)
 }
