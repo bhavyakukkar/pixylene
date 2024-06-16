@@ -106,12 +106,22 @@ pub struct Controller {
     b_statusline: Rectangle,
 }
 
-impl Console for Controller {
+struct ControllerLite {
+    b_console: Rectangle,
+    discard_command: Key,
+    target: Rc<RefCell<dyn UserInterface>>,
+}
+
+impl Console for ControllerLite {
     fn cmdin(&self, message: &str) -> Option<String> {
-        self.console_in(message)
+        let input = self.target.borrow_mut()
+            .console_in(message, &self.discard_command, &self.b_console);
+        self.target.borrow_mut().clear(&self.b_console);
+        return input;
     }
+
     fn cmdout(&self, message: &str, log_type: &LogType) {
-        self.console_out(message, log_type)
+        self.target.borrow_mut().console_out(message, log_type, &self.b_console);
     }
 }
 
@@ -185,12 +195,6 @@ impl Controller {
                 }
             }
         }
-    }
-
-    fn set_boundaries(&mut self, boundaries: (Rectangle, Rectangle, Rectangle)) {
-        self.b_camera = boundaries.0;
-        self.b_statusline = boundaries.1;
-        self.b_console = boundaries.2;
     }
 
     fn console_in(&self, message: &str) -> Option<String> {
@@ -849,10 +853,12 @@ impl Controller {
             },
             RunAction{ name } => {
                 let s = self.sel_session()?;
-                let mut self_clone = Controller::new(self.target.clone(), Config::empty());
-                self_clone.set_boundaries((self.b_camera,
-                                           self.b_statusline,
-                                           self.b_console));
+
+                let visible_target = ControllerLite {
+                    b_console: self.b_console,
+                    discard_command: self.config.required_keys.discard_command.clone(),
+                    target: self.target.clone(),
+                };
 
                 let Self {
                     sessions,
@@ -884,7 +890,7 @@ impl Controller {
                                                                             //location Lua (check
                                                                             //action_map in fn
                                                                             //new_session)
-                                    .invoke_action(&name, pixylene.clone(), Rc::new(self_clone))
+                                    .invoke_action(&name, pixylene.clone(), Rc::new(visible_target))
                                 {
                                     Ok(()) => {
                                         if native_action_manager
@@ -922,7 +928,7 @@ impl Controller {
                             ActionLocation::Native(action) => {
                                 let performed = native_action_manager.perform(
                                     &mut pixylene.borrow_mut().project,
-                                    &self_clone,
+                                    &visible_target,
                                     action.clone()
                                 );
                                 match performed {
@@ -976,10 +982,11 @@ impl Controller {
             },
             RunLua{ statement } => {
                 let s = self.sel_session()?;
-                let mut self_clone = Controller::new(self.target.clone(), Config::empty());
-                self_clone.set_boundaries((self.b_camera,
-                                           self.b_statusline,
-                                           self.b_console));
+                let visible_target = ControllerLite {
+                    b_console: self.b_console,
+                    discard_command: self.config.required_keys.discard_command.clone(),
+                    target: self.target.clone(),
+                };
 
                 let Self {
                     sessions,
@@ -1007,7 +1014,7 @@ impl Controller {
 
                 target.borrow_mut().clear(&b_console);
                 match lua_action_manager.as_mut().unwrap() //cant fail because checked like 2 lines ago
-                    .invoke(statement, pixylene.clone(), Rc::new(self_clone))
+                    .invoke(statement, pixylene.clone(), Rc::new(visible_target))
                 {
                     Ok(()) => {
                         if native_action_manager.commit(&pixylene.borrow().project.canvas) {
