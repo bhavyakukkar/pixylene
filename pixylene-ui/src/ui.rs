@@ -294,6 +294,10 @@ pub enum UiFn {
     #[command(visible_alias = "pc")]
     PrintCanvasJson,
 
+    #[serde(alias = "ln")]
+    #[command(visible_alias = "ln")]
+    ListNamespaces,
+
     #[serde(alias = "lk")]
     #[command(visible_alias = "lk")]
     ListKeybindMap {

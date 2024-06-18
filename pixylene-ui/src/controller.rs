@@ -40,6 +40,7 @@ const SPLASH_LOGO: &str = r#"
 
  type  :new 16 16     - to create a new 16x16 canvas
  type  :lc            - to list all commands
+ type  :ln            - to list all namespaces
  type  :lk            - to list the required keys & keys in the default namespace
  type  :q             - to quit
 "#;
@@ -1091,6 +1092,37 @@ impl Controller {
                 self.console_in("press ENTER to stop previewing canvas JSON");
             },
 
+            ListNamespaces => {
+                use colored::{ Colorize, ColoredString };
+                let mut paragraph: Vec<ColoredString> = vec![
+                    "".into(),
+                    "Namespaces".underline().bright_yellow(),
+                    format!(
+                        " {:<20} : {} keybinds",
+                        "Default".bright_magenta(),
+                        self.config.keymap.get(&None).as_ref().unwrap().len(),
+                    )
+                    .into()
+                ];
+                let _ = self.config.keymap.iter()
+                    .filter(|(namespace, _)| namespace.is_some())
+                    .map(|(namespace, keys)| {
+                        paragraph.push(
+                            format!(
+                                " {:<20} : {} keybinds",
+                                namespace.as_ref().unwrap().to_owned().bright_magenta(),
+                                keys.len(),
+                            )
+                            .into()
+                        );
+                    })
+                    .collect::<()>();
+                self.target.borrow_mut().clear_all();
+                self.target.borrow_mut().draw_paragraph(paragraph, &self.b_camera);
+                let _ = self.console_in("press ENTER to exit listing namespaces");
+                self.target.borrow_mut().clear_all();
+            },
+
             ListKeybindMap{ namespace } => {
                 use colored::{ Colorize, ColoredString };
                 let half_width = self.target.borrow().get_size().y() as usize/2;
@@ -1102,7 +1134,7 @@ impl Controller {
                                     format!("{:<half_width$}",
                                         format!(
                                             "  {:<10} -> {}",
-                                            format!("'{}'", key.to_string()),
+                                            key.to_string().bright_magenta(),
                                             if self.config.keymap_show_command_names {
                                                 format!("{:?}", ui_fns)
                                             } else {
@@ -1116,7 +1148,7 @@ impl Controller {
                             .collect::<()>();
                     };
 
-                let _print_namespace_compact =
+                let print_namespace_compact =
                     |mut keys: Iter<Key, Vec<UiFn>>, paragraph: &mut Vec<ColoredString>| loop {
                         let mut line = String::new();
                         if let Some((key, ui_fns)) = keys.next() {
@@ -1124,7 +1156,7 @@ impl Controller {
                                 &format!("{:<half_width$}",
                                     format!(
                                         "  {:<10} -> {}",
-                                        format!("'{}'", key.to_string()),
+                                        key.to_string().bright_magenta(),
                                         if self.config.keymap_show_command_names { format!("{:?}", ui_fns) }
                                         else { deparse(ui_fns) }
                                     )));
@@ -1135,7 +1167,7 @@ impl Controller {
                         if let Some((key, ui_fns)) = keys.next() {
                             line.push_str(&format!(
                                 "{:<10} -> {}",
-                                format!("'{}'", key.to_string()),
+                                key.to_string().bright_magenta(),
                                 if self.config.keymap_show_command_names { format!("{:?}", ui_fns) }
                                 else { deparse(ui_fns) }
                             ));
@@ -1163,15 +1195,17 @@ impl Controller {
                             paragraph.push("".into());
                             paragraph.push("Required Keys".underline().bright_yellow());
                             paragraph.push(format!(
-                                "  Force Quit <- '{}',   Start Command <- '{}',   Discard Command <- '{}'",
-                                force_quit, start_command, discard_command
+                                "  Force Quit <- {},   Start Command <- {},   Discard Command <- {}",
+                                force_quit.to_string().bright_magenta(),
+                                start_command.to_string().bright_magenta(),
+                                discard_command.to_string().bright_magenta(),
                             ).into());
                         }
 
                         //keys in default namespace
                         paragraph.push(ColoredString::from(""));
                         paragraph.push("Default Namespace".underline().bright_yellow());
-                        print_namespace_simple(
+                        print_namespace_compact(
                             self.config.keymap.get(&None).unwrap().iter(),
                             &mut paragraph
                         );
@@ -1204,7 +1238,7 @@ impl Controller {
                         vec!["Commands".underline().bright_yellow()],
                         parse_cmd("--help").unwrap_err().lines().skip(3)
                             .take_while(|line| !line.contains("  help"))
-                            .map(|l| l.into()).collect::<Vec<ColoredString>>()
+                            .map(|l| l.bright_magenta()).collect::<Vec<ColoredString>>()
                     ].into_iter().flatten().collect(),
                     &self.b_camera
                 );
