@@ -15,7 +15,7 @@ use pixylene_lua::LuaActionManager;
 use dirs::config_dir;
 use std::{
     fs::read_to_string,
-    collections::HashMap,
+    collections::{HashMap, hash_map::Iter},
     process::exit,
     cell::RefCell,
     rc::Rc,
@@ -40,7 +40,7 @@ const SPLASH_LOGO: &str = r#"
 
  type  :new 16 16     - to create a new 16x16 canvas
  type  :lc            - to list all commands
- type  :lk            - to list the current keybindings
+ type  :lk            - to list the required keys & keys in the default namespace
  type  :q             - to quit
 "#;
 // type  :help          - if you are new!
@@ -1091,41 +1091,33 @@ impl Controller {
                 self.console_in("press ENTER to stop previewing canvas JSON");
             },
 
-            ListKeybindMap => {
+            ListKeybindMap{ namespace } => {
                 use colored::{ Colorize, ColoredString };
-                let mut paragraph: Vec<ColoredString> = Vec::new();
                 let half_width = self.target.borrow().get_size().y() as usize/2;
+                let print_namespace_simple =
+                    |keys: Iter<Key, Vec<UiFn>>, paragraph: &mut Vec<ColoredString>| {
+                        let _ = keys
+                            .map(|(key, ui_fns)| {
+                                paragraph.push(
+                                    format!("{:<half_width$}",
+                                        format!(
+                                            "  {:<10} -> {}",
+                                            format!("'{}'", key.to_string()),
+                                            if self.config.keymap_show_command_names {
+                                                format!("{:?}", ui_fns)
+                                            } else {
+                                                deparse(ui_fns)
+                                            }
+                                        )
+                                    )
+                                    .into()
+                                );
+                            })
+                            .collect::<()>();
+                    };
 
-                self.target.borrow_mut().clear_all();
-
-                //todo: refactor so later may be used separately in :help
-                //required keys
-                {
-                    let ReqUiFnMap {
-                        ref force_quit,
-                        ref start_command,
-                        ref discard_command } = self.config.required_keys;
-                    paragraph.push("".into());
-                    paragraph.push("Required Keys".underline().bright_yellow());
-                    paragraph.push(format!(
-                        "  Force Quit <- '{}',   Start Command <- '{}',   Discard Command <- '{}'",
-                        force_quit, start_command, discard_command
-                    ).into());
-                }
-
-                //all namespaces & their keys
-                paragraph.extend(vec![
-                    vec![("Default Namespace".to_owned(), self.config.keymap.get(&None).unwrap())],
-                    self.config.keymap.iter().filter(|(namespace, _)| namespace.is_some())
-                        .map(|(n, k)| (format!("Namespace '{}'", n.clone().unwrap()), k)).collect()
-                ].iter().flatten()
-                .map(|(namespace, keys)| {
-                    let mut lines = vec![
-                        ColoredString::from(""),
-                        namespace.underline().bright_yellow(),
-                    ];
-                    let mut keys = keys.iter();
-                    loop {
+                let _print_namespace_compact =
+                    |mut keys: Iter<Key, Vec<UiFn>>, paragraph: &mut Vec<ColoredString>| loop {
                         let mut line = String::new();
                         if let Some((key, ui_fns)) = keys.next() {
                             line.push_str(
@@ -1139,6 +1131,7 @@ impl Controller {
                         } else {
                             break;
                         }
+
                         if let Some((key, ui_fns)) = keys.next() {
                             line.push_str(&format!(
                                 "{:<10} -> {}",
@@ -1146,14 +1139,55 @@ impl Controller {
                                 if self.config.keymap_show_command_names { format!("{:?}", ui_fns) }
                                 else { deparse(ui_fns) }
                             ));
-                            lines.push(line.into());
+                            paragraph.push(line.into());
                         } else {
-                            lines.push(line.into());
+                            paragraph.push(line.into());
                             break;
                         }
+                    };
+
+                let mut paragraph: Vec<ColoredString> = Vec::new();
+
+                self.target.borrow_mut().clear_all();
+
+                match namespace {
+                    //list required keys and keys in default namespace
+                    None => {
+                        //todo: refactor so later may be used separately in :help
+                        //required keys
+                        {
+                            let ReqUiFnMap {
+                                ref force_quit,
+                                ref start_command,
+                                ref discard_command } = self.config.required_keys;
+                            paragraph.push("".into());
+                            paragraph.push("Required Keys".underline().bright_yellow());
+                            paragraph.push(format!(
+                                "  Force Quit <- '{}',   Start Command <- '{}',   Discard Command <- '{}'",
+                                force_quit, start_command, discard_command
+                            ).into());
+                        }
+
+                        //keys in default namespace
+                        paragraph.push(ColoredString::from(""));
+                        paragraph.push("Default Namespace".underline().bright_yellow());
+                        print_namespace_simple(
+                            self.config.keymap.get(&None).unwrap().iter(),
+                            &mut paragraph
+                        );
                     }
-                    lines
-                }).flatten().collect::<Vec<ColoredString>>());
+
+                    //list keys in requested namespace
+                    Some(namespace) => {
+                        paragraph.push(ColoredString::from(""));
+                        paragraph.push(
+                            format!("Namespace '{namespace}'").underline().bright_yellow());
+
+                        if let Some(namespace) = self.config.keymap.get(&Some(namespace.to_string())) {
+                            print_namespace_simple(namespace.iter(), &mut paragraph);
+                        }
+                    }
+                }
 
                 self.target.borrow_mut().draw_paragraph(paragraph,
                     &self.b_camera

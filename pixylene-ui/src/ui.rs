@@ -296,7 +296,10 @@ pub enum UiFn {
 
     #[serde(alias = "lk")]
     #[command(visible_alias = "lk")]
-    ListKeybindMap,
+    ListKeybindMap {
+        #[serde(alias = "n")]
+        namespace: Option<String>,
+    },
 
     #[serde(alias = "lc")]
     #[command(visible_alias = "lc")]
