@@ -60,7 +60,34 @@ impl TealData for Project {
             });
         }
 
-        //todo: add interfaces to methods toggle_cursor_at & clear_cursors
+        {
+            methods.document("Clears the cursors in the Project and returns them as list of \
+                             tables of 'coord' and 'layer'");
+            methods.add_method_mut("clear", |lua_ctx, this, _: ()| {
+                let mut cursors = Vec::new();
+                for (coord, layer) in this.0.borrow_mut().project.clear_cursors() {
+                    let element = lua_ctx.create_table()?;
+                    element.set("coord", UCoord(coord.clone()))?;
+                    element.set("layer", layer + 1)?;
+                    cursors.push(element);
+                }
+                Ok(cursors)
+            });
+        }
+
+        {
+            mlua_create_named_parameters!(
+                ProjectToggleCursorAtArgs with
+                    coord: UCoord,
+                    layer: u16,
+            );
+            methods.document("Returns whether there is a cursor at the provided coordinate on the \
+                             layer at given layer index");
+            methods.add_method_mut("toggle", |_, this, a: ProjectToggleCursorAtArgs| {
+                this.0.borrow_mut().project.toggle_cursor_at(&(a.coord.0, a.layer))
+                    .map_err(|err| ExternalError(Arc::from(BOXED_ERROR(&err.to_string()))))
+            });
+        }
 
         methods.generate_help();
     }
