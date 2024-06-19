@@ -183,7 +183,6 @@ impl<T: Pixel> Layers<T> {
     }
 
     pub fn layers(&self) -> Iter<Layer<T>> {
-        //LayersIter{ iter: Box::new(self.layers.iter().map(|l| l.clone())) }
         self.layers.iter()
     }
 
@@ -214,8 +213,8 @@ impl Layers<IndexedPixel> {
 /// Error enum to describe various errors returned by Layers methods
 #[derive(Debug)]
 pub enum LayersError {
-    /// Error that occurs when trying to trying to convert an empty [`LayerIter`] to a [`Layers`],
-    /// in which case no dimensions information is able to inferred
+    /// Error that occurs when trying to convert an empty vector of [`Layer`]s to a [`Layers`],
+    /// in which case no dimensions information is able to be inferred
     NoDimensionInformation,
 
     /// Error that occurs when trying to add a Layer of inconsistent dimensions to the Canvas

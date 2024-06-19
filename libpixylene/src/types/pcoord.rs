@@ -89,7 +89,7 @@ impl<T: Into<u128> + TryFrom<u128> + Copy> PCoord<T> {
     }
 }
 
-/// Contains a PCoord, because compiler won't let me impl From<PCoord<S>> for PCoord<T> without
+/// Contains a PCoord, because compiler won't let me impl [From<PCoord<S>>] for [PCoord<T>] without
 /// this
 pub struct PCoordContainer<T: Into<u128> + Copy>(pub PCoord<T>);
 

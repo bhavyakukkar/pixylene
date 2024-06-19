@@ -47,6 +47,11 @@ pub fn add_my_native_actions(amp: &mut HashMap<String, ActionLocation>) {
     insert_native(amp, "layer_new", layer::New);
     insert_native(amp, "layer_opacity", layer::ChangeOpacity);
     insert_native(amp, "layer_mute", layer::Mute);
+
+    insert_native(amp, "goto_row_start", cursors::GoToSingleCursor::new(None, Some(0)));
+    insert_native(amp, "goto_row_end", cursors::GoToSingleCursor::new(None, Some(u16::MAX)));
+    insert_native(amp, "goto_column_start", cursors::GoToSingleCursor::new(Some(0), None));
+    insert_native(amp, "goto_column_end", cursors::GoToSingleCursor::new(Some(u16::MAX), None));
 }
 
 pub fn add_my_lua_actions(am: &mut LuaActionManager) {

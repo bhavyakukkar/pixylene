@@ -56,6 +56,8 @@ pub enum StartType {
     //New { dimensions: Option<Coord>, palette: Option<Palette> },
     //Open { path: String },
     //Import { path: String, palette: Option<Palette> },
+
+    /// New empty canvas
     New {
         width: Option<u16>,
         height: Option<u16>,
@@ -63,12 +65,15 @@ pub enum StartType {
         indexed: bool,
         /*/*todo*/colorscheme: Option<Colorscheme>,*/
     },
+    /// Open existing .json (Canvas file)
     Canvas {
         path: PathBuf
     },
+    /// Open existing .pixylene (Project file)
     Project {
         path: PathBuf
     },
+    /// Import a PNG
     Import {
         path: PathBuf,
         width: Option<u32>,
