@@ -14,162 +14,161 @@ every_frame = [
 # configuring keys
 keymap_show_command_names = false
 
+# the default namespace will be the namespace that pixylene starts with
+default_namespace = "Main"
+
+
 # the map of keybinds
 
-# DEFAULT namespace
-[[keys]]
-keys = [
-    # every keybind binds a single key 'k' to a sequence of commands 'f'
-    { k = "alt-x", f = [ "A" ] },
-    { k = ";", f = [ "la" ] },
+[keys."Main"]
+# every keybind binds a single key 'k' to a sequence of commands 'f'
+"alt-x" = [ "A" ]
+";" = [ "la" ]
 
-    { k = "left",  f = [{ a = { n = "cursors_left" } }] },
-    { k = "down",  f = [{ a = { n = "cursors_down" } }] },
-    { k = "up",    f = [{ a = { n = "cursors_up" } }] },
-    { k = "right", f = [{ a = { n = "cursors_right" } }] },
+"left" = [{ a = { n = "cursors_left" } }]
+"down" = [{ a = { n = "cursors_down" } }]
+"up" = [{ a = { n = "cursors_up" } }]
+"right" = [{ a = { n = "cursors_right" } }]
 
-    { k = "h", f = [{ a = { n = "cursors_left" } }] },
-    { k = "j", f = [{ a = { n = "cursors_down" } }] },
-    { k = "k", f = [{ a = { n = "cursors_up" } }] },
-    { k = "l", f = [{ a = { n = "cursors_right" } }] },
+"h" = [{ a = { n = "cursors_left" } }]
+"j" = [{ a = { n = "cursors_down" } }]
+"k" = [{ a = { n = "cursors_up" } }]
+"l" = [{ a = { n = "cursors_right" } }]
 
-    { k = "0",       f = [{ a = { n = "goto_row_start" } }] },
-    { k = "$",       f = [{ a = { n = "goto_row_end" } }] },
-    { k = "g",       f = [{ a = { n = "goto_column_start" } }] },
-    { k = "shift-g", f = [{ a = { n = "goto_column_end" } }] },
+"0" = [{ a = { n = "goto_row_start" } }]
+"$" = [{ a = { n = "goto_row_end" } }]
+"g" = [{ a = { n = "goto_column_start" } }]
+"shift-g" = [{ a = { n = "goto_column_end" } }]
 
-    { k = "enter", f = [{ a = { n = "pencil" } }] },
-    { k = "1",     f = [{ a = { n = "pencil1" } }] },
-    { k = "2",     f = [{ a = { n = "pencil2" } }] },
-    { k = "3",     f = [{ a = { n = "pencil3" } }] },
-    { k = "4",     f = [{ a = { n = "pencil4" } }] },
-    { k = "5",     f = [{ a = { n = "pencil5" } }] },
-    { k = "6",     f = [{ a = { n = "pencil6" } }] },
-    { k = "7",     f = [{ a = { n = "pencil7" } }] },
-    { k = "8",     f = [{ a = { n = "pencil8" } }] },
+"enter" = [{ a = { n = "pencil" } }]
+"1" = [{ a = { n = "pencil1" } }]
+"2" = [{ a = { n = "pencil2" } }]
+"3" = [{ a = { n = "pencil3" } }]
+"4" = [{ a = { n = "pencil4" } }]
+"5" = [{ a = { n = "pencil5" } }]
+"6" = [{ a = { n = "pencil6" } }]
+"7" = [{ a = { n = "pencil7" } }]
+"8" = [{ a = { n = "pencil8" } }]
 
-    { k = "e", f = [{ a = { n = "equip" } }] },
-    { k = "c", f = [{ a = { n = "palette_equipped_color" } }] },
-    { k = "s", f = [{ a = { n = "hex_at_cursors" } }] },
-    { k = "?", f = [ "lc" ] },
+"e" = [{ a = { n = "equip" } }]
+"?" = [ "lc" ]
 
-    # go to Ooze namespace
-    { k = "shift-o", f = [{ ns = { n = "Ooze" } }] },
-    # go to View namespace
-    { k = "shift-v", f = [{ ns = { n = "View" } }] },
-    # go to Layer namespace
-    { k = "shift-l", f = [{ ns = { n = "Layer" } }] },
-    # go to Cursors namespace
-    { k = "shift-c", f = [{ ns = { n = "Cursors" } }] },
-    # go to Shapes namespace
-    { k = "shift-s", f = [{ ns = { n = "Shapes" } }] },
-]
+# go to Ooze namespace
+"o" = [{ ns = { n = "Ooze" } }]
+# go to Cursors namespace
+"c" = [{ ns = { n = "Cursors" } }]
+# go to Shapes namespace
+"s" = [{ ns = { n = "Shapes" } }]
 
-[[keys]]
-name = "Ooze"
-keys = [
-    # navigation
-    { k = "u", f = [{a={ n="cursors_up" }}, {a={ n="cursors_left" }}, {a={ n="pencil" }}] },
-    { k = "k", f = [{a={ n="cursors_up" }}, {a={ n="pencil" }}] },
-    { k = "p", f = [{a={ n="cursors_up" }}, {a={ n="cursors_right" }}, {a={ n="pencil" }}] },
+# go to View namespace
+"ctrl-v" = [{ ns = { n = "View" } }]
+# go to Layer namespace
+"ctrl-l" = [{ ns = { n = "Layer" } }]
 
-    { k = "h", f = [{a={ n="cursors_left" }}, {a={ n="pencil" }}] },
-    { k = "l", f = [{a={ n="cursors_right" }}, {a={ n="pencil" }}] },
 
-    { k = "n", f = [{a={ n="cursors_down" }}, {a={ n="cursors_left" }}, {a={ n="pencil" }}] },
-    { k = "j", f = [{a={ n="cursors_down" }}, {a={ n="pencil" }}] },
-    { k = "m", f = [{a={ n="cursors_down" }}, {a={ n="cursors_right" }}, {a={ n="pencil" }}] },
+[keys.Ooze]
+# navigation
+"u" = [{a={ n="cursors_up" }}, {a={ n="cursors_left" }}, {a={ n="pencil" }}]
+"k" = [{a={ n="cursors_up" }}, {a={ n="pencil" }}]
+"p" = [{a={ n="cursors_up" }}, {a={ n="cursors_right" }}, {a={ n="pencil" }}]
 
-    # change equipped color
-    { k = "1", f = [{l={ s="actions.equip.index = 1" }}, {a={ n="equip" }}, {l={ s="actions['equip'].index = nil" }}] },
-    { k = "2", f = [{l={ s="actions.equip.index = 2" }}, {a={ n="equip" }}, {l={ s="actions['equip'].index = nil" }}] },
-    { k = "3", f = [{l={ s="actions.equip.index = 3" }}, {a={ n="equip" }}, {l={ s="actions['equip'].index = nil" }}] },
-    { k = "4", f = [{l={ s="actions.equip.index = 4" }}, {a={ n="equip" }}, {l={ s="actions['equip'].index = nil" }}] },
-    { k = "5", f = [{l={ s="actions.equip.index = 5" }}, {a={ n="equip" }}, {l={ s="actions['equip'].index = nil" }}] },
-    { k = "6", f = [{l={ s="actions.equip.index = 6" }}, {a={ n="equip" }}, {l={ s="actions['equip'].index = nil" }}] },
-    { k = "7", f = [{l={ s="actions.equip.index = 7" }}, {a={ n="equip" }}, {l={ s="actions['equip'].index = nil" }}] },
-    { k = "8", f = [{l={ s="actions.equip.index = 8" }}, {a={ n="equip" }}, {l={ s="actions['equip'].index = nil" }}] },
+"h" = [{a={ n="cursors_left" }}, {a={ n="pencil" }}]
+"l" = [{a={ n="cursors_right" }}, {a={ n="pencil" }}]
 
-    { k = "esc", f = [ "dns" ] }, # go back to default namespace
-]
+"n" = [{a={ n="cursors_down" }}, {a={ n="cursors_left" }}, {a={ n="pencil" }}]
+"j" = [{a={ n="cursors_down" }}, {a={ n="pencil" }}]
+"m" = [{a={ n="cursors_down" }}, {a={ n="cursors_right" }}, {a={ n="pencil" }}]
 
-[[keys]]
-name = "View"
-keys = [
-    # directly perform lua statement on keypress
+# change equipped color
+"1" = [{l={ s="actions.equip.index = 1" }}, {a={ n="equip" }}, {l={ s="actions['equip'].index = nil" }}]
+"2" = [{l={ s="actions.equip.index = 2" }}, {a={ n="equip" }}, {l={ s="actions['equip'].index = nil" }}]
+"3" = [{l={ s="actions.equip.index = 3" }}, {a={ n="equip" }}, {l={ s="actions['equip'].index = nil" }}]
+"4" = [{l={ s="actions.equip.index = 4" }}, {a={ n="equip" }}, {l={ s="actions['equip'].index = nil" }}]
+"5" = [{l={ s="actions.equip.index = 5" }}, {a={ n="equip" }}, {l={ s="actions['equip'].index = nil" }}]
+"6" = [{l={ s="actions.equip.index = 6" }}, {a={ n="equip" }}, {l={ s="actions['equip'].index = nil" }}]
+"7" = [{l={ s="actions.equip.index = 7" }}, {a={ n="equip" }}, {l={ s="actions['equip'].index = nil" }}]
+"8" = [{l={ s="actions.equip.index = 8" }}, {a={ n="equip" }}, {l={ s="actions['equip'].index = nil" }}]
 
-    { k = "h", f = [{ l = { s = """
-        Project.focus = {
-            ['layer'] = Project.focus.layer,
-            ['coord'] = C(Project.focus.coord.x, Project.focus.coord.y - 1),
-        }
-    """ }}] },
-    { k = "j", f = [{ l = { s = """
-        Project.focus = {
-            ['layer'] = Project.focus.layer,
-            ['coord'] = C(Project.focus.coord.x + 1, Project.focus.coord.y),
-        }
-    """ }}] },
-    { k = "k", f = [{ l = { s = """
-        Project.focus = {
-            ['layer'] = Project.focus.layer,
-            ['coord'] = C(Project.focus.coord.x - 1, Project.focus.coord.y),
-        }
-    """ }}] },
-    { k = "l", f = [{ l = { s = """
-        Project.focus = {
-            ['layer'] = Project.focus.layer,
-            ['coord'] = C(Project.focus.coord.x, Project.focus.coord.y + 1),
-        }
-    """ } }] },
+"esc" = [ "dns" ] # go back to default namespace
 
-    { k = "i", f = [{ a = { n = "zoomin" } }] },
-    { k = "o", f = [{ a = { n = "zoomout" } }] },
 
-    { k = "esc", f = [ "dns" ] }, # go back to default namespace
-]
+[keys.View]
+# directly perform lua statement on keypress
+
+"h" = [{ l = { s = """
+    Project.focus = {
+        ['layer'] = Project.focus.layer,
+        ['coord'] = C(Project.focus.coord.x, Project.focus.coord.y - 1),
+    }
+""" }}]
+"j" = [{ l = { s = """
+    Project.focus = {
+        ['layer'] = Project.focus.layer,
+        ['coord'] = C(Project.focus.coord.x + 1, Project.focus.coord.y),
+    }
+""" }}]
+"k" = [{ l = { s = """
+    Project.focus = {
+        ['layer'] = Project.focus.layer,
+        ['coord'] = C(Project.focus.coord.x - 1, Project.focus.coord.y),
+    }
+""" }}]
+"l" = [{ l = { s = """
+    Project.focus = {
+        ['layer'] = Project.focus.layer,
+        ['coord'] = C(Project.focus.coord.x, Project.focus.coord.y + 1),
+    }
+""" } }]
+
+"i" = [{ a = { n = "zoomin" } }]
+"o" = [{ a = { n = "zoomout" } }]
+
+"esc"   = [ "dns" ] # go back to default namespace
+"enter" = [ "dns" ] # go back to default namespace
+
 
 # LAYER namespace
-[[keys]]
-name = "Layer"
-keys = [
-    # all 3 of these keys perform an action then return to the default namespace
-    { k = "n", f = [{ a = { n = "layer_new" } }, "dns"] },
-    { k = "o", f = [{ a = { n = "layer_opacity" } }, "dns"] },
-    { k = "m", f = [{ a = { n = "layer_mute" } }, "dns"] },
+[keys.Layer]
+# all 3 of these keys perform an action then return to the default namespace
+"n" = [{ a = { n = "layer_new" } }]
+"o" = [{ a = { n = "layer_opacity" } }]
+"m" = [{ a = { n = "layer_mute" } }]
 
-    { k = "esc", f = [ "dns" ] }, # go back to default namespace
-]
+"up" = [{ a = { n = "layernext" } }]
+"k" = [{ a = { n = "layernext" } }]
+"down" = [{ a = { n = "layerprev" } }]
+"j" = [{ a = { n = "layerprev" } }]
+
+"esc"   = [ "dns" ] # go back to default namespace
+"enter" = [ "dns" ] # go back to default namespace
+
 
 # CURSORS namespace
-[[keys]]
-name = "Cursors"
-keys = [
-    { k = "left",  f = [{ a = { n = "cursors_dup_left" } }] },
-    { k = "down",  f = [{ a = { n = "cursors_dup_down" } }] },
-    { k = "up",    f = [{ a = { n = "cursors_dup_up" } }] },
-    { k = "right", f = [{ a = { n = "cursors_dup_right" } }] },
+[keys.Cursors]
+"left" = [{ a = { n = "cursors_dup_left" } }]
+"down" = [{ a = { n = "cursors_dup_down" } }]
+"up" = [{ a = { n = "cursors_dup_up" } }]
+"right" = [{ a = { n = "cursors_dup_right" } }]
 
-    { k = "h", f = [{ a = { n = "cursors_dup_left" } }] },
-    { k = "j", f = [{ a = { n = "cursors_dup_down" } }] },
-    { k = "k", f = [{ a = { n = "cursors_dup_up" } }] },
-    { k = "l", f = [{ a = { n = "cursors_dup_right" } }] },
+"h" = [{ a = { n = "cursors_dup_left" } }]
+"j" = [{ a = { n = "cursors_dup_down" } }]
+"k" = [{ a = { n = "cursors_dup_up" } }]
+"l" = [{ a = { n = "cursors_dup_right" } }]
 
-    { k = "r", f = [{ a = { n = "cursors_reset" } }, "dns"] },
+"r" = [{ a = { n = "cursors_reset" } }, "dns"]
 
-    { k = "esc", f = [ "dns" ] }, # go back to default namespace
-]
+"esc" = [ "dns" ] # go back to default namespace
+"enter" = [ "dns" ] # go back to default namespace
+
 
 # SHAPES namespace
-[[keys]]
-name = "Shapes"
-keys = [
-    { k = "c", f = [{ a = { n = "circularfill" } }, "dns"] },
-    { k = "C", f = [{ a = { n = "circularoutline" } }, "dns"] },
-    { k = "f", f = [{ a = { n = "fill" } }, "dns"] },
+[keys.Shapes]
+"c" = [{ a = { n = "circularfill" } }, "dns"]
+"C" = [{ a = { n = "circularoutline" } }, "dns"]
+"f" = [{ a = { n = "fill" } }, "dns"]
 
-    { k = "esc", f = [ "dns" ] }, # go back to default namespace
-]
+"esc" = [ "dns" ] # go back to default namespace
+"enter" = [ "dns" ] # go back to default namespace
 
 
 # keys associated to function that are required to be known by pixylene

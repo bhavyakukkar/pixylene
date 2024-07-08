@@ -44,8 +44,7 @@ const SPLASH_LOGO: &str = r#"
  type  :lk            - to list the required keys & keys in the default namespace
  type  :q             - to quit
 "#;
-// type  :help          - if you are new!
-// type  :new = { w=16, h=16 }      - to create a new 16x16 canvas 
+// type  :help                      - if you are new!
 // type  :import foo.png            - to start editing 'foo.png'
 // type  :e foo.json                - to edit a previously saved canvas file 'foo.json'
 // type  :ep foo.pixylene           - to edit a previously saved project file 'foo.pixylene'
@@ -53,10 +52,6 @@ const SPLASH_LOGO: &str = r#"
 
 #[derive(Subcommand)]
 pub enum StartType {
-    //New { dimensions: Option<Coord>, palette: Option<Palette> },
-    //Open { path: String },
-    //Import { path: String, palette: Option<Palette> },
-
     /// New empty canvas
     New {
         width: Option<u16>,
@@ -100,7 +95,7 @@ pub struct PixyleneSession {
 pub struct Controller {
     target: Rc<RefCell<dyn UserInterface>>,
     config: Config,
-    namespace: Option<String>,
+    namespace: String,
 
     //sessions
     sessions: Vec<PixyleneSession>,
@@ -148,8 +143,8 @@ impl Controller {
 
         Self {
             target,
+            namespace: config.default_namespace.clone(),
             config,
-            namespace: None,
 
             sessions: Vec::new(),
             sel_session: 0,
@@ -784,17 +779,19 @@ impl Controller {
             EnterNamespace{ name } => {
                 if let Some(name) = name {
                     if let Some(_) = self.config.possible_namespaces.get(name) {
-                        self.namespace = Some(name.clone());
+                        self.namespace = name.clone();
                     } else {
                         self.console_out(&format!("namespace '{}' doesn't exist", name),
                                          &LogType::Error);
                     }
                 } else {
-                    self.namespace = None;
+                    self.namespace = self.config.default_namespace.clone();
                 }
             },
             EnterDefaultNamespace => {
-                _ = self.perform_ui(&EnterNamespace{ name: None });
+                _ = self.perform_ui(&EnterNamespace{
+                    name: Some(self.config.default_namespace.clone()),
+                });
             },
             RunKey{ key } => {
                 //special required keys
@@ -805,15 +802,23 @@ impl Controller {
                     _ = self.perform_ui(&RunCommandSpecify);
                 }
 
-                //other keys
                 else {
+                    //overlay keys (always triggerable)
                     if let Some(funcs) = self.config.keymap
-                        .get(&self.namespace).unwrap() //wont fail because only source of
-                                                       //modification for self.namespace is
-                                                       //EnterNamespace which sets only from
-                                                       //possible_namespaces corresponding to
-                                                       //keymap
-                        .get(&key) {
+                        .get(&None)
+                        .expect("None is always a key in keymap")
+                        .get(&key)
+                    {
+                        for func in (*funcs).clone() {
+                            _ = self.perform_ui(&func);
+                        }
+                    }
+                    //namespace keys
+                    else if let Some(funcs) = self.config.keymap
+                        .get(&Some(self.namespace.clone()))
+                        .expect("Namespace is always in possible namespaces in keymap")
+                        .get(&key)
+                    {
                         for func in (*funcs).clone() {
                             _ = self.perform_ui(&func);
                         }
@@ -1104,7 +1109,7 @@ impl Controller {
                     "Namespaces".underline().bright_yellow(),
                     format!(
                         " {:<20} : {} keybinds",
-                        "Default".bright_magenta(),
+                        "Overlay".bright_magenta(),
                         self.config.keymap.get(&None).as_ref().unwrap().len(),
                     )
                     .into()
@@ -1207,11 +1212,20 @@ impl Controller {
                             ).into());
                         }
 
+                        //overlay keys
+                        paragraph.push(ColoredString::from(""));
+                        paragraph.push("Overlay Keys".underline().bright_yellow());
+                        print_namespace_compact(
+                            self.config.keymap.get(&None).unwrap().iter(),
+                            &mut paragraph
+                        );
+
                         //keys in default namespace
                         paragraph.push(ColoredString::from(""));
                         paragraph.push("Default Namespace".underline().bright_yellow());
                         print_namespace_compact(
-                            self.config.keymap.get(&None).unwrap().iter(),
+                            self.config.keymap
+                                .get(&Some(self.config.default_namespace.clone())).unwrap().iter(),
                             &mut paragraph
                         );
                     }
@@ -1266,10 +1280,7 @@ impl Controller {
                 {
                     //Namespace
                     statusline.push(divider.clone());
-                    statusline.push(
-                        self.namespace.clone().unwrap_or(String::from("Default"))
-                        .on_truecolor(60,60,60).bright_white()
-                    );
+                    statusline.push(self.namespace.clone().on_truecolor(60,60,60).bright_white());
                     statusline.push(divider.clone());
                 }
 

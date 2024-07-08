@@ -1,6 +1,6 @@
 use crate::ui::{ UiFn, Key, ReqUiFnMap, KeyMap };
 
-use libpixylene::{PixyleneDefaults, types::{UCoord, PCoord}, project::Palette};
+use libpixylene::{PixyleneDefaults, types::UCoord, project::Palette};
 use crossterm::{event::{KeyEvent as K, KeyModifiers as KM, KeyCode::*}};
 use dirs::config_dir;
 use serde::{ Deserialize };
@@ -15,6 +15,7 @@ use std::{
 
 pub struct Config {
     pub defaults: PixyleneDefaults,
+    pub default_namespace: String,
     pub keymap_show_command_names: bool,
     pub possible_namespaces: HashMap<String, ()>,
     pub keymap: KeyMap,
@@ -24,33 +25,16 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn empty() -> Self {
-        Self {
-            defaults: PixyleneDefaults {
-                dim: PCoord::new(10, 10).unwrap(),
-                palette: Palette::new(),
-                repeat: PCoord::new(1, 2).unwrap(),
-            },
-            keymap_show_command_names: false,
-            possible_namespaces: HashMap::new(),
-            keymap: HashMap::new(),
-            required_keys: ReqUiFnMap {
-                start_command: K::new(Char(':'), KM::empty()).into(),
-                discard_command: K::new(Esc, KM::empty()).into(),
-                force_quit: K::new(Char('c'), KM::CONTROL).into(),
-            },
-            every_frame: Vec::new(),
-            padding: 1,
-        }
-    }
-
+    //todo: document what this function is doing
     pub fn from_config_toml() -> Result<Self, String> {
         let config = match parse_config() {
             Some(c) => Some(c?),
             None => None,
         };
+
         let ConfigSyntax {
             mut required_keys,
+            mut default_namespace,
             mut every_frame,
             mut keymap_show_command_names,
             mut padding,
@@ -65,6 +49,7 @@ impl Config {
 
         if let Some(config) = config {
             required_keys = config.required_keys;
+            default_namespace = config.default_namespace;
             every_frame = config.every_frame;
             keymap_show_command_names = config.keymap_show_command_names;
             padding = config.padding;
@@ -75,6 +60,7 @@ impl Config {
 
         Ok(Self {
             defaults,
+            default_namespace,
             keymap_show_command_names,
             possible_namespaces,
             keymap,
@@ -89,8 +75,6 @@ impl Config {
 
 /// Config Syntax (deserialized config.toml)
 
-type KUE = KeyXUiFnEntry;
-type NKE = NamespaceXKeysEntry;
 type PCE = PaletteColorEntry;
 
 
@@ -100,11 +84,8 @@ pub struct KeyXUiFnEntry {
     pub f: Vec<UiFn>,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct NamespaceXKeysEntry {
-    pub name: Option<String>,
-    pub keys: Vec<KeyXUiFnEntry>,
-}
+type KeyXUiFnEntries = HashMap<Key, Vec<UiFn>>;
+type NamespaceXKeysEntries = HashMap<String, KeyXUiFnEntries>;
 
 #[derive(Debug, Deserialize)]
 pub struct UCoordEntry {
@@ -128,7 +109,10 @@ pub struct PixyleneDefaultsConfig {
 #[derive(Debug, Deserialize)]
 pub struct ConfigSyntax {
     pub required_keys: ReqUiFnMap,
-    pub keys: Vec<NamespaceXKeysEntry>,
+    pub default_namespace: String,
+    pub keys: NamespaceXKeysEntries,
+    //over here
+    //pub overlay_keys: ,
     pub new_keys: bool,
     pub every_frame: Vec<UiFn>,
     pub defaults: PixyleneDefaultsConfig,
@@ -150,6 +134,7 @@ impl Default for ConfigSyntax {
                 discard_command: K::new(Esc, KM::empty()).into(),
                 force_quit: K::new(Char('c'), KM::CONTROL).into(),
             },
+            default_namespace: "Main".to_owned(),
             new_keys: false,
             every_frame: vec![UiFn::PreviewFocusLayer, UiFn::DrawStatusline],
             defaults: PixyleneDefaultsConfig {
@@ -174,53 +159,79 @@ impl Default for ConfigSyntax {
                     PCE { id: 16, c: String::from("#deeed6") },
                 ],
             },
-            keys: vec![
-                NKE {
-                    name: None,
-                    keys: vec![
-                        KUE { k: K::new(Char('h'), KM::empty()).into(),
-                              f: vec![UiFn::RunAction{ name: String::from("cursors_left") }] },
-                        KUE { k: K::new(Char('j'), KM::empty()).into(),
-                              f: vec![UiFn::RunAction{ name: String::from("cursors_down") }] },
-                        KUE { k: K::new(Char('k'), KM::empty()).into(),
-                              f: vec![UiFn::RunAction{ name: String::from("cursors_up") }] },
-                        KUE { k: K::new(Char('l'), KM::empty()).into(),
-                              f: vec![UiFn::RunAction{ name: String::from("cursors_right") }] },
-
-                        KUE { k: K::new(Left, KM::empty()).into(),
-                              f: vec![UiFn::RunAction{ name: String::from("cursors_left") }] },
-                        KUE { k: K::new(Down, KM::empty()).into(),
-                              f: vec![UiFn::RunAction{ name: String::from("cursors_down") }] },
-                        KUE { k: K::new(Up, KM::empty()).into(),
-                              f: vec![UiFn::RunAction{ name: String::from("cursors_up") }] },
-                        KUE { k: K::new(Right, KM::empty()).into(),
-                              f: vec![UiFn::RunAction{ name: String::from("cursors_right") }] },
-
-                        KUE { k: K::new(Char('h'), KM::CONTROL).into(),
-                              f: vec![UiFn::RunAction{ name: String::from("cursors_dup_left") }] },
-                        KUE { k: K::new(Char('j'), KM::CONTROL).into(),
-                              f: vec![UiFn::RunAction{ name: String::from("cursors_dup_down") }] },
-                        KUE { k: K::new(Char('k'), KM::CONTROL).into(),
-                              f: vec![UiFn::RunAction{ name: String::from("cursors_dup_up") }] },
-                        KUE { k: K::new(Char('l'), KM::CONTROL).into(),
-                              f: vec![UiFn::RunAction{ name: String::from("cursors_dup_right") }] },
-
-                        KUE { k: K::new(Char('r'), KM::empty()).into(),
-                              f: vec![UiFn::RunAction{ name: String::from("cursors_reset") }] },
-
-                        KUE { k: K::new(Enter, KM::empty()).into(),
-                              f: vec![UiFn::RunAction{ name: String::from("pencil") }] },
-
-                        KUE { k: K::new(Char('u'), KM::empty()).into(),
-                              f: vec![UiFn::Undo] },
-                        KUE { k: K::new(Char('r'), KM::CONTROL).into(),
-                              f: vec![UiFn::Redo] },
-
-                        KUE { k: K::new(Char('c'), KM::CONTROL).into(),
-                              f: vec![UiFn::ForceQuit] },
-                    ]
-                },
-            ],
+            keys: NamespaceXKeysEntries::from([(
+                "Main".to_owned(),
+                KeyXUiFnEntries::from([
+                    (
+                        K::new(Char('h'), KM::empty()).into(),
+                        vec![UiFn::RunAction{ name: String::from("cursors_left") }],
+                    ),
+                    (
+                        K::new(Char('j'), KM::empty()).into(),
+                        vec![UiFn::RunAction{ name: String::from("cursors_down") }],
+                    ),
+                    (
+                        K::new(Char('k'), KM::empty()).into(),
+                        vec![UiFn::RunAction{ name: String::from("cursors_up") }],
+                    ),
+                    (
+                        K::new(Char('l'), KM::empty()).into(),
+                        vec![UiFn::RunAction{ name: String::from("cursors_right") }],
+                    ),
+                    (
+                        K::new(Left, KM::empty()).into(),
+                        vec![UiFn::RunAction{ name: String::from("cursors_left") }],
+                    ),
+                    (
+                        K::new(Down, KM::empty()).into(),
+                        vec![UiFn::RunAction{ name: String::from("cursors_down") }],
+                    ),
+                    (
+                        K::new(Up, KM::empty()).into(),
+                        vec![UiFn::RunAction{ name: String::from("cursors_up") }],
+                    ),
+                    (
+                        K::new(Right, KM::empty()).into(),
+                        vec![UiFn::RunAction{ name: String::from("cursors_right") }],
+                    ),
+                    (
+                        K::new(Char('h'), KM::CONTROL).into(),
+                        vec![UiFn::RunAction{ name: String::from("cursors_dup_left") }],
+                    ),
+                    (
+                        K::new(Char('j'), KM::CONTROL).into(),
+                        vec![UiFn::RunAction{ name: String::from("cursors_dup_down") }],
+                    ),
+                    (
+                        K::new(Char('k'), KM::CONTROL).into(),
+                        vec![UiFn::RunAction{ name: String::from("cursors_dup_up") }],
+                    ),
+                    (
+                        K::new(Char('l'), KM::CONTROL).into(),
+                        vec![UiFn::RunAction{ name: String::from("cursors_dup_right") }],
+                    ),
+                    (
+                        K::new(Char('r'), KM::empty()).into(),
+                        vec![UiFn::RunAction{ name: String::from("cursors_reset") }],
+                    ),
+                    (
+                        K::new(Enter, KM::empty()).into(),
+                        vec![UiFn::RunAction{ name: String::from("pencil") }],
+                    ),
+                    (
+                        K::new(Char('u'), KM::empty()).into(),
+                        vec![UiFn::Undo],
+                    ),
+                    (
+                        K::new(Char('r'), KM::CONTROL).into(),
+                        vec![UiFn::Redo],
+                    ),
+                    (
+                        K::new(Char('c'), KM::CONTROL).into(),
+                        vec![UiFn::ForceQuit],
+                    ),
+                ]),
+            )]),
             keymap_show_command_names: true,
             padding: 1,
         }
@@ -228,6 +239,8 @@ impl Default for ConfigSyntax {
 }
 
 fn parse_config() -> Option<Result<ConfigSyntax, String>> {
+    use colored::Colorize;
+
     match config_dir() {
         Some(mut path) => {
             path.push("pixylene");
@@ -235,10 +248,37 @@ fn parse_config() -> Option<Result<ConfigSyntax, String>> {
             path.set_extension("toml");
             match read_to_string(path) {
                 //config file present
-                Ok(contents) => Some(
-                    ConfigSyntax::from(&contents)
-                        .map_err(|err| format!("Error in config.toml:\n {}", err.to_string()))
-                ),
+                Ok(contents) => match ConfigSyntax::from(&contents) {
+                    Ok(config) => {
+                        if config.keys.len() == 0 {
+                            return Some(Err(format!(
+                                "{}{}\n{}", 
+                                "Config File Error: ".red().bold(),
+                                "keys".italic(),
+                                "At-least one namespace of keys is required",
+                            )));
+                        }
+
+                        if let None = config.keys.get(&config.default_namespace) {
+                            return Some(Err(format!(
+                                "{}{}\n{}", 
+                                "Config File Error: ".red().bold(),
+                                "default_namespace".italic(),
+                                format!(
+                                    "Provided default namespace {} has not been defined in \
+                                    the config-file",
+                                    config.default_namespace,
+                                ),
+                            )));
+                        }
+
+                        Some(Ok(config))
+                    },
+                    Err(err) => Some(Err(format!(
+                        "Error parsing config.toml:\n {}",
+                        err.to_string(),
+                    ))),
+                },
                 //config file not present
                 Err(_) => None,
             }
@@ -256,32 +296,32 @@ fn parse_defaults(defaults: PixyleneDefaultsConfig) -> Result<PixyleneDefaults, 
             x: defaults.dimensions.x,
             y: defaults.dimensions.y,
         }.try_into().map_err(|err| format!(
-            "{}{}{}",
+            "{}{}\n{}",
             "Config File Error: ".red().bold(),
-            "defaults.dimensions\n".yellow().italic(),
+            "defaults.dimensions".yellow().italic(),
             err,
         ))?,
         repeat: UCoord{
             x: defaults.repeat.x,
             y: defaults.repeat.y,
         }.try_into().map_err(|err| format!(
-            "{}{}{}",
+            "{}{}\n{}",
             "Config File Error: ".red().bold(),
-            "defaults.repeat\n".italic(),
+            "defaults.repeat".italic(),
             err,
         ))?,
         palette: Palette::from(&defaults.palette.iter()
             .map(|entry| (entry.id, entry.c.as_str()))
             .collect::<Vec<(u8, &str)>>()).map_err(|err| format!(
-                "{}{}{}",
+                "{}{}\n{}",
                 "Config File Error: ".red().bold(),
-                "defaults.palette\n".italic(),
+                "defaults.palette".italic(),
                 err,
             ))?,
     })
 }
 
-fn get_keys_from_config(config: &Option<ConfigSyntax>, default_keys: Vec<NamespaceXKeysEntry>)
+fn get_keys_from_config(config: &Option<ConfigSyntax>, default_keys: NamespaceXKeysEntries)
 -> (KeyMap, HashMap<String, ()>)
 {
     let mut keymap = HashMap::new();
@@ -290,38 +330,33 @@ fn get_keys_from_config(config: &Option<ConfigSyntax>, default_keys: Vec<Namespa
 
     //if no user config or user config doesn't want new_keys
     if !(config.is_some() && config.as_ref().unwrap().new_keys) {
-    //if !config.new_keys {
         //we are constructing a new default Config here, just because keymap::KeyMap doesn't
         //implement clone and we cannot clone it from an existing reference to a default config
         _ = default_keys.into_iter()
-            .map(|group| {
-                if let Some(ref namespace) = group.name {
-                    possible_namespaces.insert(namespace.clone(), ());
-                }
+            .map(|(namespace, keys)| {
+                possible_namespaces.insert(namespace.clone(), ());
                 let mut map = HashMap::new();
-                _ = group.keys.into_iter().map(|entry| {
-                    map.insert(entry.k, entry.f);
+                _ = keys.into_iter().map(|(key, fns)| {
+                    map.insert(key, fns);
                 }).collect::<Vec<()>>();
-                keymap.insert(group.name.clone(), map);
+                keymap.insert(Some(namespace), map);
             })
             .collect::<Vec<()>>();
     }
 
     if let Some(config) = config {
         _ = config.keys.iter()
-            .map(|group| {
-                if let Some(ref namespace) = group.name {
-                    possible_namespaces.insert(namespace.clone(), ());
-                }
+            .map(|(namespace, keys)| {
+                possible_namespaces.insert(namespace.clone(), ());
                 let mut map = HashMap::new();
-                _ = group.keys.iter().map(|entry| {
-                    map.insert(entry.k.clone(), entry.f.clone());
+                _ = keys.iter().map(|(key, fns)| {
+                    map.insert(key.clone(), fns.clone());
                 }).collect::<Vec<()>>();
 
-                if let Some(existing_group) = keymap.get_mut(&group.name) {
+                if let Some(existing_group) = keymap.get_mut(&Some(namespace.clone())) {
                     existing_group.extend(map);
                 } else {
-                    keymap.insert(group.name.clone(), map);
+                    keymap.insert(Some(namespace.to_string()), map);
                 }
             }).collect::<Vec<()>>();
     }
