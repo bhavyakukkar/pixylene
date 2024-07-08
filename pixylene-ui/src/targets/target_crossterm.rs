@@ -1,20 +1,27 @@
 use pixylene_ui::{
     Cli, config::Config, controller::Controller,
-    ui::{ UserInterface, Key, KeyInfo, Rectangle, Statusline, Color },
+    ui::{UserInterface, Key, KeyInfo, Rectangle, Statusline, Color, UiFn},
 };
 
-use libpixylene::{ types::{ PCoord }, project::{ OPixel } };
-use pixylene_actions::{ LogType };
-use crossterm::{ event, cursor, terminal, style, queue, execute };
-use std::io::{ Write };
-use std::rc::Rc;
-use std::cell::RefCell;
+use libpixylene::{types::{UCoord, PCoord}, project::OPixel};
+use pixylene_actions::LogType;
+use crossterm::{event, cursor, terminal, style, queue, execute};
+use std::{io::Write, rc::Rc, cell::RefCell, collections::HashMap};
 use clap::Parser;
 
 
 /// Pixylene UI's Target for the [`crossterm`](crossterm) terminal manipulation library
 /// [Crossterm repository](https://github.com/crossterm-rs/crossterm)
-struct TargetCrossterm;
+struct TargetCrossterm {
+    bound: HashMap<(u16, u16), UCoord>,
+}
+
+impl TargetCrossterm {
+    pub fn new() -> Self {
+        Self{ bound: HashMap::new() }
+    }
+}
+
 
 impl UserInterface for TargetCrossterm {
 
@@ -31,6 +38,7 @@ impl UserInterface for TargetCrossterm {
             stdout,
             EnterAlternateScreen,
             Hide,
+            event::EnableMouseCapture,
         ).unwrap();
         stdout.flush().unwrap();
     }
@@ -43,6 +51,7 @@ impl UserInterface for TargetCrossterm {
         disable_raw_mode().unwrap();
         queue!(
             stdout,
+            event::DisableMouseCapture,
             Show,
             LeaveAlternateScreen,
         ).unwrap();
@@ -75,15 +84,15 @@ impl UserInterface for TargetCrossterm {
             MoveTo(boundary.start.y, boundary.start.x),
         ).unwrap();
 
+        let _ = self.bound.drain();
+
         for i in 0..dim.x() {
             for j in 0..dim.y() {
                 let o_pixel = &buffer.get(usize::from(i)*usize::from(dim.y()) + usize::from(j))
                     .unwrap();
                 match o_pixel {
-                    OPixel::Filled{ color, has_cursor, .. } => {
-                        //if color.a != 255 {
-                        //    panic!("alpha not 255, color: {} at ({},{})\n", color, i, j);
-                        //}
+                    OPixel::Filled{ color, has_cursor, scene_coord, .. } => {
+                        self.bound.insert((boundary.start.x+i, boundary.start.y+j), *scene_coord);
                         queue!(
                             stdout,
                             SetBackgroundColor(Color::Rgb{
@@ -99,7 +108,8 @@ impl UserInterface for TargetCrossterm {
                             Print(if show_cursors && *has_cursor { "╳" } else { " " }),
                         ).unwrap();
                     },
-                    OPixel::Empty{ has_cursor, .. } => {
+                    OPixel::Empty{ has_cursor, scene_coord } => {
+                        self.bound.insert((boundary.start.x+i, boundary.start.y+j), *scene_coord);
                         queue!(
                             stdout,
                             ResetColor,
@@ -126,7 +136,11 @@ impl UserInterface for TargetCrossterm {
     }
 
     fn get_key(&self) -> Option<KeyInfo> {
-        use event::{ Event, KeyEvent, KeyCode, KeyModifiers, KeyEventKind, read };
+        use event::{
+            Event, read,
+            KeyEvent, KeyCode, KeyModifiers, KeyEventKind,
+            MouseEvent, MouseEventKind, MouseButton,
+        };
 
         loop {
             //blocking read
@@ -140,6 +154,18 @@ impl UserInterface for TargetCrossterm {
                             )));
                         } else {
                             return Some(KeyInfo::Key(key_event.into()));
+                        }
+                    }
+                },
+                Event::Mouse(MouseEvent{ kind, column, row, .. }) => {
+                    if kind == MouseEventKind::Down(MouseButton::Left) {
+                        if let Some(scene_coord) = self.bound.get(&(row, column)) {
+                            return Some(KeyInfo::UiFn(UiFn::RunLua {
+                                statement: format!(r#"
+Project:clear()
+Project:toggle(UC({}, {}), Project.focus.layer)
+                                "#, scene_coord.x, scene_coord.y),
+                            }));
                         }
                     }
                 },
@@ -328,7 +354,7 @@ impl UserInterface for TargetCrossterm {
 
 fn main() -> Result<(), ()> {
     let cli = Cli::parse();
-    let target = TargetCrossterm;
+    let target = TargetCrossterm::new();
     let config = Config::from_config_toml()
         .map_err(|err| eprintln!("{}", err))?;
 
