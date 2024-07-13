@@ -12,3 +12,8 @@ pub use target_minifb::TargetMinifb;
 mod target_cli;
 #[cfg(feature = "cli")]
 pub use target_cli::TargetCLI;
+
+#[cfg(feature = "web")]
+mod target_web;
+#[cfg(feature = "web")]
+pub use target_web::TargetWeb;

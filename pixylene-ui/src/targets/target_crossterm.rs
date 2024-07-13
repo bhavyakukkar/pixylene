@@ -1,12 +1,12 @@
 use pixylene_ui::{
     Cli, config::Config, controller::Controller,
-    ui::{UserInterface, Key, KeyInfo, Rectangle, Statusline, Color, UiFn},
+    ui::{UserInterface, Key, KeyInfo, Rectangle, Statusline, Color},
 };
 
 use libpixylene::{types::{UCoord, PCoord}, project::OPixel};
 use pixylene_actions::LogType;
 use crossterm::{event, cursor, terminal, style, queue, execute};
-use std::{io::Write, rc::Rc, cell::RefCell, collections::HashMap};
+use std::{io::Write, rc::Rc, cell::RefCell, collections::HashMap, process};
 use clap::Parser;
 
 
@@ -56,6 +56,7 @@ impl UserInterface for TargetCrossterm {
             LeaveAlternateScreen,
         ).unwrap();
         stdout.flush().unwrap();
+        process::exit(0);
     }
 
     // Crossterm blocks until read and requires no extra work between frames
@@ -136,6 +137,7 @@ impl UserInterface for TargetCrossterm {
     }
 
     fn get_key(&self) -> Option<KeyInfo> {
+        #[allow(unused_imports)]
         use event::{
             Event, read,
             KeyEvent, KeyCode, KeyModifiers, KeyEventKind,
@@ -157,10 +159,11 @@ impl UserInterface for TargetCrossterm {
                         }
                     }
                 },
+                #[cfg(feature = "lua")]
                 Event::Mouse(MouseEvent{ kind, column, row, .. }) => {
                     if kind == MouseEventKind::Down(MouseButton::Left) {
                         if let Some(scene_coord) = self.bound.get(&(row, column)) {
-                            return Some(KeyInfo::UiFn(UiFn::RunLua {
+                            return Some(KeyInfo::UiFn(pixylene_ui::ui::UiFn::RunLua {
                                 statement: format!(r#"
 Project:clear()
 Project:toggle(UC({}, {}), Project.focus.layer)

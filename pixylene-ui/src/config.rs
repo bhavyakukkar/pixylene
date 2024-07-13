@@ -211,6 +211,22 @@ impl Default for ConfigSyntax {
                         vec![UiFn::RunAction{ name: String::from("cursors_dup_right") }],
                     ),
                     (
+                        K::new(Left, KM::CONTROL).into(),
+                        vec![UiFn::RunAction{ name: String::from("cursors_dup_left") }],
+                    ),
+                    (
+                        K::new(Down, KM::CONTROL).into(),
+                        vec![UiFn::RunAction{ name: String::from("cursors_dup_down") }],
+                    ),
+                    (
+                        K::new(Up, KM::CONTROL).into(),
+                        vec![UiFn::RunAction{ name: String::from("cursors_dup_up") }],
+                    ),
+                    (
+                        K::new(Right, KM::CONTROL).into(),
+                        vec![UiFn::RunAction{ name: String::from("cursors_dup_right") }],
+                    ),
+                    (
                         K::new(Char('r'), KM::empty()).into(),
                         vec![UiFn::RunAction{ name: String::from("cursors_reset") }],
                     ),
