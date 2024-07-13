@@ -18,6 +18,23 @@ pub struct Palette {
 }
 
 impl Palette {
+    pub const GRUVBOX_COLORS: [(u8, TruePixel); 8] = [
+        (1 , TruePixel{ r: 40 , g: 40 , b: 40 , a: 255 }),
+        (2 , TruePixel{ r: 235, g: 219, b: 178, a: 255 }),
+        (3 , TruePixel{ r: 204, g: 36 , b: 29 , a: 255 }),
+        (4 , TruePixel{ r: 152, g: 151, b: 26 , a: 255 }),
+        (5 , TruePixel{ r: 215, g: 153, b: 33 , a: 255 }),
+        (6 , TruePixel{ r: 69 , g: 133, b: 136, a: 255 }),
+        (7 , TruePixel{ r: 177, g: 98 , b: 134, a: 255 }),
+        (8 , TruePixel{ r: 104, g: 157, b: 106, a: 255 }),
+    ];
+
+    pub fn gruvbox() -> Self {
+        Self {
+            colors: HashMap::from(Self::GRUVBOX_COLORS),
+            equipped: Some(1),
+        }
+    }
 
     /// Returns an empty Palette
     pub fn new() -> Palette { Palette { colors: HashMap::new(), equipped: None } }
