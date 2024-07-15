@@ -338,7 +338,7 @@ pub struct ReqUiFnMap {
 /// Generic color type to be used in targets, wrapper around colored's [`Color`](colored::Color)
 pub struct Color(pub Option<colored::Color>);
 
-#[cfg(not(feature = "wasm"))]
+#[cfg(feature = "tui")]
 impl From<Color> for crossterm::style::Color {
     fn from(item: Color) -> crossterm::style::Color {
         use crossterm::style::Color::*;

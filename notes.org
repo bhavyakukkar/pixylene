@@ -3,6 +3,7 @@
 * TASKS
 ** Usable
 *** DONE layer operations still not given reasonable keybinds
+*** TODO fix bug where any eprintln's in Controller::new_session don't get a chance because target.finalize() exit(1)'s.
 *** TODO can't export any indexed images because resize() not implemented for indexed pngs and resize() is always called by Pixylene::export
 ** Aspects
 *** Compatibility for PyQT GUI
@@ -12,6 +13,7 @@
 ***** TODO a way for a target to pass its own config (for this, move config file parsing location to config.rs and use builder pattern to overwrite fields set by config)
 ***** TODO mouse mouse mouse
 ** Next
+*** TODO try compiling web-target to wasm32-unknown-emscripten
 *** TODO refuse compilation of target-web bin if lua feature enabled
 *** TODO (pixylenetui) refresh on terminal resize for both targets [[https://docs.rs/crossterm/latest/crossterm/event/enum.Event.html#variant.Resize][Resize]]. b_console/b_camera/b_statusline should then be loaded from a fn rather than attributes on Controller
 *** TODO new actions 'GoTo' (to get something like vim's 'gg' and 0) and 'ClearAllCursors'
