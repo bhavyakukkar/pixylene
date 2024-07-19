@@ -45,10 +45,9 @@ This is preferred if you want to pipe pixylene into some other program like this
 make cli
 ```
 
-- Lua can be enabled in any of the targets by prefixing the command like so:
+- Lua can be enabled in any of the targets except Web by prefixing the command like so:
 ```sh
 LUA=,lua make tui
-LUA=,lua make web
 LUA=,lua make gui
 LUA=,lua make cli
 ```

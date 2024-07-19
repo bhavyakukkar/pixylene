@@ -1516,8 +1516,7 @@ dependencies = [
 [[package]]
 name = "tealr"
 version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04a79794fae9f370d087d12037d58a4c86ec8c116a6bb4ccaa1ff63f9a4fe3ce"
+source = "git+https://github.com/bhavyakukkar/tealr#10123ab030e4abb48054534d3585fa9bbd1129bb"
 dependencies = [
  "bstr 0.2.17",
  "itertools 0.10.5",
@@ -1530,8 +1529,7 @@ dependencies = [
 [[package]]
 name = "tealr_derive"
 version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "335377874a830e8ba5edb767577367e3f9ebc30f09c67c715492372ad3364620"
+source = "git+https://github.com/bhavyakukkar/tealr#10123ab030e4abb48054534d3585fa9bbd1129bb"
 dependencies = [
  "proc-macro2",
  "quote",
