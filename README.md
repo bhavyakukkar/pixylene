@@ -25,23 +25,19 @@ cd pixylene
 # Build
 There are 4 targets available:
 
-1. TUI (runs in the terminal using `crossterm`)
-This is the preferred editor (preferred over gui).
 ```sh
+# runs in the terminal using `crossterm`
+# preferred editor
 make tui
-```
-2. Web (runs in the browser in the form of `wasm`)
-```sh
+
+# runs in the browser in the form of `wasm`
 make web
-```
-3. GUI (runs in a standalone window using `minifb`)
-```sh
+
+# runs in a standalone window using `minifb`
 make gui
-```
-4. CLI (runs in any stream)
-This is preferred if you want to pipe pixylene into some other program like this
-[example](./examples/cli.py)
-```sh
+
+# runs in any stream
+# preferred if you want to pipe pixylene into some other program like ./examples/cli.py
 make cli
 ```
 
