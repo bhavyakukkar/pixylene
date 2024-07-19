@@ -5,8 +5,7 @@ use pixylene_ui::{
 
 use libpixylene::{ types::{ PCoord }, project::{ OPixel } };
 use pixylene_actions::{ LogType };
-use std::rc::Rc;
-use std::cell::RefCell;
+use std::{rc::Rc, cell::RefCell, process};
 use clap::Parser;
 
 
@@ -14,7 +13,9 @@ struct TargetCLI;
 
 impl UserInterface for TargetCLI {
     fn initialize(&mut self) {}
-    fn finalize(&mut self) {}
+    fn finalize(&mut self) {
+        process::exit(0);
+    }
 
     /// Makes the target refresh between frames, returning whether target is still alive
     fn refresh(&mut self) -> bool { true }

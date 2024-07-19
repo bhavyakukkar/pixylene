@@ -2,7 +2,7 @@ use crate::{
     utils::{parse_cmd, deparse},
     ui::{ UserInterface, Rectangle, Statusline, KeyInfo, Key, ReqUiFnMap, UiFn },
     config::Config,
-    actions::{ ActionLocation, add_my_native_actions, add_my_lua_actions },
+    actions::{ self, ActionPtr },
 };
 
 use libpixylene::{
@@ -11,10 +11,8 @@ use libpixylene::{
     types::{ UCoord, PCoordContainer, PCoord, Coord, TruePixel },
 };
 use pixylene_actions::{ memento::{ ActionManager }, Console, LogType };
-use pixylene_lua::LuaActionManager;
-use dirs::config_dir;
+
 use std::{
-    fs::read_to_string,
     collections::{HashMap, hash_map::Iter},
     process::exit,
     cell::RefCell,
@@ -87,9 +85,13 @@ pub struct PixyleneSession {
 
     modified: bool,
 
-    action_map: HashMap<String, ActionLocation>,
+    native_action_map: HashMap<String, ActionPtr>,
     native_action_manager: ActionManager,
-    lua_action_manager: Option<LuaActionManager>,
+
+    #[cfg(feature = "lua")]
+    lua_action_map: HashMap<String, ()>,
+    #[cfg(feature = "lua")]
+    lua_action_manager: Option<pixylene_lua::LuaActionManager>,
 }
 
 pub struct Controller {
@@ -128,8 +130,12 @@ impl Console for ControllerLite {
 
 impl Controller {
 
-    pub fn new(target: Rc<RefCell<dyn UserInterface>>, config: Config) -> Self {
+    pub fn new(target: Rc<RefCell<dyn UserInterface>>, mut config: Config) -> Self {
         target.borrow_mut().initialize();
+
+        if config.keymap.get(&None).is_none() {
+            config.keymap.insert(None, HashMap::new());
+        }
 
         let window_size = target.borrow().get_size();
         let (b_camera, b_statusline, b_console) = compute_boundaries(&window_size, config.padding);
@@ -153,6 +159,39 @@ impl Controller {
             b_camera,
             b_statusline,
         }
+    }
+
+    //returns false if target can not refresh anymore
+    pub fn once(&mut self) -> bool {
+        use UiFn::RunKey;
+
+        if !self.target.borrow_mut().refresh() {
+            return false;
+        }
+
+        let key_info = self.target.borrow().get_key();
+        if let Some(key_info) = key_info {
+            match key_info {
+                KeyInfo::Key(key) => {
+                    _ = self.perform_ui(&RunKey{ key: Key::from(key).into() });
+                },
+                KeyInfo::UiFn(ui_fn) => {
+                    _ = self.perform_ui(&ui_fn);
+                },
+            }
+        }
+
+        if self.sessions.len() > 0 {
+            for func in self.config.every_frame.clone() {
+                _ = self.perform_ui(&func);
+            }
+        } else {
+            //welcome screen
+            self.target.borrow_mut()
+                .draw_paragraph(vec![String::from(SPLASH_LOGO).into()], &self.b_console);
+        }
+
+        true
     }
 
     pub fn run(&mut self) {
@@ -234,21 +273,26 @@ impl Controller {
             }
         }
 
-        let mut action_map: HashMap<String, ActionLocation> = HashMap::new();
+        let mut native_action_map: HashMap<String, ActionPtr> = HashMap::new();
+
+        #[cfg(feature = "lua")]
+        let mut lua_action_map: HashMap<String, ()> = HashMap::new();
 
         //Create the Lua Action-Manager
-        let lua_action_manager = match LuaActionManager::new() {
+        #[cfg(feature = "lua")]
+        let lua_action_manager = match pixylene_lua::LuaActionManager::new() {
             Ok(mut m) => {
                 //Add Lua actions defined in source-code
-                add_my_lua_actions(&mut m);
+                #[cfg(feature = "lua")]
+                actions::add_my_lua_actions(&mut m);
 
                 //Add Lua actions defined in user-config
-                let _ = m.load(&match config_dir() {
+                let _ = m.load(&match dirs::config_dir() {
                     Some(mut path) => {
                         path.push("pixylene");
                         path.push("actions");
                         path.set_extension("lua");
-                        match read_to_string(path) {
+                        match std::fs::read_to_string(path) {
                             Ok(contents) => contents,
                             //actions file not present
                             Err(_) => String::new(),
@@ -267,7 +311,7 @@ impl Controller {
                 let _ = m.list_actions()
                     .iter()
                     .map(|action_name| {
-                        action_map.insert(action_name.clone(), ActionLocation::Lua);
+                        lua_action_map.insert(action_name.clone(), ());
                     })
                     .collect::<()>();
                 Some(m)
@@ -283,7 +327,7 @@ impl Controller {
             },
         };
 
-        add_my_native_actions(&mut action_map);
+        actions::add_my_native_actions(&mut native_action_map);
 
         match start_type {
             StartType::New { width, height, indexed } => {
@@ -326,8 +370,13 @@ impl Controller {
                     canvas_file_path: None,
                     project_file_path: None,
                     modified: false,
-                    action_map,
+
+                    native_action_map,
                     native_action_manager,
+
+                    #[cfg(feature = "lua")]
+                    lua_action_map,
+                    #[cfg(feature = "lua")]
                     lua_action_manager,
                 });
                 self.sel_session += 1;
@@ -345,8 +394,13 @@ impl Controller {
                             canvas_file_path: Some(path.clone()),
                             project_file_path: None,
                             modified: false,
-                            action_map,
+
+                            native_action_map,
                             native_action_manager,
+
+                            #[cfg(feature = "lua")]
+                            lua_action_map,
+                            #[cfg(feature = "lua")]
                             lua_action_manager,
                         });
                         self.sel_session += 1;
@@ -377,8 +431,13 @@ impl Controller {
                             canvas_file_path: None,
                             project_file_path: Some(path.clone()),
                             modified: false,
-                            action_map,
+
+                            native_action_map,
                             native_action_manager,
+
+                            #[cfg(feature = "lua")]
+                            lua_action_map,
+                            #[cfg(feature = "lua")]
                             lua_action_manager,
                         });
                         self.sel_session += 1;
@@ -428,8 +487,13 @@ impl Controller {
                             canvas_file_path: None,
                             project_file_path: None,
                             modified: false,
-                            action_map,
+
+                            native_action_map,
                             native_action_manager,
+
+                            #[cfg(feature = "lua")]
+                            lua_action_map,
+                            #[cfg(feature = "lua")]
                             lua_action_manager,
                         });
                         self.sel_session += 1;
@@ -454,7 +518,6 @@ impl Controller {
     fn quit_session(&mut self) {
         if self.sessions.len() <= 1 {
             self.target.borrow_mut().finalize();
-            exit(0);
         } else {
             self.sessions.remove(self.sel_session as usize - 1);
             if usize::from(self.sel_session) > self.sessions.len() {
@@ -862,14 +925,9 @@ impl Controller {
                     self.console_clear();
                 }
             },
-            RunAction{ name } => {
-                let s = self.sel_session()?;
 
-                let visible_target = ControllerLite {
-                    b_console: self.b_console,
-                    discard_command: self.config.required_keys.discard_command.clone(),
-                    target: self.target.clone(),
-                };
+            RunNativeAction{ name } => {
+                let s = self.sel_session()?;
 
                 let Self {
                     sessions,
@@ -881,98 +939,197 @@ impl Controller {
 
                 let PixyleneSession {
                     ref mut pixylene,
-                    ref mut action_map,
+                    ref mut native_action_map,
                     ref mut native_action_manager,
-                    ref mut lua_action_manager,
                     ref mut last_action_name,
                     ref mut modified,
                     ..
                 } = &mut sessions[s];
 
-                match action_map.get(&name.clone()) {
-                    Some(action_location) => {
-                        target.borrow_mut().clear(&b_console);
-                        match action_location {
-                            ActionLocation::Lua => {
-                                match lua_action_manager.as_mut().unwrap() //cant fail because if
-                                                                            //lua_action_manager
-                                                                            //doesn't exist, no
-                                                                            //actions can have
-                                                                            //location Lua (check
-                                                                            //action_map in fn
-                                                                            //new_session)
-                                    .invoke_action(&name, pixylene.clone(), Rc::new(visible_target))
-                                {
-                                    Ok(()) => {
-                                        if native_action_manager
-                                            .commit(&pixylene.borrow().project.canvas)
-                                        {
-                                            *last_action_name = Some(name.clone());
-                                            *modified = true;
-                                        }
-                                    },
-                                    Err(err) => {
-                                        use colored::Colorize;
+                let visible_target = ControllerLite {
+                    b_console: *b_console,
+                    discard_command: self.config.required_keys.discard_command.clone(),
+                    target: target.clone(),
+                };
 
-                                        let error = format!(
-                                            "{}",
-                                            err.to_string().lines()
-                                                .map(|s| s.to_string().replace("\t", " "))
-                                                .collect::<Vec<String>>().join(", ")
-                                        );
-                                        if error.len() <= b_console.size.y().into() {
-                                            target.borrow_mut().console_out(
-                                                &error,
-                                                &LogType::Error,
-                                                &b_console
-                                            );
-                                        } else {
-                                            target.borrow_mut().draw_paragraph(
-                                                vec![error.red()],
-                                                &b_camera
-                                            );
-                                            self.console_in("press ENTER to close error");
-                                        }
-                                    }
+                match native_action_map.get(&name.clone()) {
+                    Some(action) => {
+                        target.borrow_mut().clear(&b_console);
+
+                        let performed = native_action_manager.perform(
+                            &mut pixylene.borrow_mut().project,
+                            &visible_target,
+                            action.clone()
+                        );
+
+                        match performed {
+                            Ok(()) => {
+                                if native_action_manager
+                                    .commit(&pixylene.borrow().project.canvas)
+                                {
+                                    *last_action_name = Some(name.clone());
+                                    *modified = true;
                                 }
                             },
-                            ActionLocation::Native(action) => {
-                                let performed = native_action_manager.perform(
-                                    &mut pixylene.borrow_mut().project,
-                                    &visible_target,
-                                    action.clone()
+                            Err(err) => {
+                                use colored::Colorize;
+
+                                let error = format!(
+                                    "{}",
+                                    err.to_string().lines()
+                                        .map(|s| s.to_string().replace("\t", " "))
+                                        .collect::<Vec<String>>().join(", ")
                                 );
-                                match performed {
-                                    Ok(()) => {
-                                        if native_action_manager
-                                            .commit(&pixylene.borrow().project.canvas)
-                                        {
-                                            *last_action_name = Some(name.clone());
-                                            *modified = true;
-                                        }
-                                    },
-                                    Err(err) => {
-                                        target.borrow_mut().console_out(
-                                            //&format!("failed to perform: {}", err.to_string()),
-                                            &format!("{}", err.to_string()),
-                                            &LogType::Error,
-                                            &b_console
-                                        );
-                                    }
+                                if error.len() <= b_console.size.y().into() {
+                                    target.borrow_mut().console_out(
+                                        &error,
+                                        &LogType::Error,
+                                        &b_console
+                                    );
+                                } else {
+                                    target.borrow_mut().draw_paragraph(
+                                        vec![error.red()],
+                                        &b_camera
+                                    );
+                                    self.console_in("press ENTER to close error");
                                 }
                             },
                         }
                     },
                     None => {
                         target.borrow_mut().console_out(
-                            &format!("action '{}' was not found in actions inserted into the \
-                                     action-manager", name),
+                            &format!("action '{}' was not found in native actions inserted into \
+                                     the action-manager", name),
                             &LogType::Error,
                             &b_console
                         );
-                    }
+                    },
                 }
             },
+
+            #[cfg(feature = "lua")]
+            RunLuaAction{ name } => {
+                let s = self.sel_session()?;
+
+                let Self {
+                    sessions,
+                    target,
+                    b_console,
+                    b_camera,
+                    ..
+                } = self;
+
+                let PixyleneSession {
+                    ref mut pixylene,
+                    ref mut native_action_manager,
+                    ref mut lua_action_map,
+                    ref mut lua_action_manager,
+                    ref mut last_action_name,
+                    ref mut modified,
+                    ..
+                } = &mut sessions[s];
+
+                let visible_target = ControllerLite {
+                    b_console: *b_console,
+                    discard_command: self.config.required_keys.discard_command.clone(),
+                    target: target.clone(),
+                };
+
+                match lua_action_map.get(&name.clone()) {
+                    Some(()) => {
+                        target.borrow_mut().clear(&b_console);
+
+                        match lua_action_manager.as_mut().unwrap() //cant fail because if
+                                                                    //lua_action_manager
+                                                                    //doesn't exist, lua_action_map
+                                                                    //shouldn't contain any actions
+                                                                    //at all (check lua_action_map
+                                                                    //in fn new_session)
+                            .invoke_action(&name, pixylene.clone(), Rc::new(visible_target))
+                        {
+                            Ok(()) => {
+                                if native_action_manager
+                                    .commit(&pixylene.borrow().project.canvas)
+                                {
+                                    *last_action_name = Some(name.clone());
+                                    *modified = true;
+                                }
+                            },
+                            Err(err) => {
+                                use colored::Colorize;
+
+                                let error = format!(
+                                    "{}",
+                                    err.to_string().lines()
+                                        .map(|s| s.to_string().replace("\t", " "))
+                                        .collect::<Vec<String>>().join(", ")
+                                );
+                                if error.len() <= b_console.size.y().into() {
+                                    target.borrow_mut().console_out(
+                                        &error,
+                                        &LogType::Error,
+                                        &b_console
+                                    );
+                                } else {
+                                    target.borrow_mut().draw_paragraph(
+                                        vec![error.red()],
+                                        &b_camera
+                                    );
+                                    self.console_in("press ENTER to close error");
+                                }
+                            }
+                        }
+                    },
+                    None => {
+                        target.borrow_mut().console_out(
+                            &format!("action '{}' was not found in lua actions inserted into \
+                                     the action-manager", name),
+                            &LogType::Error,
+                            &b_console
+                        );
+                    },
+                }
+            },
+
+            RunAction{ name } => {
+                let s = self.sel_session()?;
+
+                let Self {
+                    sessions,
+                    target,
+                    b_console,
+                    ..
+                } = self;
+
+                let session = &mut sessions[s];
+
+                #[cfg(feature = "lua")]
+                {
+                    if session.native_action_map.get(name).is_some() {
+                        let _ = self.perform_ui(&RunNativeAction{ name: name.clone() });
+                        return Ok(());
+                    }
+                    else if session.lua_action_map.get(name).is_some() {
+                        let _ = self.perform_ui(&RunLuaAction{ name: name.clone() });
+                        return Ok(());
+                    }
+                }
+                #[cfg(not(feature = "lua"))]
+                {
+                    if session.native_action_map.get(name).is_some() {
+                        let _ = self.perform_ui(&RunNativeAction{ name: name.clone() });
+                        return Ok(());
+                    }
+                }
+
+                target.borrow_mut().console_out(
+                    &format!("action '{}' was not found in actions inserted into \
+                             the action-manager", name),
+                    &LogType::Error,
+                    &b_console
+                );
+            },
+
             RunLastAction => {
                 let s = self.sel_session()?;
                 if let Some(action_name) = &self.sessions[s].last_action_name {
@@ -983,6 +1140,7 @@ impl Controller {
                 }
             },
 
+            #[cfg(feature = "lua")]
             RunLuaSpecify => {
                 _ = self.sel_session()?;
                 if let Some(statement) = self.console_in("lua statement: ") {
@@ -991,6 +1149,8 @@ impl Controller {
                     self.console_clear();
                 }
             },
+
+            #[cfg(feature = "lua")]
             RunLua{ statement } => {
                 let s = self.sel_session()?;
                 let visible_target = ControllerLite {

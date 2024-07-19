@@ -252,6 +252,21 @@ pub enum UiFn {
     #[command(visible_alias = "Cmd")]
     RunCommandSpecify,
 
+    #[serde(alias = "an")]
+    #[command(visible_alias = "an")]
+    RunNativeAction{
+        #[serde(alias = "n")]
+        name: String,
+    },
+
+    #[cfg(feature = "lua")]
+    #[serde(alias = "al")]
+    #[command(visible_alias = "al")]
+    RunLuaAction{
+        #[serde(alias = "n")]
+        name: String,
+    },
+
     #[serde(alias = "a")]
     #[command(visible_alias = "a")]
     RunAction{
@@ -267,6 +282,7 @@ pub enum UiFn {
     #[command(visible_alias = "la")]
     RunLastAction,
 
+    #[cfg(feature = "lua")]
     #[serde(alias = "l")]
     #[command(visible_alias = "l")]
     RunLua{
@@ -274,6 +290,7 @@ pub enum UiFn {
         statement: String,
     },
 
+    #[cfg(feature = "lua")]
     #[serde(alias = "L")]
     #[command(visible_alias = "L")]
     RunLuaSpecify,
@@ -321,6 +338,7 @@ pub struct ReqUiFnMap {
 /// Generic color type to be used in targets, wrapper around colored's [`Color`](colored::Color)
 pub struct Color(pub Option<colored::Color>);
 
+#[cfg(feature = "tui")]
 impl From<Color> for crossterm::style::Color {
     fn from(item: Color) -> crossterm::style::Color {
         use crossterm::style::Color::*;

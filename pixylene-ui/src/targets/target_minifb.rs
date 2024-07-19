@@ -8,7 +8,7 @@ use pixylene_actions::{ LogType };
 use crossterm::event::{ KeyEvent, KeyCode, KeyModifiers };
 use minifb::{ Window, WindowOptions, KeyRepeat, Scale };
 use minifb_fonts::{ font5x8 };
-use std::rc::Rc;
+use std::{rc::Rc, process};
 use std::cell::RefCell;
 use clap::Parser;
 
@@ -243,7 +243,9 @@ impl UserInterface for TargetMinifb {
         self.1 = buffer;
     }
 
-    fn finalize(&mut self) { }
+    fn finalize(&mut self) {
+        process::exit(0);
+    }
 
     fn refresh(&mut self) -> bool {
         let window = self.0.as_mut().expect(NOWIN);

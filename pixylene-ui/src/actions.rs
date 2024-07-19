@@ -1,31 +1,31 @@
 use libpixylene::types::Coord;
 use pixylene_actions::{
     memento::Action,
-    std_actions::{cursors, layer, scene},
+    std_actions::{cursors, layer, scene, project},
     utils::Direction,
 };
+
+#[cfg(feature = "lua")]
 use pixylene_lua::LuaActionManager;
+
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-pub enum ActionLocation {
-    Native(Rc<RefCell<dyn Action>>),
-    Lua,
-}
+pub type ActionPtr = Rc<RefCell<dyn Action>>;
 
 fn insert_native<T: Action + 'static>(
-    action_map: &mut HashMap<String, ActionLocation>,
+    action_map: &mut HashMap<String, Rc<RefCell<dyn Action>>>,
     action_name: &str,
     action: T,
 ) {
     action_map.insert(
         action_name.to_string(),
-        ActionLocation::Native(Rc::new(RefCell::new(action))),
+        Rc::new(RefCell::new(action)),
     );
 }
 
-pub fn add_my_native_actions(amp: &mut HashMap<String, ActionLocation>) {
+pub fn add_my_native_actions(amp: &mut HashMap<String, ActionPtr>) {
     // Insert Native Action Instances Here
     insert_native(amp, "pencil", scene::Pencil::new(None));
     for i in 1..9 {
@@ -52,8 +52,12 @@ pub fn add_my_native_actions(amp: &mut HashMap<String, ActionLocation>) {
     insert_native(amp, "goto_row_end", cursors::GoToSingleCursor::new(None, Some(u16::MAX)));
     insert_native(amp, "goto_column_start", cursors::GoToSingleCursor::new(Some(0), None));
     insert_native(amp, "goto_column_end", cursors::GoToSingleCursor::new(Some(u16::MAX), None));
+
+    insert_native(amp, "zoomin", project::Multiplier::new(1));
+    insert_native(amp, "zoomout", project::Multiplier::new(-1));
 }
 
+#[cfg(feature = "lua")]
 pub fn add_my_lua_actions(am: &mut LuaActionManager) {
     let std_actions = std::include_str!("std-actions.lua");
     let _ = am.load(std_actions);

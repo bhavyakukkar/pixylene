@@ -7,7 +7,7 @@ edition = "2021"
 libpixylene = { path = "../libpixylene" }
 mlua = { version = "0.9.5", features = [ "vendored" ] }
 pixylene-actions = { path = "../pixylene-actions" }
-tealr = { version = "0.9.1", features = [ "mlua_lua54", "derive" ] }
+tealr = { git = "https://github.com/bhavyakukkar/tealr", features = [ "mlua_lua54", "derive" ] }
 serde_json = { version = "1.0", optional = true }
 
 [features]

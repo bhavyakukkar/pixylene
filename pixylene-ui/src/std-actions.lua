@@ -37,24 +37,6 @@ actions['layerprev'] = {
     end
 }
 
--- zooms in, i.e., increments the project multiplier by 1
-actions['zoomin'] = {
-    perform = function(self, project, console)
-        project.mul = project.mul + 1
-        console:cmdout("zoomed in")
-    end
-}
-
--- zooms out, i.e., decrements the project multiplier by 1
-actions['zoomout'] = {
-    perform = function(self, project, console)
-        if (project.mul > 1) then
-            project.mul = project.mul - 1
-            console:cmdout("zoomed out")
-        end
-    end
-}
-
 -- duplicates the Current Layer & moves focus to it
 actions['dupcurlayer'] = {
     perform = function(self, project, console)
