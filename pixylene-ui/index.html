@@ -5,16 +5,28 @@
     <script src="index.js" type="module"></script>
     <style>
       body {
+        background: #e0e0d0;
         margin: 0;
         width: 100vw;
         height: 100vh;
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
+      }
+      #statusline {
+        background: #777;
+        font-size: 1.2em;
+        color: white;
+        padding: 0.5em 0;
+        width: max-content;
+        margin: 1em 0;
+        font-family: monospace;
       }
     </style>
   </head>
   <body>
-    <canvas id="camera" width="800" height="800"/>
+    <canvas id="camera" width="800" height="800"></canvas>
+    <span id="statusline"/>
   </body>
 </html>

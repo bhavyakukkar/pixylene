@@ -336,19 +336,19 @@ pub fn start() {
                         vec![UiFn::RunAction{ name: String::from("cursors_right") }],
                     ),
                     (
-                        K::new(Left, KM::CONTROL).into(),
+                        K::new(Char('H'), KM::empty()).into(),
                         vec![UiFn::RunAction{ name: String::from("cursors_dup_left") }],
                     ),
                     (
-                        K::new(Down, KM::CONTROL).into(),
+                        K::new(Char('J'), KM::empty()).into(),
                         vec![UiFn::RunAction{ name: String::from("cursors_dup_down") }],
                     ),
                     (
-                        K::new(Up, KM::CONTROL).into(),
+                        K::new(Char('K'), KM::empty()).into(),
                         vec![UiFn::RunAction{ name: String::from("cursors_dup_up") }],
                     ),
                     (
-                        K::new(Right, KM::CONTROL).into(),
+                        K::new(Char('L'), KM::empty()).into(),
                         vec![UiFn::RunAction{ name: String::from("cursors_dup_right") }],
                     ),
                     (
@@ -406,6 +406,44 @@ pub fn start() {
                     (
                         K::new(Char('8'), KM::empty()).into(),
                         vec![UiFn::RunAction{ name: String::from("pencil8") }],
+                    ),
+
+                    (
+                        K::new(Char('!'), KM::empty()).into(),
+                        vec![UiFn::RunAction{ name: String::from("equip1") }],
+                    ),
+                    (
+                        K::new(Char('@'), KM::empty()).into(),
+                        vec![UiFn::RunAction{ name: String::from("equip2") }],
+                    ),
+                    (
+                        K::new(Char('#'), KM::empty()).into(),
+                        vec![UiFn::RunAction{ name: String::from("equip3") }],
+                    ),
+                    (
+                        K::new(Char('$'), KM::empty()).into(),
+                        vec![UiFn::RunAction{ name: String::from("equip4") }],
+                    ),
+                    (
+                        K::new(Char('%'), KM::empty()).into(),
+                        vec![UiFn::RunAction{ name: String::from("equip5") }],
+                    ),
+                    (
+                        K::new(Char('^'), KM::empty()).into(),
+                        vec![UiFn::RunAction{ name: String::from("equip6") }],
+                    ),
+                    (
+                        K::new(Char('&'), KM::empty()).into(),
+                        vec![UiFn::RunAction{ name: String::from("equip7") }],
+                    ),
+                    (
+                        K::new(Char('*'), KM::empty()).into(),
+                        vec![UiFn::RunAction{ name: String::from("equip8") }],
+                    ),
+
+                    (
+                        K::new(Char('c'), KM::empty()).into(),
+                        vec![UiFn::RunAction{ name: String::from("circularoutline") }],
                     ),
                 ]))]),
                 required_keys: ReqUiFnMap {

@@ -90,6 +90,8 @@ export class PixyleneWebJS {
         boundary,
     ) {
         console.log("draw_paragraph", paragraph, boundary)
+        const statusline = document.getElementById("statusline");
+        statusline.innerText = paragraph;
     }
     console_in(
         message,
@@ -98,7 +100,7 @@ export class PixyleneWebJS {
     ) {
         console.log("console_in", message, discard_key, boundary)
         this.key = null;
-        return prompt();
+        return prompt(message);
     }
     clear(boundary) {
         console.log("clear", boundary)
