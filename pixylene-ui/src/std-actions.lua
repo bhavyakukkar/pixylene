@@ -130,7 +130,7 @@ actions['circularfill'] = {
     end
 }
 
-actions['circularoutline'] = {
+actions['lua_circularoutline'] = {
     -- https://rosettacode.org/wiki/Bitmap/Midpoint_circle_algorithm?oldid=358330
     perform = function(self, project, console)
         if (project.num_cursors ~= 1) then
