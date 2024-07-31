@@ -43,9 +43,9 @@ make cli
 
 - Lua can be enabled in any of the targets except Web by prefixing the command like so:
 ```sh
-LUA=,lua make tui
-LUA=,lua make gui
-LUA=,lua make cli
+LUA=lua make tui
+LUA=lua make gui
+LUA=lua make cli
 ```
 
 - `tui`, `gui` & `cli` will be built to `target/release/` as pixylenetui, pixylenegui, pixylenecli

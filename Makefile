@@ -1,13 +1,13 @@
 
 
 tui:
-	cargo build -p pixylene-ui --bin pixylenetui -F tui${LUA} --release
+	cargo build -p pixylene-ui --bin pixylenetui -F tui,${LUA} --release
 
 cli:
-	cargo build -p pixylene-ui --bin pixylenecli --release
+	cargo build -p pixylene-ui --bin pixylenecli -F ,${LUA} --release
 
 gui:
-	cargo build -p pixylene-ui --bin pixylenegui -F minifb${LUA} --release
+	cargo build -p pixylene-ui --bin pixylenegui -F minifb,${LUA} --release
 
 web:
 	cargo build -p pixylene-ui -F wasm --bin pixyleneweb --target wasm32-unknown-unknown --release && \
