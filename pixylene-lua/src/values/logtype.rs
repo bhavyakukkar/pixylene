@@ -1,15 +1,13 @@
 use tealr::{
     mlu::{
         mlua::{
-            self,
-            prelude::{ LuaValue },
-            FromLua, Lua, Result, UserData, UserDataFields, UserDataMethods,
+            self, prelude::LuaValue, FromLua, Lua, Result, UserData, UserDataFields,
+            UserDataMethods,
         },
         TealData, TealDataMethods, UserDataWrapper,
     },
     ToTypename, TypeBody,
 };
-
 
 /// Lua interface to pixylene-actions's [`LogType`](pixylene_actions::LogType) type
 #[derive(Copy, Clone)]
@@ -36,20 +34,22 @@ impl TealData for LogType {
 
     fn add_fields<'lua, F: tealr::mlu::TealDataFields<'lua, Self>>(fields: &mut F) {
         fields.document("Log of type 'Info'");
-        fields.add_field_method_get("INFO", |_, _|
-                                    Ok(LogType(pixylene_actions::LogType::Info)));
+        fields.add_field_method_get("INFO", |_, _| Ok(LogType(pixylene_actions::LogType::Info)));
 
         fields.document("Log of type 'Error'");
-        fields.add_field_method_get("ERROR", |_, _|
-                                    Ok(LogType(pixylene_actions::LogType::Error)));
+        fields.add_field_method_get("ERROR", |_, _| {
+            Ok(LogType(pixylene_actions::LogType::Error))
+        });
 
         fields.document("Log of type 'Warning'");
-        fields.add_field_method_get("WARNING", |_, _|
-                                    Ok(LogType(pixylene_actions::LogType::Warning)));
-        
+        fields.add_field_method_get("WARNING", |_, _| {
+            Ok(LogType(pixylene_actions::LogType::Warning))
+        });
+
         fields.document("Log of type 'Success'");
-        fields.add_field_method_get("SUCCESS", |_, _|
-                                    Ok(LogType(pixylene_actions::LogType::Success)));
+        fields.add_field_method_get("SUCCESS", |_, _| {
+            Ok(LogType(pixylene_actions::LogType::Success))
+        });
     }
 }
 

@@ -1,23 +1,23 @@
 use crate::{
     utils::BOXED_ERROR,
-    values::{ types::{ Coord, UCoord, PCoord }, project::{ Canvas } },
+    values::{
+        project::Canvas,
+        types::{Coord, PCoord, UCoord},
+    },
     Context,
 };
 
+use libpixylene::Pixylene;
+use std::cell::RefCell;
+use std::rc::Rc;
+use std::sync::Arc;
 use tealr::{
     mlu::{
-        mlua::{
-            self, UserData, UserDataFields, UserDataMethods, Error::ExternalError,
-        },
+        mlua::{self, Error::ExternalError, UserData, UserDataFields, UserDataMethods},
         TealData, TealDataMethods, UserDataWrapper,
     },
-    ToTypename, TypeBody, mlua_create_named_parameters,
+    mlua_create_named_parameters, ToTypename, TypeBody,
 };
-use std::sync::Arc;
-use std::rc::Rc;
-use std::cell::RefCell;
-use libpixylene::Pixylene;
-
 
 /// Lua interface to libpixylene's [`Project`][project::Project] type
 //#[derive(Clone)]
@@ -52,17 +52,24 @@ impl TealData for Project {
                     coord: UCoord,
                     layer: u16,
             );
-            methods.document("Returns whether there is a cursor at the provided coordinate on the \
-                             layer at given layer index");
+            methods.document(
+                "Returns whether there is a cursor at the provided coordinate on the \
+                             layer at given layer index",
+            );
             methods.add_method_mut("is_cursor_at", |_, this, a: ProjectIsCursorAtArgs| {
-                this.0.borrow().project.is_cursor_at(&(a.coord.0, a.layer))
+                this.0
+                    .borrow()
+                    .project
+                    .is_cursor_at(&(a.coord.0, a.layer))
                     .map_err(|err| ExternalError(Arc::from(BOXED_ERROR(&err.to_string()))))
             });
         }
 
         {
-            methods.document("Clears the cursors in the Project and returns them as list of \
-                             tables of 'coord' and 'layer'");
+            methods.document(
+                "Clears the cursors in the Project and returns them as list of \
+                             tables of 'coord' and 'layer'",
+            );
             methods.add_method_mut("clear", |lua_ctx, this, _: ()| {
                 let mut cursors = Vec::new();
                 for (coord, layer) in this.0.borrow_mut().project.clear_cursors() {
@@ -81,10 +88,15 @@ impl TealData for Project {
                     coord: UCoord,
                     layer: u16,
             );
-            methods.document("Returns whether there is a cursor at the provided coordinate on the \
-                             layer at given layer index");
+            methods.document(
+                "Returns whether there is a cursor at the provided coordinate on the \
+                             layer at given layer index",
+            );
             methods.add_method_mut("toggle", |_, this, a: ProjectToggleCursorAtArgs| {
-                this.0.borrow_mut().project.toggle_cursor_at(&(a.coord.0, a.layer))
+                this.0
+                    .borrow_mut()
+                    .project
+                    .toggle_cursor_at(&(a.coord.0, a.layer))
                     .map_err(|err| ExternalError(Arc::from(BOXED_ERROR(&err.to_string()))))
             });
         }
@@ -95,13 +107,18 @@ impl TealData for Project {
     fn add_fields<'lua, F: tealr::mlu::TealDataFields<'lua, Self>>(fields: &mut F) {
         fields.document("the Output-Multiplier of the Project");
         fields.add_field_method_get("mul", |_, this| Ok(this.0.borrow().project.get_out_mul()));
-        fields.add_field_method_set("mul", |_, this, value: u8| 
-            this.0.borrow_mut().project.set_out_mul(value)
+        fields.add_field_method_set("mul", |_, this, value: u8| {
+            this.0
+                .borrow_mut()
+                .project
+                .set_out_mul(value)
                 .map_err(|err| ExternalError(Arc::from(BOXED_ERROR(&err.to_string()))))
-        );
+        });
 
-        fields.document("the Output-Dimensions of the Project (not to be confused with the \
-                        Canvas's dimensions)");
+        fields.document(
+            "the Output-Dimensions of the Project (not to be confused with the \
+                        Canvas's dimensions)",
+        );
         fields.add_field_method_get("dim", |_, this| Ok(PCoord(this.0.borrow().project.out_dim)));
         fields.add_field_method_set("dim", |_, this, value: PCoord| {
             this.0.borrow_mut().project.out_dim = value.0;
@@ -109,27 +126,31 @@ impl TealData for Project {
         });
 
         fields.document("the Output-Repeat of the Project");
-        fields.add_field_method_get("repeat", |_, this| Ok(PCoord(this.0.borrow().project
-                                                                  .out_repeat)));
+        fields.add_field_method_get("repeat", |_, this| {
+            Ok(PCoord(this.0.borrow().project.out_repeat))
+        });
         fields.add_field_method_set("repeat", |_, this, value: PCoord| {
             this.0.borrow_mut().project.out_repeat = value.0;
             Ok(())
         });
 
         fields.document("the Canvas contained by the Project");
-        fields.add_field_method_get("canvas", |_, this|
-            Ok(Canvas(Context::Linked(this.0.clone(), ()))));
+        fields.add_field_method_get("canvas", |_, this| {
+            Ok(Canvas(Context::Linked(this.0.clone(), ())))
+        });
 
         fields.add_field_method_set("canvas", |_, this, canvas: Canvas| {
-            this.0.borrow_mut().project.canvas = canvas.0.do_imt
-                (|canvas| canvas.clone())
-                (|pixylene, _| pixylene.project.canvas.clone());
+            this.0.borrow_mut().project.canvas =
+                canvas.0.do_imt(|canvas| canvas.clone())(|pixylene, _| {
+                    pixylene.project.canvas.clone()
+                });
             Ok(())
         });
 
         fields.document("the number of cursors in the Project");
-        fields.add_field_method_get("num_cursors", |_, this|
-            Ok(this.0.borrow().project.num_cursors()));
+        fields.add_field_method_get("num_cursors", |_, this| {
+            Ok(this.0.borrow().project.num_cursors())
+        });
 
         fields.document("the cursors in the Project");
         fields.add_field_method_get("cursors", |lua_ctx, this| {
@@ -143,8 +164,10 @@ impl TealData for Project {
             Ok(cursors)
         });
 
-        fields.document("table containing the focussed Layer ('layer') & focussed coordinate on \
-                        the Layer ('coord') of the Project");
+        fields.document(
+            "table containing the focussed Layer ('layer') & focussed coordinate on \
+                        the Layer ('coord') of the Project",
+        );
         fields.add_field_method_get("focus", |lua_ctx, this| {
             let focus = lua_ctx.create_table()?;
             focus.set("coord", Coord(this.0.borrow().project.focus.0))?;

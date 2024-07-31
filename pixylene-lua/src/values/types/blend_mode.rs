@@ -1,19 +1,17 @@
-use super::{ TruePixel };
+use super::TruePixel;
 
+use libpixylene::types;
+use std::sync::Arc;
 use tealr::{
     mlu::{
         mlua::{
-            self,
-            prelude::{ LuaValue },
-            FromLua, Lua, Result, UserData, UserDataFields, UserDataMethods,
+            self, prelude::LuaValue, FromLua, Lua, Result, UserData, UserDataFields,
+            UserDataMethods,
         },
         TealData, TealDataMethods, UserDataWrapper,
     },
-    ToTypename, TypeBody, mlua_create_named_parameters,
+    mlua_create_named_parameters, ToTypename, TypeBody,
 };
-use std::sync::Arc;
-use libpixylene::types;
-
 
 /// Lua interface to libpixylene's [`BlendMode`](types::BlendMode) type
 #[derive(Copy, Clone)]
@@ -45,7 +43,10 @@ impl TealData for BlendMode {
             );
             methods.document("Construct Blend-mode that composts pixels with given fractions");
             methods.add_function("COMPOSITE", |_, a: BlendModeCompositeArgs| {
-                Ok(BlendMode(types::BlendMode::Composite(a.fraction_a, a.fraction_b)))
+                Ok(BlendMode(types::BlendMode::Composite(
+                    a.fraction_a,
+                    a.fraction_b,
+                )))
             });
         }
 
@@ -58,14 +59,12 @@ impl TealData for BlendMode {
             );
             methods.document("Blend two pixels and return the resultant pixel");
             methods.add_method("blend", |_, this, a: BlendModeBlendArgs| {
-                use mlua::Error::{ ExternalError };
+                use mlua::Error::ExternalError;
                 let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
 
                 match this.0.blend(a.top.0, a.bottom.0) {
                     Ok(p) => Ok(TruePixel(p)),
-                    Err(err) => Err(ExternalError(Arc::from(
-                        boxed_error(&err.to_string())
-                    ))),
+                    Err(err) => Err(ExternalError(Arc::from(boxed_error(&err.to_string())))),
                 }
             });
         }
@@ -75,11 +74,8 @@ impl TealData for BlendMode {
         methods.generate_help();
     }
     fn add_fields<'lua, F: tealr::mlu::TealDataFields<'lua, Self>>(fields: &mut F) {
-
         fields.document("Blend-mode that uses the standard interpolation approach");
-        fields.add_field_method_get("NORMAL", |_, _| {
-            Ok(BlendMode(types::BlendMode::Normal))
-        });
+        fields.add_field_method_get("NORMAL", |_, _| Ok(BlendMode(types::BlendMode::Normal)));
 
         fields.document("Blend-mode that overwrites the top pixel onto the bottom pixel");
         fields.add_field_method_get("OVERWRITE", |_, _| {

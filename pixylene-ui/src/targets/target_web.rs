@@ -1,15 +1,17 @@
-use libpixylene::{PixyleneDefaults, types::PCoord, project::{OPixel, Palette}};
-use pixylene_actions::LogType;
-use pixylene_ui::{controller::{Controller, StartType}, config::Config, ui::{
-    UserInterface, Key, UiFn, KeyMap, Rectangle, Statusline, KeyInfo, ReqUiFnMap,
-}};
-use crossterm::event::{KeyEvent, KeyCode, KeyModifiers};
-use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
-use std::{
-    rc::Rc,
-    cell::RefCell,
-    collections::HashMap,
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use libpixylene::{
+    project::{OPixel, Palette},
+    types::PCoord,
+    PixyleneDefaults,
 };
+use pixylene_actions::LogType;
+use pixylene_ui::{
+    config::Config,
+    controller::{Controller, StartType},
+    ui::{Key, KeyInfo, KeyMap, Rectangle, ReqUiFnMap, Statusline, UiFn, UserInterface},
+};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 macro_rules! keybind {
     ($key:expr, $($ui_fn:expr),+) => {
@@ -60,7 +62,12 @@ struct OPixelJS {
 impl From<OPixel> for OPixelJS {
     fn from(item: OPixel) -> OPixelJS {
         match item {
-            OPixel::Filled{ scene_coord, color, is_focus, has_cursor } => OPixelJS {
+            OPixel::Filled {
+                scene_coord,
+                color,
+                is_focus,
+                has_cursor,
+            } => OPixelJS {
                 r#type: 0,
                 scene_coord_x: scene_coord.x,
                 scene_coord_y: scene_coord.y,
@@ -71,7 +78,10 @@ impl From<OPixel> for OPixelJS {
                 is_focus,
                 has_cursor,
             },
-            OPixel::Empty{ scene_coord, has_cursor } => OPixelJS {
+            OPixel::Empty {
+                scene_coord,
+                has_cursor,
+            } => OPixelJS {
                 r#type: 1,
                 scene_coord_x: scene_coord.x,
                 scene_coord_y: scene_coord.y,
@@ -103,7 +113,6 @@ impl Into<OPixel> for OPixelJS {
     }
 }
 
-
 #[allow(dead_code)]
 #[wasm_bindgen]
 struct RectangleC {
@@ -132,7 +141,7 @@ extern "C" {
     type PixyleneWebJS;
 
     #[wasm_bindgen(constructor)]
-    fn new() -> PixyleneWebJS;        
+    fn new() -> PixyleneWebJS;
 
     #[wasm_bindgen(method)]
     fn initialize(this: &PixyleneWebJS);
@@ -162,11 +171,7 @@ extern "C" {
     );
 
     #[wasm_bindgen(method)]
-    fn draw_paragraph(
-        this: &PixyleneWebJS,
-        paragraph: String,
-        boundary: *mut RectangleC,
-    );
+    fn draw_paragraph(this: &PixyleneWebJS, paragraph: String, boundary: *mut RectangleC);
 
     #[wasm_bindgen(method)]
     fn console_in(
@@ -183,7 +188,6 @@ extern "C" {
     fn clear_all(this: &PixyleneWebJS);
 }
 
-
 struct TargetWeb(PixyleneWebJS);
 
 impl TargetWeb {
@@ -194,7 +198,6 @@ impl TargetWeb {
 }
 
 impl UserInterface for TargetWeb {
-
     fn initialize(&mut self) {
         self.0.initialize();
     }
@@ -217,7 +220,10 @@ impl UserInterface for TargetWeb {
         if key.len() != 1 {
             return None;
         }
-        Some(KeyInfo::Key(KeyEvent::new(KeyCode::Char(key[0]), KeyModifiers::empty())))
+        Some(KeyInfo::Key(KeyEvent::new(
+            KeyCode::Char(key[0]),
+            KeyModifiers::empty(),
+        )))
     }
 
     fn get_size(&self) -> PCoord {
@@ -227,34 +233,52 @@ impl UserInterface for TargetWeb {
         PCoord::new(x, y).unwrap_or(PCoord::new(30u16, 30u16).unwrap())
     }
 
-    fn draw_camera(&mut self, dim: PCoord, buffer: Vec<OPixel>, show_cursors: bool,
-                   boundary: &Rectangle) {
-        let buffer = buffer.into_iter()
+    fn draw_camera(
+        &mut self,
+        dim: PCoord,
+        buffer: Vec<OPixel>,
+        show_cursors: bool,
+        boundary: &Rectangle,
+    ) {
+        let buffer = buffer
+            .into_iter()
             .map(|opixel| OPixelJS::from(opixel))
             .collect::<Vec<OPixelJS>>();
-        self.0.draw_camera(dim.x(), dim.y(), buffer.into_boxed_slice(), show_cursors, &mut boundary.into());
+        self.0.draw_camera(
+            dim.x(),
+            dim.y(),
+            buffer.into_boxed_slice(),
+            show_cursors,
+            &mut boundary.into(),
+        );
     }
 
     fn draw_statusline(&mut self, statusline: &Statusline, boundary: &Rectangle) {
-        let statusline = statusline.iter()
+        let statusline = statusline
+            .iter()
             .fold("".to_owned(), |a, b| a + &b.to_string());
         self.0.draw_paragraph(statusline, &mut boundary.into());
     }
 
     fn draw_paragraph(&mut self, paragraph: Vec<colored::ColoredString>, boundary: &Rectangle) {
-        let paragraph = paragraph.iter()
+        let paragraph = paragraph
+            .iter()
             .fold("".to_owned(), |a, b| a + &b.to_string());
         self.0.draw_paragraph(paragraph, &mut boundary.into());
     }
 
-    fn clear(&mut self, boundary: &Rectangle) { 
+    fn clear(&mut self, boundary: &Rectangle) {
         self.0.clear(&mut boundary.into());
     }
 
-    fn console_in(&mut self, message: &str, _discard_key: &Key, boundary: &Rectangle)
-    -> Option<String>
-    {
-        self.0.console_in(message.to_owned(), "`".to_owned(), &mut boundary.into())
+    fn console_in(
+        &mut self,
+        message: &str,
+        _discard_key: &Key,
+        boundary: &Rectangle,
+    ) -> Option<String> {
+        self.0
+            .console_in(message.to_owned(), "`".to_owned(), &mut boundary.into())
         //let mut input = String::new();
         //loop {
         //    let k_i_m = self.get_key();
@@ -274,7 +298,8 @@ impl UserInterface for TargetWeb {
     }
 
     fn console_out(&mut self, message: &str, _log_type: &LogType, boundary: &Rectangle) {
-        self.0.draw_paragraph(message.to_owned(), &mut boundary.into());
+        self.0
+            .draw_paragraph(message.to_owned(), &mut boundary.into());
     }
 
     fn clear_all(&mut self) {
@@ -285,7 +310,6 @@ impl UserInterface for TargetWeb {
 thread_local! {
     pub static APP: RefCell<Option<Controller>> = RefCell::new(None);
 }
-
 
 #[wasm_bindgen(start)]
 pub fn start() {
@@ -303,83 +327,218 @@ pub fn start() {
                 },
                 default_namespace: "Main".to_owned(),
                 keymap_show_command_names: true,
-                possible_namespaces: HashMap::from([
-                    ("Main".to_owned(), ()),
-                ]),
-                keymap: KeyMap::from([(Some("Main".to_owned()), HashMap::from([
-                    keybind!((Char('h'), KeyModifiers::empty()),
-                        RunAction{ name: "cursors_left".to_owned() }),
-                    keybind!((Char('h'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("cursors_left") }),
-                    keybind!((Char('j'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("cursors_down") }),
-                    keybind!((Char('k'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("cursors_up") }),
-                    keybind!((Char('l'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("cursors_right") }),
-                    keybind!((Left, KeyModifiers::empty()),
-                        RunAction{ name: String::from("cursors_left") }),
-                    keybind!((Down, KeyModifiers::empty()),
-                        RunAction{ name: String::from("cursors_down") }),
-                    keybind!((Up, KeyModifiers::empty()),
-                        RunAction{ name: String::from("cursors_up") }),
-                    keybind!((Right, KeyModifiers::empty()),
-                        RunAction{ name: String::from("cursors_right") }),
-                    keybind!((Char('H'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("cursors_dup_left") }),
-                    keybind!((Char('J'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("cursors_dup_down") }),
-                    keybind!((Char('K'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("cursors_dup_up") }),
-                    keybind!((Char('L'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("cursors_dup_right") }),
-                    keybind!((Char('R'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("cursors_reset") }),
-                    keybind!((Char('i'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("zoomin") }),
-                    keybind!((Char('o'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("zoomout") }),
-                    keybind!((Char('u'), KeyModifiers::empty()), Undo),
-                    keybind!((Char('r'), KeyModifiers::empty()), Redo),
-                    keybind!((Enter, KeyModifiers::empty()),
-                        RunAction{ name: String::from("pencil") }),
-                    keybind!((Char('1'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("pencil1") }),
-                    keybind!((Char('2'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("pencil2") }),
-                    keybind!((Char('3'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("pencil3") }),
-                    keybind!((Char('4'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("pencil4") }),
-                    keybind!((Char('5'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("pencil5") }),
-                    keybind!((Char('6'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("pencil6") }),
-                    keybind!((Char('7'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("pencil7") }),
-                    keybind!((Char('8'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("pencil8") }),
-
-                    keybind!((Char('!'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("equip1") }),
-                    keybind!((Char('@'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("equip2") }),
-                    keybind!((Char('#'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("equip3") }),
-                    keybind!((Char('$'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("equip4") }),
-                    keybind!((Char('%'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("equip5") }),
-                    keybind!((Char('^'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("equip6") }),
-                    keybind!((Char('&'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("equip7") }),
-                    keybind!((Char('*'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("equip8") }),
-
-                    keybind!((Char('c'), KeyModifiers::empty()),
-                        RunAction{ name: String::from("circularoutline") }),
-                ]))]),
+                possible_namespaces: HashMap::from([("Main".to_owned(), ())]),
+                keymap: KeyMap::from([(
+                    Some("Main".to_owned()),
+                    HashMap::from([
+                        keybind!(
+                            (Char('h'), KeyModifiers::empty()),
+                            RunAction {
+                                name: "cursors_left".to_owned()
+                            }
+                        ),
+                        keybind!(
+                            (Char('h'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("cursors_left")
+                            }
+                        ),
+                        keybind!(
+                            (Char('j'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("cursors_down")
+                            }
+                        ),
+                        keybind!(
+                            (Char('k'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("cursors_up")
+                            }
+                        ),
+                        keybind!(
+                            (Char('l'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("cursors_right")
+                            }
+                        ),
+                        keybind!(
+                            (Left, KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("cursors_left")
+                            }
+                        ),
+                        keybind!(
+                            (Down, KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("cursors_down")
+                            }
+                        ),
+                        keybind!(
+                            (Up, KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("cursors_up")
+                            }
+                        ),
+                        keybind!(
+                            (Right, KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("cursors_right")
+                            }
+                        ),
+                        keybind!(
+                            (Char('H'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("cursors_dup_left")
+                            }
+                        ),
+                        keybind!(
+                            (Char('J'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("cursors_dup_down")
+                            }
+                        ),
+                        keybind!(
+                            (Char('K'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("cursors_dup_up")
+                            }
+                        ),
+                        keybind!(
+                            (Char('L'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("cursors_dup_right")
+                            }
+                        ),
+                        keybind!(
+                            (Char('R'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("cursors_reset")
+                            }
+                        ),
+                        keybind!(
+                            (Char('i'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("zoomin")
+                            }
+                        ),
+                        keybind!(
+                            (Char('o'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("zoomout")
+                            }
+                        ),
+                        keybind!((Char('u'), KeyModifiers::empty()), Undo),
+                        keybind!((Char('r'), KeyModifiers::empty()), Redo),
+                        keybind!(
+                            (Enter, KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("pencil")
+                            }
+                        ),
+                        keybind!(
+                            (Char('1'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("pencil1")
+                            }
+                        ),
+                        keybind!(
+                            (Char('2'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("pencil2")
+                            }
+                        ),
+                        keybind!(
+                            (Char('3'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("pencil3")
+                            }
+                        ),
+                        keybind!(
+                            (Char('4'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("pencil4")
+                            }
+                        ),
+                        keybind!(
+                            (Char('5'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("pencil5")
+                            }
+                        ),
+                        keybind!(
+                            (Char('6'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("pencil6")
+                            }
+                        ),
+                        keybind!(
+                            (Char('7'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("pencil7")
+                            }
+                        ),
+                        keybind!(
+                            (Char('8'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("pencil8")
+                            }
+                        ),
+                        keybind!(
+                            (Char('!'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("equip1")
+                            }
+                        ),
+                        keybind!(
+                            (Char('@'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("equip2")
+                            }
+                        ),
+                        keybind!(
+                            (Char('#'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("equip3")
+                            }
+                        ),
+                        keybind!(
+                            (Char('$'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("equip4")
+                            }
+                        ),
+                        keybind!(
+                            (Char('%'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("equip5")
+                            }
+                        ),
+                        keybind!(
+                            (Char('^'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("equip6")
+                            }
+                        ),
+                        keybind!(
+                            (Char('&'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("equip7")
+                            }
+                        ),
+                        keybind!(
+                            (Char('*'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("equip8")
+                            }
+                        ),
+                        keybind!(
+                            (Char('c'), KeyModifiers::empty()),
+                            RunAction {
+                                name: String::from("circularoutline")
+                            }
+                        ),
+                    ]),
+                )]),
                 required_keys: ReqUiFnMap {
                     force_quit: Key::from(TargetWeb::FORCE_QUIT),
                     start_command: Key::from(TargetWeb::START_COMMAND),
@@ -393,11 +552,14 @@ pub fn start() {
 
     APP.with_borrow_mut(|controller_maybe| {
         if let Some(controller) = controller_maybe {
-            controller.new_session(&StartType::New {
-                width: None,
-                height: None,
-                indexed: false,
-            }, true);
+            controller.new_session(
+                &StartType::New {
+                    width: None,
+                    height: None,
+                    indexed: false,
+                },
+                true,
+            );
         }
     });
 }
@@ -413,5 +575,4 @@ pub fn tick() -> bool {
     })
 }
 
-fn main() {
-}
+fn main() {}

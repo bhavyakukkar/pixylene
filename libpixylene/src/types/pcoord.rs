@@ -1,13 +1,14 @@
 use super::UCoord;
 
+use serde::{Deserialize, Serialize};
 use std::fmt;
-use serde::{ Serialize, Deserialize };
 
 /// A `P`ositive `Coord`inate type composed of two positive (>= 1) unsigned integers.
 ///
 /// `This type can not be constructed directly, use `[`PCoord::new`][new]` to construct.`
 ///
 /// [new]: #method.new
+#[rustfmt::skip] //Savefile's macro fails on rustfmt appending a comma to line 14
 #[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Default, Debug, Savefile)]
 pub struct PCoord<T=u16>
 where T: Into<u128> + Copy
@@ -15,7 +16,6 @@ where T: Into<u128> + Copy
     x: T,
     y: T,
 }
-
 
 impl PCoord<u16> {
     /// The largest value allowed as a coordinate of a PCoord
@@ -43,18 +43,21 @@ impl PCoord<u32> {
     }
 }
 
-
 impl<T: Into<u128> + TryFrom<u128> + Copy> PCoord<T> {
-
     /// Tries to construct & return a new PCoord with the given 'x' and 'y' coordinates, failing if
     /// any of the coordinates are 0
     pub fn new(x: T, y: T) -> Result<PCoord<T>, ()> {
-        if x.into() != 0 && y.into() != 0u128 { Ok(PCoord{x, y}) }
-        else { Err(()) }
+        if x.into() != 0 && y.into() != 0u128 {
+            Ok(PCoord { x, y })
+        } else {
+            Err(())
+        }
     }
 
     /// Gets the 'x' coordinate of the PCoord
-    pub fn x(&self) -> T { self.x }
+    pub fn x(&self) -> T {
+        self.x
+    }
 
     /// Tries to set the 'x' coordinate of the PCoord, failing if 0 is provided
     pub fn set_x(&mut self, x: T) -> Result<(), ()> {
@@ -67,7 +70,9 @@ impl<T: Into<u128> + TryFrom<u128> + Copy> PCoord<T> {
     }
 
     /// Gets the 'y' coordinate of the PCoord
-    pub fn y(&self) -> T { self.y }
+    pub fn y(&self) -> T {
+        self.y
+    }
 
     /// Tries to set the 'y' coordinate of the PCoord, failing if 0 is provided
     pub fn set_y(&mut self, y: T) -> Result<(), ()> {
@@ -81,10 +86,8 @@ impl<T: Into<u128> + TryFrom<u128> + Copy> PCoord<T> {
 
     pub fn mul(self, other: Self) -> Result<Self, ()> {
         Ok(Self {
-            x: T::try_from(self.x.into() * other.x.into())
-                .map_err(|_| ())?,
-            y: T::try_from(self.x.into() * other.x.into())
-                .map_err(|_| ())?,
+            x: T::try_from(self.x.into() * other.x.into()).map_err(|_| ())?,
+            y: T::try_from(self.x.into() * other.x.into()).map_err(|_| ())?,
         })
     }
 }
@@ -99,7 +102,10 @@ where
     T: Into<u128> + Copy + From<S>,
 {
     fn from(item: PCoord<S>) -> PCoordContainer<T> {
-        PCoordContainer(PCoord{ x: T::from(item.x), y: T::from(item.y) })
+        PCoordContainer(PCoord {
+            x: T::from(item.x),
+            y: T::from(item.y),
+        })
     }
 }
 
@@ -111,7 +117,10 @@ impl fmt::Display for PCoord {
 
 impl From<(usize, usize)> for PCoord {
     fn from(item: (usize, usize)) -> PCoord {
-        PCoord{ x: u16::try_from(item.0).unwrap(), y: u16::try_from(item.1).unwrap() }
+        PCoord {
+            x: u16::try_from(item.0).unwrap(),
+            y: u16::try_from(item.1).unwrap(),
+        }
     }
 }
 
@@ -119,12 +128,14 @@ impl TryFrom<UCoord> for PCoord {
     type Error = String;
     fn try_from(item: UCoord) -> Result<PCoord, String> {
         if item.x == 0 {
-            Err(String::from("Cannot convert to PCoord since x of UCoord found to be 0"))
-        }
-        else if item.y == 0 {
-            Err(String::from("Cannot convert to PCoord since y of UCoord found to be 0"))
-        }
-        else {
+            Err(String::from(
+                "Cannot convert to PCoord since x of UCoord found to be 0",
+            ))
+        } else if item.y == 0 {
+            Err(String::from(
+                "Cannot convert to PCoord since y of UCoord found to be 0",
+            ))
+        } else {
             Ok(PCoord::new(item.x, item.y).unwrap()) //wont fail
         }
     }

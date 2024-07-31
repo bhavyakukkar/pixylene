@@ -1,15 +1,11 @@
-use crate::ui::{ UiFn, Key, ReqUiFnMap, KeyMap };
+use crate::ui::{Key, KeyMap, ReqUiFnMap, UiFn};
 
-use libpixylene::{PixyleneDefaults, types::UCoord, project::Palette};
-use crossterm::{event::{KeyEvent as K, KeyModifiers as KM, KeyCode::*}};
+use crossterm::event::{KeyCode::*, KeyEvent as K, KeyModifiers as KM};
 use dirs::config_dir;
-use serde::{ Deserialize };
-use toml::{ from_str, de::Error };
-use std::{
-    fs::read_to_string,
-    collections::HashMap,
-};
-
+use libpixylene::{project::Palette, types::UCoord, PixyleneDefaults};
+use serde::Deserialize;
+use std::{collections::HashMap, fs::read_to_string};
+use toml::{de::Error, from_str};
 
 /// Configuration (parsed from Config Syntax and evaluated for logic errors)
 
@@ -42,8 +38,7 @@ impl Config {
             mut defaults,
             keys,
             ..
-        } =
-            ConfigSyntax::default();
+        } = ConfigSyntax::default();
 
         let (keymap, possible_namespaces) = get_keys_from_config(&config, keys);
 
@@ -71,12 +66,9 @@ impl Config {
     }
 }
 
-
-
 /// Config Syntax (deserialized config.toml)
 
 type PCE = PaletteColorEntry;
-
 
 #[derive(Debug, Deserialize)]
 pub struct KeyXUiFnEntry {
@@ -141,22 +133,70 @@ impl Default for ConfigSyntax {
                 dimensions: UCoordEntry { x: 32, y: 32 },
                 repeat: UCoordEntry { x: 1, y: 2 },
                 palette: vec![
-                    PCE { id: 1 , c: String::from("#140c1c") },
-                    PCE { id: 2 , c: String::from("#442434") },
-                    PCE { id: 3 , c: String::from("#30346d") },
-                    PCE { id: 4 , c: String::from("#4e4a4e") },
-                    PCE { id: 5 , c: String::from("#854c30") },
-                    PCE { id: 6 , c: String::from("#346524") },
-                    PCE { id: 7 , c: String::from("#d04648") },
-                    PCE { id: 8 , c: String::from("#757161") },
-                    PCE { id: 9 , c: String::from("#597dce") },
-                    PCE { id: 10, c: String::from("#d27d2c") },
-                    PCE { id: 11, c: String::from("#8595a1") },
-                    PCE { id: 12, c: String::from("#6daa2c") },
-                    PCE { id: 13, c: String::from("#d2aa99") },
-                    PCE { id: 14, c: String::from("#6dc2ca") },
-                    PCE { id: 15, c: String::from("#dad45e") },
-                    PCE { id: 16, c: String::from("#deeed6") },
+                    PCE {
+                        id: 1,
+                        c: String::from("#140c1c"),
+                    },
+                    PCE {
+                        id: 2,
+                        c: String::from("#442434"),
+                    },
+                    PCE {
+                        id: 3,
+                        c: String::from("#30346d"),
+                    },
+                    PCE {
+                        id: 4,
+                        c: String::from("#4e4a4e"),
+                    },
+                    PCE {
+                        id: 5,
+                        c: String::from("#854c30"),
+                    },
+                    PCE {
+                        id: 6,
+                        c: String::from("#346524"),
+                    },
+                    PCE {
+                        id: 7,
+                        c: String::from("#d04648"),
+                    },
+                    PCE {
+                        id: 8,
+                        c: String::from("#757161"),
+                    },
+                    PCE {
+                        id: 9,
+                        c: String::from("#597dce"),
+                    },
+                    PCE {
+                        id: 10,
+                        c: String::from("#d27d2c"),
+                    },
+                    PCE {
+                        id: 11,
+                        c: String::from("#8595a1"),
+                    },
+                    PCE {
+                        id: 12,
+                        c: String::from("#6daa2c"),
+                    },
+                    PCE {
+                        id: 13,
+                        c: String::from("#d2aa99"),
+                    },
+                    PCE {
+                        id: 14,
+                        c: String::from("#6dc2ca"),
+                    },
+                    PCE {
+                        id: 15,
+                        c: String::from("#dad45e"),
+                    },
+                    PCE {
+                        id: 16,
+                        c: String::from("#deeed6"),
+                    },
                 ],
             },
             keys: NamespaceXKeysEntries::from([(
@@ -164,88 +204,115 @@ impl Default for ConfigSyntax {
                 KeyXUiFnEntries::from([
                     (
                         K::new(Char('h'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_left") }],
+                        vec![UiFn::RunAction {
+                            name: String::from("cursors_left"),
+                        }],
                     ),
                     (
                         K::new(Char('j'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_down") }],
+                        vec![UiFn::RunAction {
+                            name: String::from("cursors_down"),
+                        }],
                     ),
                     (
                         K::new(Char('k'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_up") }],
+                        vec![UiFn::RunAction {
+                            name: String::from("cursors_up"),
+                        }],
                     ),
                     (
                         K::new(Char('l'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_right") }],
+                        vec![UiFn::RunAction {
+                            name: String::from("cursors_right"),
+                        }],
                     ),
                     (
                         K::new(Left, KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_left") }],
+                        vec![UiFn::RunAction {
+                            name: String::from("cursors_left"),
+                        }],
                     ),
                     (
                         K::new(Down, KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_down") }],
+                        vec![UiFn::RunAction {
+                            name: String::from("cursors_down"),
+                        }],
                     ),
                     (
                         K::new(Up, KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_up") }],
+                        vec![UiFn::RunAction {
+                            name: String::from("cursors_up"),
+                        }],
                     ),
                     (
                         K::new(Right, KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_right") }],
+                        vec![UiFn::RunAction {
+                            name: String::from("cursors_right"),
+                        }],
                     ),
                     (
                         K::new(Char('h'), KM::CONTROL).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_dup_left") }],
+                        vec![UiFn::RunAction {
+                            name: String::from("cursors_dup_left"),
+                        }],
                     ),
                     (
                         K::new(Char('j'), KM::CONTROL).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_dup_down") }],
+                        vec![UiFn::RunAction {
+                            name: String::from("cursors_dup_down"),
+                        }],
                     ),
                     (
                         K::new(Char('k'), KM::CONTROL).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_dup_up") }],
+                        vec![UiFn::RunAction {
+                            name: String::from("cursors_dup_up"),
+                        }],
                     ),
                     (
                         K::new(Char('l'), KM::CONTROL).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_dup_right") }],
+                        vec![UiFn::RunAction {
+                            name: String::from("cursors_dup_right"),
+                        }],
                     ),
                     (
                         K::new(Left, KM::CONTROL).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_dup_left") }],
+                        vec![UiFn::RunAction {
+                            name: String::from("cursors_dup_left"),
+                        }],
                     ),
                     (
                         K::new(Down, KM::CONTROL).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_dup_down") }],
+                        vec![UiFn::RunAction {
+                            name: String::from("cursors_dup_down"),
+                        }],
                     ),
                     (
                         K::new(Up, KM::CONTROL).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_dup_up") }],
+                        vec![UiFn::RunAction {
+                            name: String::from("cursors_dup_up"),
+                        }],
                     ),
                     (
                         K::new(Right, KM::CONTROL).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_dup_right") }],
+                        vec![UiFn::RunAction {
+                            name: String::from("cursors_dup_right"),
+                        }],
                     ),
                     (
                         K::new(Char('r'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_reset") }],
+                        vec![UiFn::RunAction {
+                            name: String::from("cursors_reset"),
+                        }],
                     ),
                     (
                         K::new(Enter, KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("pencil") }],
+                        vec![UiFn::RunAction {
+                            name: String::from("pencil"),
+                        }],
                     ),
-                    (
-                        K::new(Char('u'), KM::empty()).into(),
-                        vec![UiFn::Undo],
-                    ),
-                    (
-                        K::new(Char('r'), KM::CONTROL).into(),
-                        vec![UiFn::Redo],
-                    ),
-                    (
-                        K::new(Char('c'), KM::CONTROL).into(),
-                        vec![UiFn::ForceQuit],
-                    ),
+                    (K::new(Char('u'), KM::empty()).into(), vec![UiFn::Undo]),
+                    (K::new(Char('r'), KM::CONTROL).into(), vec![UiFn::Redo]),
+                    (K::new(Char('c'), KM::CONTROL).into(), vec![UiFn::ForceQuit]),
                 ]),
             )]),
             keymap_show_command_names: true,
@@ -268,7 +335,7 @@ fn parse_config() -> Option<Result<ConfigSyntax, String>> {
                     Ok(config) => {
                         if config.keys.len() == 0 {
                             return Some(Err(format!(
-                                "{}{}\n{}", 
+                                "{}{}\n{}",
                                 "Config File Error: ".red().bold(),
                                 "keys".italic(),
                                 "At-least one namespace of keys is required",
@@ -277,7 +344,7 @@ fn parse_config() -> Option<Result<ConfigSyntax, String>> {
 
                         if let None = config.keys.get(&config.default_namespace) {
                             return Some(Err(format!(
-                                "{}{}\n{}", 
+                                "{}{}\n{}",
                                 "Config File Error: ".red().bold(),
                                 "default_namespace".italic(),
                                 format!(
@@ -289,7 +356,7 @@ fn parse_config() -> Option<Result<ConfigSyntax, String>> {
                         }
 
                         Some(Ok(config))
-                    },
+                    }
                     Err(err) => Some(Err(format!(
                         "Error parsing config.toml:\n {}",
                         err.to_string(),
@@ -298,7 +365,7 @@ fn parse_config() -> Option<Result<ConfigSyntax, String>> {
                 //config file not present
                 Err(_) => None,
             }
-        },
+        }
         //config dir not configured on user's OS
         None => None,
     }
@@ -308,38 +375,54 @@ fn parse_defaults(defaults: PixyleneDefaultsConfig) -> Result<PixyleneDefaults, 
     use colored::Colorize;
 
     Ok(PixyleneDefaults {
-        dim: UCoord{
+        dim: UCoord {
             x: defaults.dimensions.x,
             y: defaults.dimensions.y,
-        }.try_into().map_err(|err| format!(
-            "{}{}\n{}",
-            "Config File Error: ".red().bold(),
-            "defaults.dimensions".yellow().italic(),
-            err,
-        ))?,
-        repeat: UCoord{
+        }
+        .try_into()
+        .map_err(|err| {
+            format!(
+                "{}{}\n{}",
+                "Config File Error: ".red().bold(),
+                "defaults.dimensions".yellow().italic(),
+                err,
+            )
+        })?,
+        repeat: UCoord {
             x: defaults.repeat.x,
             y: defaults.repeat.y,
-        }.try_into().map_err(|err| format!(
-            "{}{}\n{}",
-            "Config File Error: ".red().bold(),
-            "defaults.repeat".italic(),
-            err,
-        ))?,
-        palette: Palette::from(&defaults.palette.iter()
-            .map(|entry| (entry.id, entry.c.as_str()))
-            .collect::<Vec<(u8, &str)>>()).map_err(|err| format!(
+        }
+        .try_into()
+        .map_err(|err| {
+            format!(
+                "{}{}\n{}",
+                "Config File Error: ".red().bold(),
+                "defaults.repeat".italic(),
+                err,
+            )
+        })?,
+        palette: Palette::from(
+            &defaults
+                .palette
+                .iter()
+                .map(|entry| (entry.id, entry.c.as_str()))
+                .collect::<Vec<(u8, &str)>>(),
+        )
+        .map_err(|err| {
+            format!(
                 "{}{}\n{}",
                 "Config File Error: ".red().bold(),
                 "defaults.palette".italic(),
                 err,
-            ))?,
+            )
+        })?,
     })
 }
 
-fn get_keys_from_config(config: &Option<ConfigSyntax>, default_keys: NamespaceXKeysEntries)
--> (KeyMap, HashMap<String, ()>)
-{
+fn get_keys_from_config(
+    config: &Option<ConfigSyntax>,
+    default_keys: NamespaceXKeysEntries,
+) -> (KeyMap, HashMap<String, ()>) {
     let mut keymap = HashMap::new();
     keymap.insert(None, HashMap::new());
     let mut possible_namespaces = HashMap::new();
@@ -348,33 +431,43 @@ fn get_keys_from_config(config: &Option<ConfigSyntax>, default_keys: NamespaceXK
     if !(config.is_some() && config.as_ref().unwrap().new_keys) {
         //we are constructing a new default Config here, just because keymap::KeyMap doesn't
         //implement clone and we cannot clone it from an existing reference to a default config
-        _ = default_keys.into_iter()
+        _ = default_keys
+            .into_iter()
             .map(|(namespace, keys)| {
                 possible_namespaces.insert(namespace.clone(), ());
                 let mut map = HashMap::new();
-                _ = keys.into_iter().map(|(key, fns)| {
-                    map.insert(key, fns);
-                }).collect::<Vec<()>>();
+                _ = keys
+                    .into_iter()
+                    .map(|(key, fns)| {
+                        map.insert(key, fns);
+                    })
+                    .collect::<Vec<()>>();
                 keymap.insert(Some(namespace), map);
             })
             .collect::<Vec<()>>();
     }
 
     if let Some(config) = config {
-        _ = config.keys.iter()
+        _ = config
+            .keys
+            .iter()
             .map(|(namespace, keys)| {
                 possible_namespaces.insert(namespace.clone(), ());
                 let mut map = HashMap::new();
-                _ = keys.iter().map(|(key, fns)| {
-                    map.insert(key.clone(), fns.clone());
-                }).collect::<Vec<()>>();
+                _ = keys
+                    .iter()
+                    .map(|(key, fns)| {
+                        map.insert(key.clone(), fns.clone());
+                    })
+                    .collect::<Vec<()>>();
 
                 if let Some(existing_group) = keymap.get_mut(&Some(namespace.clone())) {
                     existing_group.extend(map);
                 } else {
                     keymap.insert(Some(namespace.to_string()), map);
                 }
-            }).collect::<Vec<()>>();
+            })
+            .collect::<Vec<()>>();
     }
 
     (keymap, possible_namespaces)

@@ -79,11 +79,7 @@ impl Pixylene {
         Ok(Pixylene { project })
     }
 
-    pub fn export(
-        &self,
-        resize: Option<PCoord<u32>>,
-        path: &PathBuf,
-    ) -> Result<(), PixyleneError> {
+    pub fn export(&self, resize: Option<PCoord<u32>>, path: &PathBuf) -> Result<(), PixyleneError> {
         let mut png = PngFile::from_canvas(&self.project.canvas)?;
         if let Some(resize) = resize {
             png.resize(resize)?;

@@ -1,25 +1,24 @@
 use crate::{
+    utils::{CanvasMismatch, ContextExpired, BOXED_ERROR, CANVAS_MISMATCH_INDEXED, LAYER_GONE},
+    values::{project::IndexedScene, types::BlendMode},
     Context,
-    utils::{CanvasMismatch, ContextExpired, CANVAS_MISMATCH_INDEXED, LAYER_GONE, BOXED_ERROR},
-    values::{
-        project::IndexedScene,
-        types::BlendMode,
-    }
 };
 
-use libpixylene::{types, project};
-use std::{borrow::{Borrow, BorrowMut}, sync::Arc};
+use libpixylene::{project, types};
+use std::{
+    borrow::{Borrow, BorrowMut},
+    sync::Arc,
+};
 use tealr::{
     mlu::{
         mlua::{
-            self, prelude::LuaValue, FromLua, Lua, MetaMethod, Result, UserData, UserDataFields,
-            UserDataMethods, Error::ExternalError
+            self, prelude::LuaValue, Error::ExternalError, FromLua, Lua, MetaMethod, Result,
+            UserData, UserDataFields, UserDataMethods,
         },
         TealData, TealDataMethods, UserDataWrapper,
     },
     mlua_create_named_parameters, ToTypename, TypeBody,
 };
-
 
 /// Lua interface to libpixylene's [`Layer`][project::Layer] type
 #[derive(Clone)]
@@ -58,16 +57,20 @@ impl TealData for IndexedLayer {
             );
             methods.add_meta_method(MetaMethod::Call, |_, _, a: IndexedLayerArgs| {
                 Ok(IndexedLayer(Context::Solo(project::Layer {
-                    scene: a.scene.0.do_imt::<_, _, CanvasMismatch<ContextExpired<
-                        project::Scene<types::IndexedPixel>
-                    >>>
-                        (|scene| Ok(Ok(scene.clone())))
-                        (|pixylene, index| pixylene.project.canvas.layers.to_indexed()
-                            .map(|layers| layers.get_layer(*index)
-                                .map(|layer| layer.scene.clone())
-                                .map_err(|_| ())))
-                        .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(CANVAS_MISMATCH_INDEXED))))?
-                        .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(LAYER_GONE))))?,
+                    scene: a.scene.0.do_imt::<_, _, CanvasMismatch<
+                        ContextExpired<project::Scene<types::IndexedPixel>>,
+                    >>(|scene| Ok(Ok(scene.clone())))(
+                        |pixylene, index| {
+                            pixylene.project.canvas.layers.to_indexed().map(|layers| {
+                                layers
+                                    .get_layer(*index)
+                                    .map(|layer| layer.scene.clone())
+                                    .map_err(|_| ())
+                            })
+                        },
+                    )
+                    .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(CANVAS_MISMATCH_INDEXED))))?
+                    .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(LAYER_GONE))))?,
                     opacity: a.opacity,
                     mute: a.mute,
                     blend_mode: a.blend_mode.0,
@@ -75,8 +78,7 @@ impl TealData for IndexedLayer {
             });
 
             //todo: Lua interface to Layer<IndexedPixel>::to_true_layer
-            {
-            }
+            {}
         }
 
         // todo: + metamethod alias for merge that checks for consistent sizes and uses top layer's
@@ -95,116 +97,173 @@ impl TealData for IndexedLayer {
             Linked(pixylene, index) => Ok(IndexedScene(Linked(pixylene.clone(), *index))),
         });
         fields.add_field_method_set("scene", |_, this, scene: IndexedScene| {
-            let that_scene = scene.0.do_imt::<_, _, CanvasMismatch<ContextExpired<
-                project::Scene<types::IndexedPixel>
-            >>>
-                (|scene| Ok(Ok(scene.clone())))
-                (|pixylene, index| pixylene.borrow().project.canvas.layers.to_indexed()
-                    .map(|layers| layers.get_layer(*index)
-                         .map(|layer| layer.scene.clone())
-                         .map_err(|_| ())))
-                .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(CANVAS_MISMATCH_INDEXED))))?
-                .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(LAYER_GONE))))?;
+            let that_scene = scene.0.do_imt::<_, _, CanvasMismatch<
+                ContextExpired<project::Scene<types::IndexedPixel>>,
+            >>(|scene| Ok(Ok(scene.clone())))(|pixylene, index| {
+                pixylene
+                    .borrow()
+                    .project
+                    .canvas
+                    .layers
+                    .to_indexed()
+                    .map(|layers| {
+                        layers
+                            .get_layer(*index)
+                            .map(|layer| layer.scene.clone())
+                            .map_err(|_| ())
+                    })
+            })
+            .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(CANVAS_MISMATCH_INDEXED))))?
+            .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(LAYER_GONE))))?;
 
-            this.0.do_mut::<_, _, CanvasMismatch<ContextExpired<()>>>
-                (|layer| {
+            this.0
+                .do_mut::<_, _, CanvasMismatch<ContextExpired<()>>>(|layer| {
                     layer.scene = that_scene.clone();
                     Ok(Ok(()))
-                })
-                (|mut pixylene, index| pixylene.borrow_mut().project.canvas.layers.to_indexed_mut()
-                    .map(|layers| layers.get_layer_mut(*index)
-                         .map(|layer| {
-                             layer.scene = that_scene.clone();
-                         })
-                         .map_err(|_| ())))
-                .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(CANVAS_MISMATCH_INDEXED))))?
-                .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(LAYER_GONE))))
+                })(|mut pixylene, index| {
+                pixylene
+                    .borrow_mut()
+                    .project
+                    .canvas
+                    .layers
+                    .to_indexed_mut()
+                    .map(|layers| {
+                        layers
+                            .get_layer_mut(*index)
+                            .map(|layer| {
+                                layer.scene = that_scene.clone();
+                            })
+                            .map_err(|_| ())
+                    })
+            })
+            .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(CANVAS_MISMATCH_INDEXED))))?
+            .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(LAYER_GONE))))
         });
 
         //Lua interface to Layer.opacity
         fields.document("the opacity of this IndexedLayer");
-        fields.add_field_method_get("opacity", |_, this| this.0.do_imt::<_, _, CanvasMismatch<
-            ContextExpired<u8>
-        >>
-            (|layer| Ok(Ok(layer.opacity)))
-            (|pixylene, index| pixylene.project.canvas.layers.to_indexed()
-                .map(|layers| layers.get_layer(*index)
-                     .map(|layer| layer.opacity)
-                     .map_err(|_| ())))
+        fields.add_field_method_get("opacity", |_, this| {
+            this.0
+                .do_imt::<_, _, CanvasMismatch<ContextExpired<u8>>>(|layer| Ok(Ok(layer.opacity)))(
+                |pixylene, index| {
+                    pixylene.project.canvas.layers.to_indexed().map(|layers| {
+                        layers
+                            .get_layer(*index)
+                            .map(|layer| layer.opacity)
+                            .map_err(|_| ())
+                    })
+                },
+            )
             .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(CANVAS_MISMATCH_INDEXED))))?
-            .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(LAYER_GONE)))));
-        fields.add_field_method_set("opacity", |_, this, opacity| this.0.do_mut::<_, _,
-            CanvasMismatch<ContextExpired<()>>
-        >
-            (|layer| {
-                layer.opacity = opacity;
-                Ok(Ok(()))
+            .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(LAYER_GONE))))
+        });
+        fields.add_field_method_set("opacity", |_, this, opacity| {
+            this.0
+                .do_mut::<_, _, CanvasMismatch<ContextExpired<()>>>(|layer| {
+                    layer.opacity = opacity;
+                    Ok(Ok(()))
+                })(|mut pixylene, index| {
+                pixylene
+                    .project
+                    .canvas
+                    .layers
+                    .to_indexed_mut()
+                    .map(|layers| {
+                        layers
+                            .get_layer_mut(*index)
+                            .map(|layer| {
+                                layer.opacity = opacity;
+                            })
+                            .map_err(|_| ())
+                    })
             })
-            (|mut pixylene, index| pixylene.project.canvas.layers.to_indexed_mut()
-                .map(|layers| layers.get_layer_mut(*index)
-                     .map(|layer| {
-                         layer.opacity = opacity;
-                     })
-                     .map_err(|_| ())))
             .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(CANVAS_MISMATCH_INDEXED))))?
-            .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(LAYER_GONE)))));
+            .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(LAYER_GONE))))
+        });
 
         //Lua interface to Layer.mute
         fields.document("the mute of this IndexedLayer");
-        fields.add_field_method_get("mute", |_, this| this.0.do_imt::<_, _, CanvasMismatch<
-            ContextExpired<bool>
-        >>
-            (|layer| Ok(Ok(layer.mute)))
-            (|pixylene, index| pixylene.project.canvas.layers.to_indexed()
-                .map(|layers| layers.get_layer(*index)
-                     .map(|layer| layer.mute)
-                     .map_err(|_| ())))
+        fields.add_field_method_get("mute", |_, this| {
+            this.0
+                .do_imt::<_, _, CanvasMismatch<ContextExpired<bool>>>(|layer| Ok(Ok(layer.mute)))(
+                |pixylene, index| {
+                    pixylene.project.canvas.layers.to_indexed().map(|layers| {
+                        layers
+                            .get_layer(*index)
+                            .map(|layer| layer.mute)
+                            .map_err(|_| ())
+                    })
+                },
+            )
             .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(CANVAS_MISMATCH_INDEXED))))?
-            .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(LAYER_GONE)))));
-        fields.add_field_method_set("mute", |_, this, mute| this.0.do_mut::<_, _,
-            CanvasMismatch<ContextExpired<()>>
-        >
-            (|layer| {
-                layer.mute = mute;
-                Ok(Ok(()))
+            .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(LAYER_GONE))))
+        });
+        fields.add_field_method_set("mute", |_, this, mute| {
+            this.0
+                .do_mut::<_, _, CanvasMismatch<ContextExpired<()>>>(|layer| {
+                    layer.mute = mute;
+                    Ok(Ok(()))
+                })(|mut pixylene, index| {
+                pixylene
+                    .project
+                    .canvas
+                    .layers
+                    .to_indexed_mut()
+                    .map(|layers| {
+                        layers
+                            .get_layer_mut(*index)
+                            .map(|layer| {
+                                layer.mute = mute;
+                            })
+                            .map_err(|_| ())
+                    })
             })
-            (|mut pixylene, index| pixylene.project.canvas.layers.to_indexed_mut()
-                .map(|layers| layers.get_layer_mut(*index)
-                     .map(|layer| {
-                         layer.mute = mute;
-                     })
-                     .map_err(|_| ())))
             .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(CANVAS_MISMATCH_INDEXED))))?
-            .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(LAYER_GONE)))));
+            .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(LAYER_GONE))))
+        });
 
         //Lua interface to Layer.blend_mode
         fields.document("the blend-mode of this IndexedLayer");
-        fields.add_field_method_get("blend_mode", |_, this| Ok(BlendMode(
-            this.0.do_imt::<_, _, CanvasMismatch<
-                ContextExpired<types::BlendMode>
-            >>
-                (|layer| Ok(Ok(layer.blend_mode)))
-                (|pixylene, index| pixylene.project.canvas.layers.to_indexed()
-                    .map(|layers| layers.get_layer(*index)
-                         .map(|layer| layer.blend_mode)
-                         .map_err(|_| ())))
+        fields.add_field_method_get("blend_mode", |_, this| {
+            Ok(BlendMode(
+                this.0
+                    .do_imt::<_, _, CanvasMismatch<ContextExpired<types::BlendMode>>>(|layer| {
+                        Ok(Ok(layer.blend_mode))
+                    })(|pixylene, index| {
+                    pixylene.project.canvas.layers.to_indexed().map(|layers| {
+                        layers
+                            .get_layer(*index)
+                            .map(|layer| layer.blend_mode)
+                            .map_err(|_| ())
+                    })
+                })
                 .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(CANVAS_MISMATCH_INDEXED))))?
-                .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(LAYER_GONE))))?)));
-        fields.add_field_method_set("blend_mode", |_, this, blend_mode: BlendMode| this.0.do_mut::<_, _,
-            CanvasMismatch<ContextExpired<()>>
-        >
-            (|layer| {
-                layer.blend_mode = blend_mode.0;
-                Ok(Ok(()))
+                .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(LAYER_GONE))))?,
+            ))
+        });
+        fields.add_field_method_set("blend_mode", |_, this, blend_mode: BlendMode| {
+            this.0
+                .do_mut::<_, _, CanvasMismatch<ContextExpired<()>>>(|layer| {
+                    layer.blend_mode = blend_mode.0;
+                    Ok(Ok(()))
+                })(|mut pixylene, index| {
+                pixylene
+                    .project
+                    .canvas
+                    .layers
+                    .to_indexed_mut()
+                    .map(|layers| {
+                        layers
+                            .get_layer_mut(*index)
+                            .map(|layer| {
+                                layer.blend_mode = blend_mode.0;
+                            })
+                            .map_err(|_| ())
+                    })
             })
-            (|mut pixylene, index| pixylene.project.canvas.layers.to_indexed_mut()
-                .map(|layers| layers.get_layer_mut(*index)
-                     .map(|layer| {
-                         layer.blend_mode = blend_mode.0;
-                     })
-                     .map_err(|_| ())))
             .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(CANVAS_MISMATCH_INDEXED))))?
-            .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(LAYER_GONE)))));
+            .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(LAYER_GONE))))
+        });
     }
 }
 

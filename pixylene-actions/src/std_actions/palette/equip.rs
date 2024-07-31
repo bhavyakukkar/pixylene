@@ -1,9 +1,6 @@
-use crate::{ Console, memento };
+use crate::{memento, Console};
 
-use libpixylene::{
-    project::{ Project },
-};
-
+use libpixylene::project::Project;
 
 /// An action that equips the given index for the color palette
 pub struct Equip {
@@ -12,10 +9,9 @@ pub struct Equip {
 
 impl Equip {
     pub fn new(palette_index: u8) -> Self {
-        Equip{ palette_index }
+        Equip { palette_index }
     }
 }
-
 
 impl memento::Action for Equip {
     fn perform(&mut self, project: &mut Project, _console: &dyn Console) -> memento::ActionResult {

@@ -1,22 +1,22 @@
-use crate::{ Console, memento, ActionError, utils::OptionalTrueOrIndexed };
+use crate::{memento, utils::OptionalTrueOrIndexed, ActionError, Console};
 
 use libpixylene::{
-    types::{ TruePixel, IndexedPixel },
-    project::{ LayersType, Project },
+    project::{LayersType, Project},
+    types::{IndexedPixel, TruePixel},
 };
-
 
 #[derive(Debug)]
 pub struct New;
 
 impl memento::Action for New {
     fn perform(&mut self, project: &mut Project, console: &dyn Console) -> memento::ActionResult {
-        use ActionError::{InputError, Discarded, InvalidCanvasType};
+        use ActionError::{Discarded, InputError, InvalidCanvasType};
         use OptionalTrueOrIndexed::*;
 
         let color: OptionalTrueOrIndexed = match &project.canvas.layers {
             LayersType::True(_) => {
-                let input = console.cmdin("color (#hex or palette) (default: empty): ")
+                let input = console
+                    .cmdin("color (#hex or palette) (default: empty): ")
                     .ok_or(Discarded)?;
                 True(match input.len() {
                     0 => None,
@@ -29,38 +29,39 @@ impl memento::Action for New {
                             }
                         },
                         _ => {
-                            return Err(InputError(
-                                format!("don't know how to parse '{}'", input)
-                            ));
-                        },
+                            return Err(InputError(format!("don't know how to parse '{}'", input)));
+                        }
                     },
                 })
-            },
+            }
             LayersType::Indexed(_) => {
-                let input = console.cmdin("color index (default: empty): ")
+                let input = console
+                    .cmdin("color index (default: empty): ")
                     .ok_or(Discarded)?;
                 Indexed(match input.len() {
                     0 => None,
                     _ => match str::parse::<u8>(&input) {
-                         Ok(index) => Some(IndexedPixel(index)),
-                         Err(err) => {
-                             return Err(InputError(err.to_string()));
-                         }
+                        Ok(index) => Some(IndexedPixel(index)),
+                        Err(err) => {
+                            return Err(InputError(err.to_string()));
+                        }
                     },
                 })
-            },
+            }
         };
 
         match (&mut project.canvas.layers, color.clone()) {
             (LayersType::True(ref mut layers), True(color)) => {
                 project.focus.1 = layers.new_layer(color)?;
-            },
+            }
             (LayersType::Indexed(ref mut layers), Indexed(color)) => {
                 project.focus.1 = layers.new_layer(color)?;
-            },
-            _ => { return Err(InvalidCanvasType{
-                expecting_indexed: if let True(_) = color { true } else { false },
-            }); }
+            }
+            _ => {
+                return Err(InvalidCanvasType {
+                    expecting_indexed: if let True(_) = color { true } else { false },
+                });
+            }
         };
         Ok(())
     }

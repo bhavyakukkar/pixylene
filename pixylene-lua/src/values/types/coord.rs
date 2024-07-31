@@ -1,17 +1,15 @@
 use tealr::{
     mlu::{
         mlua::{
-            self,
-            prelude::{ LuaValue },
-            FromLua, Lua, Result, UserData, UserDataFields, UserDataMethods, MetaMethod,
+            self, prelude::LuaValue, FromLua, Lua, MetaMethod, Result, UserData, UserDataFields,
+            UserDataMethods,
         },
         TealData, TealDataMethods, UserDataWrapper,
     },
-    ToTypename, TypeBody, mlua_create_named_parameters,
+    mlua_create_named_parameters, ToTypename, TypeBody,
 };
 
 use libpixylene::types;
-
 
 /// Lua interface to libpixylene's [`Coord`](types::Coord) type
 #[derive(Copy, Clone)]
@@ -46,10 +44,12 @@ impl TealData for Coord {
                     x : Option<i32>,
                     y : Option<i32>,
             );
-            methods.document("Creates & returns a new Coord with optional 'x' and 'y' coordinates \
-                             that default to 0");
+            methods.document(
+                "Creates & returns a new Coord with optional 'x' and 'y' coordinates \
+                             that default to 0",
+            );
             methods.add_meta_method(MetaMethod::Call, |_, _, a: CoordArgs| {
-                Ok(Coord(types::Coord{
+                Ok(Coord(types::Coord {
                     x: a.x.unwrap_or(0),
                     y: a.y.unwrap_or(0),
                 }))
@@ -66,18 +66,15 @@ impl TealData for Coord {
             );
             methods.document("Creates & returns a new Coord with 'x' and 'y' coordinates");
             methods.add_function("new", |_, a: CoordNewArgs| {
-                Ok(Coord(types::Coord{x: a.x, y: a.y}))
+                Ok(Coord(types::Coord { x: a.x, y: a.y }))
             });
         }
-
 
         //Lua interface to Coord::zero
         //c = Coord.zero()
         {
             methods.document("Creates & returns a new (0,0) Coord");
-            methods.add_function("zero", |_, _: ()| {
-                Ok(Coord(types::Coord::zero()))
-            });
+            methods.add_function("zero", |_, _: ()| Ok(Coord(types::Coord::zero())));
         }
 
         //Lua interface to Coord::area
@@ -97,10 +94,12 @@ impl TealData for Coord {
                     first : Coord,
                     second : Coord,
             );
-            methods.document("Returns a Coord composed of the overflowing sums of two Coord's \
-                             coordinates");
+            methods.document(
+                "Returns a Coord composed of the overflowing sums of two Coord's \
+                             coordinates",
+            );
             methods.add_meta_function(MetaMethod::Add, |_, a: CoordAddArgs| {
-                Ok(Coord(types::Coord{
+                Ok(Coord(types::Coord {
                     x: a.first.0.x.overflowing_add(a.second.0.x).0,
                     y: a.first.0.y.overflowing_add(a.second.0.y).0,
                 }))
@@ -111,7 +110,6 @@ impl TealData for Coord {
     }
 
     fn add_fields<'lua, F: tealr::mlu::TealDataFields<'lua, Self>>(fields: &mut F) {
-
         fields.document("the 'x' coordinate of the Coord");
         fields.add_field_method_get("x", |_, this| Ok(this.0.x));
         fields.add_field_method_set("x", |_, this, value| {

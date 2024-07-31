@@ -1,17 +1,15 @@
+use libpixylene::types;
+use std::sync::Arc;
 use tealr::{
     mlu::{
         mlua::{
-            self,
-            prelude::{ LuaValue },
-            FromLua, Lua, Result, UserData, UserDataFields, UserDataMethods, MetaMethod,
+            self, prelude::LuaValue, FromLua, Lua, MetaMethod, Result, UserData, UserDataFields,
+            UserDataMethods,
         },
         TealData, TealDataMethods, UserDataWrapper,
     },
-    ToTypename, TypeBody, mlua_create_named_parameters,
+    mlua_create_named_parameters, ToTypename, TypeBody,
 };
-use std::sync::Arc;
-use libpixylene::types;
-
 
 /// Lua interface to libpixylene's [`TruePixel`](types::TruePixel) type
 #[derive(Copy, Clone)]
@@ -32,10 +30,12 @@ impl<'lua> FromLua<'lua> for TruePixel {
 
 impl TealData for TruePixel {
     fn add_methods<'lua, T: TealDataMethods<'lua, Self>>(methods: &mut T) {
-        use mlua::Error::{ ExternalError };
+        use mlua::Error::ExternalError;
 
-        methods.document_type("An RGBA type to represent a color, composed of 8-bit red, green, \
-                              blue & alpha values.");
+        methods.document_type(
+            "An RGBA type to represent a color, composed of 8-bit red, green, \
+                              blue & alpha values.",
+        );
 
         //Flexible Lua call metamethod to construct a new RGBA TruePixel
         {
@@ -46,10 +46,12 @@ impl TealData for TruePixel {
                     b : Option<u8>,
                     a : Option<u8>,
             );
-            methods.document("Create & return a new TruePixel with optional red, green, blue & alpha \
-                             levels, each between 0-255, defaulting to 0 (expect 255 for alpha)");
+            methods.document(
+                "Create & return a new TruePixel with optional red, green, blue & alpha \
+                             levels, each between 0-255, defaulting to 0 (expect 255 for alpha)",
+            );
             methods.add_meta_method(MetaMethod::Call, |_, _, args: TruePixelArgs| {
-                Ok(TruePixel(types::TruePixel{
+                Ok(TruePixel(types::TruePixel {
                     r: args.r.unwrap_or(0),
                     g: args.g.unwrap_or(0),
                     b: args.b.unwrap_or(0),
@@ -67,10 +69,17 @@ impl TealData for TruePixel {
                     b : u8,
                     a : u8,
             );
-            methods.document("Create & return a new TruePixel with specified red, green, blue & alpha \
-                             levels, each between 0-255");
+            methods.document(
+                "Create & return a new TruePixel with specified red, green, blue & alpha \
+                             levels, each between 0-255",
+            );
             methods.add_function("rgba", |_, args: TruePixelRgbaArgs| {
-                Ok(TruePixel(types::TruePixel{r: args.r, g: args.g, b: args.b, a: args.a}))
+                Ok(TruePixel(types::TruePixel {
+                    r: args.r,
+                    g: args.g,
+                    b: args.b,
+                    a: args.a,
+                }))
             });
         }
 
@@ -82,15 +91,21 @@ impl TealData for TruePixel {
                     g : u8,
                     b : u8,
             );
-            methods.document("Create & return a new TruePixel with specified red, green & blue \
-                             levels, each between 0-255 (alpha defaults to 0)");
+            methods.document(
+                "Create & return a new TruePixel with specified red, green & blue \
+                             levels, each between 0-255 (alpha defaults to 0)",
+            );
             methods.add_function("rgb", |_, args: TruePixelRgbArgs| {
-                Ok(TruePixel(types::TruePixel{r: args.r, g: args.g, b: args.b, a: 255}))
+                Ok(TruePixel(types::TruePixel {
+                    r: args.r,
+                    g: args.g,
+                    b: args.b,
+                    a: 255,
+                }))
             });
         }
 
         //todo: cmyk & hsl
-
 
         //Lua interface to construct a new TruePixel with a hex-triplet (6 or 8 digits)
         {
@@ -98,16 +113,16 @@ impl TealData for TruePixel {
                 TruePixelHexArgs with
                     s: String,
             );
-            methods.document("Create & return a new TruePixel with a specified CSS-like hex string, \
-                             e.g. `#694269` or `#69426942`");
+            methods.document(
+                "Create & return a new TruePixel with a specified CSS-like hex string, \
+                             e.g. `#694269` or `#69426942`",
+            );
             methods.add_function("hex", |_, a: TruePixelHexArgs| {
                 let boxed_error = |s: &str| Box::<dyn std::error::Error + Send + Sync>::from(s);
 
                 match types::TruePixel::from_hex(&a.s) {
                     Ok(p) => Ok(TruePixel(p)),
-                    Err(err) => Err(ExternalError(Arc::from(
-                        boxed_error(&err.to_string())
-                    ))),
+                    Err(err) => Err(ExternalError(Arc::from(boxed_error(&err.to_string())))),
                 }
             });
         }
@@ -122,7 +137,6 @@ impl TealData for TruePixel {
     }
 
     fn add_fields<'lua, F: tealr::mlu::TealDataFields<'lua, Self>>(fields: &mut F) {
-
         //todo: add constants RED, GREEN, BLUE, etc.
 
         fields.document("the red level of the TruePixel");

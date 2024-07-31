@@ -1,5 +1,5 @@
 use super::Pixel;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use std::fmt;
 
@@ -8,9 +8,10 @@ use std::fmt;
 pub struct IndexedPixel(pub u8);
 
 impl Pixel for IndexedPixel {
-    fn empty() -> Self { Self(0) }
+    fn empty() -> Self {
+        Self(0)
+    }
 }
-
 
 impl fmt::Display for IndexedPixel {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

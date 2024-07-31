@@ -1,11 +1,9 @@
-use crate::{ command::ChangeError };
+use crate::command::ChangeError;
 
 use libpixylene::{
-    types::{ BlendError, TruePixelError },
-    project::{ SceneError, PaletteError, ProjectError, LayersError },
+    project::{LayersError, PaletteError, ProjectError, SceneError},
+    types::{BlendError, TruePixelError},
 };
-
-
 
 #[derive(Debug)]
 pub enum ActionError {
@@ -19,33 +17,47 @@ pub enum ActionError {
     OnlyNCursorsSupported(String, usize),
 
     // Custom Errors
-    ExpectingCanvasType{ expecting_indexed: bool },
-    InvalidCanvasType{ expecting_indexed: bool },
+    ExpectingCanvasType { expecting_indexed: bool },
+    InvalidCanvasType { expecting_indexed: bool },
     ArgsError(String),
     InputError(String),
     OperationError(Option<String>),
     Discarded,
 }
 impl From<TruePixelError> for ActionError {
-    fn from(item: TruePixelError) -> ActionError { ActionError::TruePixelError(item) }
+    fn from(item: TruePixelError) -> ActionError {
+        ActionError::TruePixelError(item)
+    }
 }
 impl From<SceneError> for ActionError {
-    fn from(item: SceneError) -> ActionError { ActionError::SceneError(item) }
+    fn from(item: SceneError) -> ActionError {
+        ActionError::SceneError(item)
+    }
 }
 impl From<PaletteError> for ActionError {
-    fn from(item: PaletteError) -> ActionError { ActionError::PaletteError(item) }
+    fn from(item: PaletteError) -> ActionError {
+        ActionError::PaletteError(item)
+    }
 }
 impl From<ChangeError> for ActionError {
-    fn from(item: ChangeError) -> ActionError { ActionError::ChangeError(item) }
+    fn from(item: ChangeError) -> ActionError {
+        ActionError::ChangeError(item)
+    }
 }
 impl From<ProjectError> for ActionError {
-    fn from(item: ProjectError) -> ActionError { ActionError::ProjectError(item) }
+    fn from(item: ProjectError) -> ActionError {
+        ActionError::ProjectError(item)
+    }
 }
 impl From<LayersError> for ActionError {
-    fn from(item: LayersError) -> ActionError { ActionError::LayersError(item) }
+    fn from(item: LayersError) -> ActionError {
+        ActionError::LayersError(item)
+    }
 }
 impl From<BlendError> for ActionError {
-    fn from(item: BlendError) -> ActionError { ActionError::BlendError(item) }
+    fn from(item: BlendError) -> ActionError {
+        ActionError::BlendError(item)
+    }
 }
 impl std::fmt::Display for ActionError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -61,11 +73,11 @@ impl std::fmt::Display for ActionError {
             OnlyNCursorsSupported(supported, supplied) => write!(
                 f,
                 "this action only supports {} cursor/s, found {}",
-                supported,
-                supplied,
+                supported, supplied,
             ),
-            ExpectingCanvasType{ expecting_indexed } => write!(
-                f, "{}",
+            ExpectingCanvasType { expecting_indexed } => write!(
+                f,
+                "{}",
                 if *expecting_indexed {
                     "This action was expecting arguments pertaining to indexed-color but found \
                     those pertaining to true-color"
@@ -74,8 +86,9 @@ impl std::fmt::Display for ActionError {
                     pertaining to indexed-color"
                 },
             ),
-            InvalidCanvasType{ expecting_indexed } => write!(
-                f, "{}",
+            InvalidCanvasType { expecting_indexed } => write!(
+                f,
+                "{}",
                 if *expecting_indexed {
                     "This action was inferred to operate using indexed-color but the canvas is \
                     true-color"

@@ -1,17 +1,17 @@
 mod palette;
-pub use palette::{ PaletteError, Palette };
+pub use palette::{Palette, PaletteError};
 
 mod scene;
-pub use scene::{ OPixel, SceneError, Scene };
+pub use scene::{OPixel, Scene, SceneError};
 
 mod layer;
-pub use layer::{ Layer, LayerError };
+pub use layer::{Layer, LayerError};
 
 mod layers;
-pub use layers::{ Layers, LayersError };
+pub use layers::{Layers, LayersError};
 
 mod canvas;
-pub use canvas::{ LayersType, Canvas };
+pub use canvas::{Canvas, LayersType};
 
 mod project;
-pub use project::{ ProjectError, Project };
+pub use project::{Project, ProjectError};

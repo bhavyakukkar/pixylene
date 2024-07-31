@@ -1,29 +1,27 @@
-use crate::project::{ Project };
+use crate::project::Project;
 
 use savefile::prelude::*;
 use std::path::PathBuf;
-
 
 pub struct ProjectFile {
     pub version: u32,
 }
 impl ProjectFile {
     pub fn read(&self, path: &PathBuf) -> Result<Project, ProjectFileError> {
-        use ProjectFileError::{ LoadingError };
+        use ProjectFileError::LoadingError;
         match load_file(path.clone(), self.version) {
             Ok(project) => Ok(project),
             Err(error) => Err(LoadingError(path.clone(), error)),
         }
     }
     pub fn write(&self, path: &PathBuf, project: &Project) -> Result<(), ProjectFileError> {
-        use ProjectFileError::{ SavingError };
+        use ProjectFileError::SavingError;
         match save_file(path.clone(), self.version, project) {
             Ok(()) => Ok(()),
             Err(error) => Err(SavingError(path.clone(), error)),
         }
     }
 }
-
 
 // Error Types
 

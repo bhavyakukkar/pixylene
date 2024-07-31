@@ -1,19 +1,19 @@
 use crate::{
-    utils::{CanvasMismatch, CANVAS_MISMATCH_TRUE, CANVAS_MISMATCH_INDEXED, BOXED_ERROR},
+    utils::{CanvasMismatch, BOXED_ERROR, CANVAS_MISMATCH_INDEXED, CANVAS_MISMATCH_TRUE},
     values::{
-        project::{TrueScene, IndexedScene, TrueLayers, IndexedLayers, Palette},
-        types::{PCoord, TruePixel, IndexedPixel},
+        project::{IndexedLayers, IndexedScene, Palette, TrueLayers, TrueScene},
+        types::{IndexedPixel, PCoord, TruePixel},
     },
     Context,
 };
 
-use libpixylene::{types, project};
+use libpixylene::{project, types};
 use std::sync::Arc;
 use tealr::{
     mlu::{
         mlua::{
-            self, prelude::LuaValue, FromLua, Lua, UserData, UserDataFields,
-            UserDataMethods, Error::ExternalError
+            self, prelude::LuaValue, Error::ExternalError, FromLua, Lua, UserData, UserDataFields,
+            UserDataMethods,
         },
         TealData, TealDataMethods, UserDataWrapper,
     },
@@ -40,8 +40,10 @@ impl<'lua> FromLua<'lua> for Canvas {
 
 impl TealData for Canvas {
     fn add_methods<'lua, T: TealDataMethods<'lua, Self>>(methods: &mut T) {
-        methods.document_type("A set of true-color or indexed-color Layers with uniform dimensions
-                              and a Palette.");
+        methods.document_type(
+            "A set of true-color or indexed-color Layers with uniform dimensions
+                              and a Palette.",
+        );
 
         //Lua interface to construct a Canvas containing TrueLayers
         {
@@ -50,25 +52,31 @@ impl TealData for Canvas {
                     layers: TrueLayers,
                     palette: Palette,
             );
-            methods.document(
-                "Construct and return a new true Canvas from TrueLayers and a Palette"
-            );
+            methods
+                .document("Construct and return a new true Canvas from TrueLayers and a Palette");
             methods.add_function("true", |_, a: CanvasTrueArgs| {
-                let layers = a.layers.0.do_imt::<_, _, CanvasMismatch<
-                    project::Layers<types::TruePixel>
-                >>
-                    (|layers| Ok(layers.clone()))
-                    (|pixylene, _| pixylene.project.canvas.layers.to_true()
-                        .map(|layers| layers.clone()))
-                    .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(CANVAS_MISMATCH_TRUE))))?;
+                let layers = a
+                    .layers
+                    .0
+                    .do_imt::<_, _, CanvasMismatch<project::Layers<types::TruePixel>>>(|layers| {
+                        Ok(layers.clone())
+                    })(|pixylene, _| {
+                    pixylene
+                        .project
+                        .canvas
+                        .layers
+                        .to_true()
+                        .map(|layers| layers.clone())
+                })
+                .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(CANVAS_MISMATCH_TRUE))))?;
 
-                let palette = a.palette.0.do_imt
-                    (|palette| palette.clone())
-                    (|pixylene, _| pixylene.project.canvas.palette.clone());
+                let palette = a.palette.0.do_imt(|palette| palette.clone())(|pixylene, _| {
+                    pixylene.project.canvas.palette.clone()
+                });
 
-                Ok(Canvas(Context::Solo(project::Canvas{
+                Ok(Canvas(Context::Solo(project::Canvas {
                     layers: project::LayersType::True(layers),
-                    palette
+                    palette,
                 })))
             });
         }
@@ -81,24 +89,31 @@ impl TealData for Canvas {
                     palette: Palette,
             );
             methods.document(
-                "Construct and return a new indexed Canvas from IndexedLayers and a Palette"
+                "Construct and return a new indexed Canvas from IndexedLayers and a Palette",
             );
             methods.add_function("true", |_, a: CanvasTrueArgs| {
-                let layers = a.layers.0.do_imt::<_, _, CanvasMismatch<
-                    project::Layers<types::IndexedPixel>
-                >>
-                    (|layers| Ok(layers.clone()))
-                    (|pixylene, _| pixylene.project.canvas.layers.to_indexed()
-                        .map(|layers| layers.clone()))
-                    .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(CANVAS_MISMATCH_INDEXED))))?;
+                let layers = a
+                    .layers
+                    .0
+                    .do_imt::<_, _, CanvasMismatch<project::Layers<types::IndexedPixel>>>(
+                        |layers| Ok(layers.clone()),
+                    )(|pixylene, _| {
+                    pixylene
+                        .project
+                        .canvas
+                        .layers
+                        .to_indexed()
+                        .map(|layers| layers.clone())
+                })
+                .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(CANVAS_MISMATCH_INDEXED))))?;
 
-                let palette = a.palette.0.do_imt
-                    (|palette| palette.clone())
-                    (|pixylene, _| pixylene.project.canvas.palette.clone());
+                let palette = a.palette.0.do_imt(|palette| palette.clone())(|pixylene, _| {
+                    pixylene.project.canvas.palette.clone()
+                });
 
-                Ok(Canvas(Context::Solo(project::Canvas{
+                Ok(Canvas(Context::Solo(project::Canvas {
                     layers: project::LayersType::Indexed(layers),
-                    palette
+                    palette,
                 })))
             });
         }
@@ -115,13 +130,13 @@ impl TealData for Canvas {
             );
             methods.add_method("merge_true", |_, this, a: CanvasMergeArgs| {
                 let color = a.background.map(|color| color.0);
-                Ok(TrueScene(Context::Solo(this.0.do_imt
-                    (|canvas| canvas.merged_true_scene(color))
-                    (|pixylene, _| pixylene.project.canvas.merged_true_scene(color))
-                )))
+                Ok(TrueScene(Context::Solo(this
+                    .0
+                    .do_imt(|canvas| canvas.merged_true_scene(color))(
+                    |pixylene, _| pixylene.project.canvas.merged_true_scene(color),
+                ))))
             });
         }
-
 
         //Lua interface to merged_indexed_scene()
         {
@@ -135,10 +150,11 @@ impl TealData for Canvas {
             );
             methods.add_method("merge_indexed", |_, this, a: CanvasMergeArgs| {
                 let color = a.background.map(|color| color.0);
-                Ok(IndexedScene(Context::Solo(this.0.do_imt
-                    (|canvas| canvas.merged_indexed_scene(color))
-                    (|pixylene, _| pixylene.project.canvas.merged_indexed_scene(color))
-                    .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(CANVAS_MISMATCH_INDEXED))))?
+                Ok(IndexedScene(Context::Solo(
+                    this.0.do_imt(|canvas| canvas.merged_indexed_scene(color))(|pixylene, _| {
+                        pixylene.project.canvas.merged_indexed_scene(color)
+                    })
+                    .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(CANVAS_MISMATCH_INDEXED))))?,
                 )))
             });
         }
@@ -147,72 +163,84 @@ impl TealData for Canvas {
     fn add_fields<'lua, F: tealr::mlu::TealDataFields<'lua, Self>>(fields: &mut F) {
         //Lua interface to Canvas field palette
         fields.document("the palette composed by this Canvas");
-        fields.add_field_method_get("palette", |_, this| Ok(match &this.0 {
-            Context::Solo(ref canvas) => Palette(Context::Solo(canvas.palette.clone())),
-            Context::Linked(pixylene, _) => Palette(Context::Linked(pixylene.clone(), ())),
-        }));
+        fields.add_field_method_get("palette", |_, this| {
+            Ok(match &this.0 {
+                Context::Solo(ref canvas) => Palette(Context::Solo(canvas.palette.clone())),
+                Context::Linked(pixylene, _) => Palette(Context::Linked(pixylene.clone(), ())),
+            })
+        });
         fields.add_field_method_set("palette", |_, this, palette: Palette| {
-            let new_palette = palette.0.do_imt
-                (|palette| palette.clone())
-                (|pixylene, _| pixylene.project.canvas.palette.clone());
+            let new_palette = palette.0.do_imt(|palette| palette.clone())(|pixylene, _| {
+                pixylene.project.canvas.palette.clone()
+            });
 
-            this.0.do_mut
-                (|canvas| {
-                    canvas.palette = new_palette.clone();
-                })
-                (|mut pixylene, _| {
-                    pixylene.project.canvas.palette = new_palette.clone();
-                });
+            this.0.do_mut(|canvas| {
+                canvas.palette = new_palette.clone();
+            })(|mut pixylene, _| {
+                pixylene.project.canvas.palette = new_palette.clone();
+            });
             Ok(())
         });
 
         //Lua interface to find out whether Canvas contains indexed layers or not
         fields.document("whether the Canvas is indexed");
-        fields.add_field_method_get("indexed", |_, this| Ok(this.0.do_imt
-            (|canvas| matches!(canvas.layers, project::LayersType::Indexed(_)))
-            (|pixylene, _|
-                matches!(pixylene.project.canvas.layers, project::LayersType::Indexed(_))))
-        );
+        fields.add_field_method_get("indexed", |_, this| {
+            Ok(this.0.do_imt(|canvas| {
+                matches!(canvas.layers, project::LayersType::Indexed(_))
+            })(|pixylene, _| {
+                matches!(
+                    pixylene.project.canvas.layers,
+                    project::LayersType::Indexed(_)
+                )
+            }))
+        });
 
-        fields.document("the layers of the Canvas, returned in a table that either contains the \
+        fields.document(
+            "the layers of the Canvas, returned in a table that either contains the \
                         composed TrueLayers to key \"true\" or the composed IndexedLayers to key \
-                        \"indexed\"");
+                        \"indexed\"",
+        );
         fields.add_field_method_get("layers", |lua_ctx, this| {
             let table = lua_ctx.create_table()?;
             match &this.0 {
                 Context::Solo(ref canvas) => match &canvas.layers {
                     project::LayersType::True(layers) => {
                         table.set("true", TrueLayers(Context::Solo(layers.clone())))?;
-                    },
+                    }
                     project::LayersType::Indexed(layers) => {
                         table.set("indexed", IndexedLayers(Context::Solo(layers.clone())))?;
-                    },
+                    }
                 },
                 Context::Linked(pixylene, _) => match &pixylene.borrow().project.canvas.layers {
                     project::LayersType::True(_) => {
                         table.set("true", TrueLayers(Context::Linked(pixylene.clone(), ())))?;
-                    },
+                    }
                     project::LayersType::Indexed(_) => {
-                        table.set("indexed", IndexedLayers(Context::Linked(pixylene.clone(), ())))?;
-                    },
-                }
+                        table.set(
+                            "indexed",
+                            IndexedLayers(Context::Linked(pixylene.clone(), ())),
+                        )?;
+                    }
+                },
             }
             Ok(table)
         });
 
         //Lua interface to LayersType method dim
         fields.document("the dimensions of the layers in the Canvas");
-        fields.add_field_method_get("dim", |_, this| Ok(PCoord(this.0.do_imt
-            (|canvas| canvas.layers.dim())
-            (|pixylene, _| pixylene.project.canvas.layers.dim())
-        )));
+        fields.add_field_method_get("dim", |_, this| {
+            Ok(PCoord(this.0.do_imt(|canvas| canvas.layers.dim())(
+                |pixylene, _| pixylene.project.canvas.layers.dim(),
+            )))
+        });
 
         //Lua interface to LayersType method len
         fields.document("the number of layers in the Canvas");
-        fields.add_field_method_get("len", |_, this| Ok(this.0.do_imt
-            (|canvas| canvas.layers.len())
-            (|pixylene, _| pixylene.project.canvas.layers.len())
-        ));
+        fields.add_field_method_get("len", |_, this| {
+            Ok(this.0.do_imt(|canvas| canvas.layers.len())(
+                |pixylene, _| pixylene.project.canvas.layers.len(),
+            ))
+        });
     }
 }
 

@@ -1,5 +1,5 @@
 use crate::{
-    utils::{CanvasMismatch, ContextExpired, CANVAS_MISMATCH_TRUE, LAYER_GONE, BOXED_ERROR},
+    utils::{CanvasMismatch, ContextExpired, BOXED_ERROR, CANVAS_MISMATCH_TRUE, LAYER_GONE},
     values::types::{PCoord, TruePixel, UCoord},
     Context,
 };
@@ -9,14 +9,13 @@ use std::sync::Arc;
 use tealr::{
     mlu::{
         mlua::{
-            self, prelude::LuaValue, FromLua, Lua, MetaMethod, UserData, UserDataFields,
-            UserDataMethods, Error::ExternalError
+            self, prelude::LuaValue, Error::ExternalError, FromLua, Lua, MetaMethod, UserData,
+            UserDataFields, UserDataMethods,
         },
         TealData, TealDataMethods, UserDataWrapper,
     },
     mlua_create_named_parameters, ToTypename, TypeBody,
 };
-
 
 /// Lua interface to libpixylene's [`Scene`][S] type over TruePixel
 ///
@@ -72,18 +71,22 @@ impl TealData for TrueScene {
             methods.document("Get the pixel at a particular coordinate on the scene");
             methods.add_method("get", |_, this, a: TrueSceneGetPixelArgs| {
                 use types::Pixel;
-                this.0.do_imt::<_, _, CanvasMismatch<ContextExpired<
-                    Result<Option<types::TruePixel>, project::SceneError>
-                >>>
-                    (|scene| Ok(Ok(scene.get_pixel(a.coordinate.0))))
-                    (|pixylene, index| pixylene.project.canvas.layers.to_true().map(|layers| layers
-                            .get_layer(*index)
-                            .map(|layer| layer.scene.get_pixel(a.coordinate.0))
-                            .map_err(|_| ())))
-                    .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(CANVAS_MISMATCH_TRUE))))?
-                    .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(LAYER_GONE))))?
-                    .map_err(|err| ExternalError(Arc::from(BOXED_ERROR(&err.to_string()))))
-                    .map(|pixel| TruePixel(pixel.unwrap_or(types::TruePixel::empty())))
+                this.0.do_imt::<_, _, CanvasMismatch<
+                    ContextExpired<Result<Option<types::TruePixel>, project::SceneError>>,
+                >>(|scene| Ok(Ok(scene.get_pixel(a.coordinate.0))))(
+                    |pixylene, index| {
+                        pixylene.project.canvas.layers.to_true().map(|layers| {
+                            layers
+                                .get_layer(*index)
+                                .map(|layer| layer.scene.get_pixel(a.coordinate.0))
+                                .map_err(|_| ())
+                        })
+                    },
+                )
+                .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(CANVAS_MISMATCH_TRUE))))?
+                .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(LAYER_GONE))))?
+                .map_err(|err| ExternalError(Arc::from(BOXED_ERROR(&err.to_string()))))
+                .map(|pixel| TruePixel(pixel.unwrap_or(types::TruePixel::empty())))
             });
         }
 
@@ -115,15 +118,23 @@ impl TealData for TrueScene {
 
     fn add_fields<'lua, F: tealr::mlu::TealDataFields<'lua, Self>>(fields: &mut F) {
         fields.document("the dimensions of this scene");
-        fields.add_field_method_get("dim", |_, this| Ok(PCoord(
-            this.0.do_imt::<_, _, CanvasMismatch<ContextExpired<types::PCoord>>>
-                (|scene| Ok(Ok(scene.dim())))
-                (|pixylene, index| pixylene.project.canvas.layers.to_true().map(|layers|
-                    layers.get_layer(*index)
-                        .map(|layer| layer.scene.dim())
-                        .map_err(|_| ())))
+        fields.add_field_method_get("dim", |_, this| {
+            Ok(PCoord(
+                this.0
+                    .do_imt::<_, _, CanvasMismatch<ContextExpired<types::PCoord>>>(|scene| {
+                        Ok(Ok(scene.dim()))
+                    })(|pixylene, index| {
+                    pixylene.project.canvas.layers.to_true().map(|layers| {
+                        layers
+                            .get_layer(*index)
+                            .map(|layer| layer.scene.dim())
+                            .map_err(|_| ())
+                    })
+                })
                 .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(CANVAS_MISMATCH_TRUE))))?
-                .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(LAYER_GONE))))?)));
+                .map_err(|_| ExternalError(Arc::from(BOXED_ERROR(LAYER_GONE))))?,
+            ))
+        });
     }
 }
 

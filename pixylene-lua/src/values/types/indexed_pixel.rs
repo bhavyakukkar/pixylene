@@ -1,16 +1,14 @@
+use libpixylene::types;
 use tealr::{
     mlu::{
         mlua::{
-            self,
-            prelude::{ LuaValue },
-            FromLua, Lua, Result, UserData, UserDataFields, UserDataMethods, MetaMethod,
+            self, prelude::LuaValue, FromLua, Lua, MetaMethod, Result, UserData, UserDataFields,
+            UserDataMethods,
         },
         TealData, TealDataMethods, UserDataWrapper,
     },
-    ToTypename, TypeBody, mlua_create_named_parameters,
+    mlua_create_named_parameters, ToTypename, TypeBody,
 };
-use libpixylene::types;
-
 
 /// Lua interface to libpixylene's [`IndexedPixel`](types::IndexedPixel) type
 #[derive(Copy, Clone)]
@@ -49,12 +47,11 @@ impl TealData for IndexedPixel {
     }
 
     fn add_fields<'lua, F: tealr::mlu::TealDataFields<'lua, Self>>(fields: &mut F) {
-
         //Lua interface to IndexedPixel.0
         fields.document("the index of the IndexedPixel");
-        fields.add_field_method_get("index", |_, this| Ok(this.0.0));
+        fields.add_field_method_get("index", |_, this| Ok(this.0 .0));
         fields.add_field_method_set("index", |_, this, value| {
-            this.0.0 = value;
+            this.0 .0 = value;
             Ok(())
         });
     }

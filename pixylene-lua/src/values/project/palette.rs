@@ -1,24 +1,17 @@
-use crate::{
-    utils::BOXED_ERROR,
-    values::{ types::{ TruePixel } },
-    Context,
-};
+use crate::{utils::BOXED_ERROR, values::types::TruePixel, Context};
 
+use libpixylene::project;
+use std::sync::Arc;
 use tealr::{
     mlu::{
         mlua::{
-            self,
-            prelude::{ LuaValue },
-            FromLua, Lua, Result, UserData, UserDataFields, UserDataMethods, MetaMethod,
-            Error::ExternalError,
+            self, prelude::LuaValue, Error::ExternalError, FromLua, Lua, MetaMethod, Result,
+            UserData, UserDataFields, UserDataMethods,
         },
         TealData, TealDataMethods, UserDataWrapper,
     },
-    ToTypename, TypeBody, mlua_create_named_parameters,
+    mlua_create_named_parameters, ToTypename, TypeBody,
 };
-use std::sync::Arc;
-use libpixylene::{ project };
-
 
 /// Lua interface to libpixylene's [`Palette`][project::Palette] type
 #[derive(Clone)]
@@ -39,14 +32,18 @@ impl<'lua> FromLua<'lua> for Palette {
 
 impl TealData for Palette {
     fn add_methods<'lua, T: TealDataMethods<'lua, Self>>(methods: &mut T) {
-        methods.document_type("A color palette of indexed colors where the significant color at \
-                              any time can be chosen and equipped.");
+        methods.document_type(
+            "A color palette of indexed colors where the significant color at \
+                              any time can be chosen and equipped.",
+        );
 
         //Lua interface to Palette::from()
         {
-            methods.document("Creates & returns a new Palette from a table of pairs of color \
+            methods.document(
+                "Creates & returns a new Palette from a table of pairs of color \
                              indexes and hex-strings, \
-                             e.g.: Palette{{1, \"#ffffff\"}, {2, \"#000000\"}}");
+                             e.g.: Palette{{1, \"#ffffff\"}, {2, \"#000000\"}}",
+            );
             methods.add_meta_method(MetaMethod::Call, |_, _, a: mlua::Table| {
                 let mut palette = project::Palette::new();
 
@@ -56,7 +53,7 @@ impl TealData for Palette {
                         Ok(()) => (),
                         Err(err) => {
                             return Err(ExternalError(Arc::from(BOXED_ERROR(&err.to_string()))));
-                        },
+                        }
                     }
                 }
 
@@ -66,23 +63,34 @@ impl TealData for Palette {
 
         //Flexible Lua interface to get_equipped() and get_color()
         {
-            methods.document("Gets the equipped color of the Palette, or the color at the optional
-                             index");
+            methods.document(
+                "Gets the equipped color of the Palette, or the color at the optional
+                             index",
+            );
             mlua_create_named_parameters!(
                 PaletteGetArgs with
                     index: Option<u8>,
             );
-            methods.add_method("get", |_, this, a: PaletteGetArgs| Ok(TruePixel(match a.index {
-                Some(index) => this.0.do_imt
-                    (|palette| palette.get_color(index)
-                        .map(|p| p.clone()))
-                    (|pixylene, _| pixylene.project.canvas.palette.get_color(index)
-                        .map(|p| p.clone()))
+            methods.add_method("get", |_, this, a: PaletteGetArgs| {
+                Ok(TruePixel(match a.index {
+                    Some(index) => this
+                        .0
+                        .do_imt(|palette| palette.get_color(index).map(|p| p.clone()))(
+                        |pixylene, _| {
+                            pixylene
+                                .project
+                                .canvas
+                                .palette
+                                .get_color(index)
+                                .map(|p| p.clone())
+                        },
+                    )
                     .map_err(|err| ExternalError(Arc::from(BOXED_ERROR(&err.to_string())))),
-                None => Ok(this.0.do_imt
-                    (|palette| palette.get_equipped().clone())
-                    (|pixylene, _| pixylene.project.canvas.palette.get_equipped().clone())),
-            }?)));
+                    None => Ok(this.0.do_imt(|palette| palette.get_equipped().clone())(
+                        |pixylene, _| pixylene.project.canvas.palette.get_equipped().clone(),
+                    )),
+                }?))
+            });
         }
 
         //Lua interface to Palette::equip() - replaced by setter to field 'equipped'
@@ -107,11 +115,13 @@ impl TealData for Palette {
                     color: String,
             );
             methods.document("Set the color at a particular index of the Palette");
-            methods.add_method_mut("set", |_, this, a: PaletteSetArgs| this.0.do_mut
-                (|palette| palette.set_color(a.index, &a.color))
-                (|mut pixylene, _| pixylene.project.canvas.palette.set_color(a.index, &a.color))
+            methods.add_method_mut("set", |_, this, a: PaletteSetArgs| {
+                this.0
+                    .do_mut(|palette| palette.set_color(a.index, &a.color))(
+                    |mut pixylene, _| pixylene.project.canvas.palette.set_color(a.index, &a.color),
+                )
                 .map_err(|err| ExternalError(Arc::from(BOXED_ERROR(&err.to_string()))))
-            );
+            });
         }
 
         //Lua interface to Palette::unset_color()
@@ -121,10 +131,11 @@ impl TealData for Palette {
                     index: u8,
             );
             methods.document("Unset the color at a particular index of the Palette");
-            methods.add_method_mut("unset", |_, this, a: PaletteUnsetColorArgs| Ok(this.0.do_mut
-                (|palette| palette.unset_color(a.index))
-                (|mut pixylene, _| pixylene.project.canvas.palette.unset_color(a.index))
-            ));
+            methods.add_method_mut("unset", |_, this, a: PaletteUnsetColorArgs| {
+                Ok(this.0.do_mut(|palette| palette.unset_color(a.index))(
+                    |mut pixylene, _| pixylene.project.canvas.palette.unset_color(a.index),
+                ))
+            });
         }
 
         methods.generate_help();
@@ -133,15 +144,17 @@ impl TealData for Palette {
     fn add_fields<'lua, F: tealr::mlu::TealDataFields<'lua, Self>>(fields: &mut F) {
         //Lua interface to Canvas field palette
         fields.document("the equipped index of the Palette");
-        fields.add_field_method_get("equipped", |_, this| Ok(this.0.do_imt
-            (|palette| palette.equipped())
-            (|pixylene, _| pixylene.project.canvas.palette.equipped())
-        ));
-        fields.add_field_method_set("equipped", |_, this, index: u8| this.0.do_mut
-            (|palette| palette.equip(index))
-            (|mut pixylene, _| pixylene.project.canvas.palette.equip(index))
+        fields.add_field_method_get("equipped", |_, this| {
+            Ok(this.0.do_imt(|palette| palette.equipped())(
+                |pixylene, _| pixylene.project.canvas.palette.equipped(),
+            ))
+        });
+        fields.add_field_method_set("equipped", |_, this, index: u8| {
+            this.0.do_mut(|palette| palette.equip(index))(|mut pixylene, _| {
+                pixylene.project.canvas.palette.equip(index)
+            })
             .map_err(|err| ExternalError(Arc::from(BOXED_ERROR(&err.to_string()))))
-        );
+        });
     }
 }
 

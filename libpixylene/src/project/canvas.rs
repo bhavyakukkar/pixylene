@@ -1,9 +1,8 @@
-use crate::types::{PCoord, BlendMode, TruePixel, IndexedPixel};
-use super::{Scene, Layer, Layers, Palette};
-use serde::{Serialize, Deserialize};
+use super::{Layer, Layers, Palette, Scene};
+use crate::types::{BlendMode, IndexedPixel, PCoord, TruePixel};
+use serde::{Deserialize, Serialize};
 
-
-#[derive(Clone, Debug, PartialEq,Savefile, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Savefile, Serialize, Deserialize)]
 pub enum LayersType {
     True(Layers<TruePixel>),
     Indexed(Layers<IndexedPixel>),
@@ -72,17 +71,20 @@ impl Canvas {
             LayersType::Indexed(layers_indexed) => {
                 layer_conv = layers_indexed.to_true_layers(&self.palette);
                 &layer_conv
-            },
+            }
         };
         for k in 0..layers_true.len() {
-            if layers_true[k].mute { continue; }
+            if layers_true[k].mute {
+                continue;
+            }
             net_layer = Layer {
                 scene: Layer::merge(
                     layers_true.dim(),
                     &layers_true[k],
                     &net_layer,
-                    BlendMode::Normal
-                ).unwrap(),
+                    BlendMode::Normal,
+                )
+                .unwrap(),
                 opacity: 255,
                 mute: false,
                 blend_mode: layers_true[k].blend_mode,
@@ -93,24 +95,31 @@ impl Canvas {
 
     /// Merges the Layers of an Indexed Canvas into a single indexed-color [`Scene`] with the
     /// provided background [`indexed-pixel`](IndexedPixel), failing if this Canvas is not Indexed
-    pub fn merged_indexed_scene(&self, background: Option<IndexedPixel>)
-    -> Result<Scene<IndexedPixel>, ()>
-    {
+    pub fn merged_indexed_scene(
+        &self,
+        background: Option<IndexedPixel>,
+    ) -> Result<Scene<IndexedPixel>, ()> {
         match &self.layers {
             LayersType::Indexed(layers) => {
                 let mut new_buf = vec![background; self.layers.dim().area() as usize];
 
                 for k in 0..layers.len() {
-                    if layers[k].mute { continue; }
-                    _ = layers[k].scene.grid().enumerate().map(|(i, p)| {
-                        if let Some(p) = p {
-                            new_buf[i] = Some(*p);
-                        }
-                    })
-                    .collect::<()>();
+                    if layers[k].mute {
+                        continue;
+                    }
+                    _ = layers[k]
+                        .scene
+                        .grid()
+                        .enumerate()
+                        .map(|(i, p)| {
+                            if let Some(p) = p {
+                                new_buf[i] = Some(*p);
+                            }
+                        })
+                        .collect::<()>();
                 }
                 Ok(Scene::new(self.layers.dim(), new_buf).unwrap())
-            },
+            }
             LayersType::True(_) => Err(()),
         }
     }

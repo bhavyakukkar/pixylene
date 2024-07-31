@@ -1,10 +1,9 @@
-use crate::{ Console, ActionError, memento, utils::Direction };
+use crate::{memento, utils::Direction, ActionError, Console};
 
 use libpixylene::{
-    types::{ Coord, UCoord },
-    project::{ Project },
+    project::Project,
+    types::{Coord, UCoord},
 };
-
 
 pub struct DuplicateCursors {
     direction: Direction,
@@ -23,14 +22,22 @@ impl memento::Action for DuplicateCursors {
             return Err(ActionError::ArgsError(String::from("given amount 0")));
         }
         let dim = project.canvas.layers.dim();
-        let cursors = project.cursors().map(|cursor| cursor.clone())
+        let cursors = project
+            .cursors()
+            .map(|cursor| cursor.clone())
             .collect::<Vec<(UCoord, u16)>>();
         for cursor in cursors {
-            let dup_cursor = Coord::from(&cursor.0)
-                .add(Coord{ x: i32::from(self.amount), y: i32::from(self.amount) }
-                     .mul(self.direction.unit()));
-            if dup_cursor.x < 0 || dup_cursor.y < 0 
-                || dup_cursor.x >= dim.x() as i32 || dup_cursor.y >= dim.y() as i32
+            let dup_cursor = Coord::from(&cursor.0).add(
+                Coord {
+                    x: i32::from(self.amount),
+                    y: i32::from(self.amount),
+                }
+                .mul(self.direction.unit()),
+            );
+            if dup_cursor.x < 0
+                || dup_cursor.y < 0
+                || dup_cursor.x >= dim.x() as i32
+                || dup_cursor.y >= dim.y() as i32
             {
                 ()
             } else {

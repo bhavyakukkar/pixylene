@@ -1,7 +1,6 @@
 use std::fmt;
 
-use super::{ UCoord, PCoord };
-
+use super::{PCoord, UCoord};
 
 /// An integer coordinate type composed of two 32-bit integers.
 ///
@@ -11,11 +10,10 @@ pub struct Coord {
     /// The 'x' coordinate of the Coord
     pub x: i32,
     /// The 'y' coordinate of the Coord
-    pub y: i32
+    pub y: i32,
 }
 
 impl Coord {
-
     /// The largest value allowed as a coordinate of a Coord
     pub const MAX: isize = i32::MAX as isize;
 
@@ -24,7 +22,7 @@ impl Coord {
 
     /// Returns a Coord with coordinates (0,0)
     pub fn zero() -> Coord {
-        Self{ x: 0, y: 0 }
+        Self { x: 0, y: 0 }
     }
 
     /// Returns the product of the Coord's coordinates
@@ -37,7 +35,10 @@ impl Coord {
     /// This method consumes both its parent and the argument; to mutably add a coordinate to an
     /// existing coordinate, use [`add_mut`](#method.add_mut)
     pub fn add(self, coord: Coord) -> Coord {
-        Self{ x: self.x.overflowing_add(coord.x).0, y: self.y.overflowing_add(coord.y).0 }
+        Self {
+            x: self.x.overflowing_add(coord.x).0,
+            y: self.y.overflowing_add(coord.y).0,
+        }
     }
 
     /// Adds another Coord's coordinates into this Coord's coordinates overflowingly
@@ -52,7 +53,10 @@ impl Coord {
     /// This method consumes both its parent and the argument; to mutably multiply a coordinate to
     /// an existing coordinate, use [`mul_mut`](#method.mul_mut)
     pub fn mul(self, coord: Coord) -> Coord {
-        Self{ x: self.x.overflowing_mul(coord.x).0, y: self.y.overflowing_mul(coord.y).0 }
+        Self {
+            x: self.x.overflowing_mul(coord.x).0,
+            y: self.y.overflowing_mul(coord.y).0,
+        }
     }
 
     /// Multiplies another Coord's coordinates into this Coord's coordinates overflowingly
@@ -70,21 +74,29 @@ impl fmt::Display for Coord {
 
 impl From<(isize, isize)> for Coord {
     fn from(item: (isize, isize)) -> Coord {
-        Coord{ x: i32::try_from(item.0).unwrap(), y: i32::try_from(item.1).unwrap() }
+        Coord {
+            x: i32::try_from(item.0).unwrap(),
+            y: i32::try_from(item.1).unwrap(),
+        }
     }
 }
 impl From<&PCoord> for Coord {
     fn from(item: &PCoord) -> Coord {
-        Coord{ x: i32::from(item.x()), y: i32::from(item.y()) }
+        Coord {
+            x: i32::from(item.x()),
+            y: i32::from(item.y()),
+        }
     }
 }
 
 impl From<&UCoord> for Coord {
     fn from(item: &UCoord) -> Coord {
-        Coord{ x: i32::from(item.x), y: i32::from(item.y) }
+        Coord {
+            x: i32::from(item.x),
+            y: i32::from(item.y),
+        }
     }
 }
-
 
 // Error Types
 
@@ -103,14 +115,12 @@ impl fmt::Display for CoordError {
             AddOverflow(first, second) => write!(
                 f,
                 "overflow occurred while adding the two coordinates: {} and {}",
-                first,
-                second,
+                first, second,
             ),
             MulOverflow(first, second) => write!(
                 f,
                 "overflow occurred while multiplying the two coordinates: {} and {}",
-                first,
-                second,
+                first, second,
             ),
         }
     }

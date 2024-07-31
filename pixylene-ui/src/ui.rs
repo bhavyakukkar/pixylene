@@ -1,9 +1,11 @@
-use libpixylene::{ types::{ UCoord, PCoord }, project::{ OPixel } };
-use pixylene_actions::{ LogType };
-use serde::{ Deserialize, Serialize };
-use std::{ collections::HashMap, path::PathBuf };
 use clap::Subcommand;
-
+use libpixylene::{
+    project::OPixel,
+    types::{PCoord, UCoord},
+};
+use pixylene_actions::LogType;
+use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, path::PathBuf};
 
 /// Trait needed for any User Interface Target to implement so that it can be controlled by
 /// [`Controller`][c]
@@ -23,13 +25,23 @@ pub trait UserInterface {
     fn get_key(&self) -> Option<KeyInfo>;
     fn get_size(&self) -> PCoord;
 
-    fn draw_camera(&mut self, dim: PCoord, buffer: Vec<OPixel>, show_cursors: bool,
-                   boundary: &Rectangle);
+    fn draw_camera(
+        &mut self,
+        dim: PCoord,
+        buffer: Vec<OPixel>,
+        show_cursors: bool,
+        boundary: &Rectangle,
+    );
     fn draw_paragraph(&mut self, paragraph: Vec<colored::ColoredString>, boudnary: &Rectangle);
 
     fn draw_statusline(&mut self, statusline: &Statusline, boundary: &Rectangle);
 
-    fn console_in(&mut self, message: &str, discard_key: &Key, boundary: &Rectangle) -> Option<String>;
+    fn console_in(
+        &mut self,
+        message: &str,
+        discard_key: &Key,
+        boundary: &Rectangle,
+    ) -> Option<String>;
     fn console_out(&mut self, message: &str, log_type: &LogType, boundary: &Rectangle);
 
     fn clear(&mut self, boundary: &Rectangle);
@@ -43,19 +55,18 @@ pub enum KeyInfo {
     UiFn(UiFn),
 }
 
-
 // needed to serialize Key since KeyMap doesn't implement Serialize
 // all thanks to https://github.com/serde-rs/serde/issues/1316
 mod string {
     use std::fmt::Display;
     use std::str::FromStr;
 
-    use serde::{de, Serializer, Deserialize, Deserializer};
+    use serde::{de, Deserialize, Deserializer, Serializer};
 
     pub fn serialize<T, S>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
     where
         T: Display,
-        S: Serializer
+        S: Serializer,
     {
         serializer.collect_str(value)
     }
@@ -64,9 +75,11 @@ mod string {
     where
         T: FromStr,
         T::Err: Display,
-        D: Deserializer<'de>
+        D: Deserializer<'de>,
     {
-        String::deserialize(deserializer)?.parse().map_err(de::Error::custom)
+        String::deserialize(deserializer)?
+            .parse()
+            .map_err(de::Error::custom)
     }
 }
 
@@ -80,9 +93,7 @@ mod string {
 ///
 /// Other target implementations require manual association.
 #[derive(Eq, Hash, Deserialize, PartialEq, Debug)]
-pub struct Key(
-    keymap::KeyMap
-);
+pub struct Key(keymap::KeyMap);
 
 impl std::str::FromStr for Key {
     type Err = pom::Error;
@@ -140,7 +151,7 @@ pub type KeyMap = HashMap<Option<String>, HashMap<Key, Vec<UiFn>>>;
 pub enum UiFn {
     #[serde(alias = "new")]
     //not needed: #[command(visible_alias = "new")]
-    New{
+    New {
         #[serde(alias = "w")]
         width: Option<u16>,
         #[serde(alias = "h")]
@@ -152,9 +163,7 @@ pub enum UiFn {
 
     #[serde(alias = "e")]
     #[command(visible_alias = "e")]
-    OpenCanvas{
-        path: PathBuf
-    },
+    OpenCanvas { path: PathBuf },
 
     #[serde(alias = "E")]
     #[command(visible_alias = "E")]
@@ -162,9 +171,7 @@ pub enum UiFn {
 
     #[serde(alias = "ep")]
     #[command(visible_alias = "ep")]
-    OpenProject{
-        path: PathBuf
-    },
+    OpenProject { path: PathBuf },
 
     #[serde(alias = "Ep")]
     #[command(visible_alias = "Ep")]
@@ -172,7 +179,7 @@ pub enum UiFn {
 
     #[serde(alias = "import")]
     //not needed: #[command(visible_alias = "import")]
-    Import{
+    Import {
         path: PathBuf,
         width: Option<u32>,
         height: Option<u32>,
@@ -181,7 +188,6 @@ pub enum UiFn {
     //#[serde(alias = "Import")]
     //#[command(visible_alias = "Import")]
     //ImportSpecify,
-
     #[serde(alias = "q")]
     #[command(visible_alias = "q")]
     Quit,
@@ -192,9 +198,7 @@ pub enum UiFn {
 
     #[serde(alias = "ses")]
     #[command(visible_alias = "ses")]
-    GoToSession{
-        index: u8
-    },
+    GoToSession { index: u8 },
 
     #[serde(alias = "nses")]
     #[command(visible_alias = "nses")]
@@ -226,9 +230,9 @@ pub enum UiFn {
 
     #[serde(alias = "ns")]
     #[command(visible_alias = "ns")]
-    EnterNamespace{
+    EnterNamespace {
         #[serde(alias = "n")]
-        name: Option<String>
+        name: Option<String>,
     },
 
     #[serde(alias = "dns")]
@@ -237,16 +241,14 @@ pub enum UiFn {
 
     #[serde(alias = "key")]
     #[command(visible_alias = "key")]
-    RunKey{
+    RunKey {
         #[serde(with = "string")]
         key: Key,
     },
 
     #[serde(alias = "cmd")]
     #[command(visible_alias = "cmd")]
-    RunCommand{
-        cmd: String
-    },
+    RunCommand { cmd: String },
 
     #[serde(alias = "Cmd")]
     #[command(visible_alias = "Cmd")]
@@ -254,7 +256,7 @@ pub enum UiFn {
 
     #[serde(alias = "an")]
     #[command(visible_alias = "an")]
-    RunNativeAction{
+    RunNativeAction {
         #[serde(alias = "n")]
         name: String,
     },
@@ -262,14 +264,14 @@ pub enum UiFn {
     #[cfg(feature = "lua")]
     #[serde(alias = "al")]
     #[command(visible_alias = "al")]
-    RunLuaAction{
+    RunLuaAction {
         #[serde(alias = "n")]
         name: String,
     },
 
     #[serde(alias = "a")]
     #[command(visible_alias = "a")]
-    RunAction{
+    RunAction {
         #[serde(alias = "n")]
         name: String,
     },
@@ -285,7 +287,7 @@ pub enum UiFn {
     #[cfg(feature = "lua")]
     #[serde(alias = "l")]
     #[command(visible_alias = "l")]
-    RunLua{
+    RunLua {
         #[serde(alias = "s")]
         statement: String,
     },
@@ -327,7 +329,7 @@ pub enum UiFn {
     ListCommands,
 }
 
-/// The mapping of [`Keys`](Key) to functions mandatorily required by the app. 
+/// The mapping of [`Keys`](Key) to functions mandatorily required by the app.
 #[derive(Debug, Deserialize)]
 pub struct ReqUiFnMap {
     pub force_quit: Key,
@@ -389,8 +391,8 @@ impl From<Color> for u32 {
                 colored::Color::BrightCyan => 0x008080,
                 colored::Color::BrightWhite => 0xC0C0C0,
                 colored::Color::TrueColor { r, g, b } => {
-                    u32::from(r)*256*256 + u32::from(g)*256 + u32::from(b)
-                },
+                    u32::from(r) * 256 * 256 + u32::from(g) * 256 + u32::from(b)
+                }
             },
             None => 0x000000,
         }

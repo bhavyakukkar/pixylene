@@ -1,15 +1,14 @@
 use crate::{
-    types::{ self, UCoord, PCoord, Pixel, TruePixel, IndexedPixel, BlendMode },
-    project::{ Scene, SceneError, Palette },
+    project::{Palette, Scene, SceneError},
+    types::{self, BlendMode, IndexedPixel, PCoord, Pixel, TruePixel, UCoord},
     utils::messages::U32TOUSIZE,
 };
 
-use serde::{ Deserialize, Serialize };
-
-
+use serde::{Deserialize, Serialize};
 
 /// A [`Scene`](Scene) with additional information including an opacity, mute switch and a
 /// [`BlendMode`](BlendMode).
+#[rustfmt::skip] //Savefile's macro fails on rustfmt appending a comma to line 14
 #[derive(Debug, Serialize, Deserialize, PartialEq, Savefile, Clone)]
 pub struct Layer<T=TruePixel>
 where T: Pixel
@@ -26,8 +25,9 @@ impl<T: Pixel> Layer<T> {
         Layer::<T> {
             scene: Scene::<T>::new(
                 dimensions,
-                vec![color; usize::try_from(dimensions.area()).expect(U32TOUSIZE)]
-            ).unwrap(),
+                vec![color; usize::try_from(dimensions.area()).expect(U32TOUSIZE)],
+            )
+            .unwrap(),
             opacity: 255,
             mute: false,
             blend_mode: BlendMode::Normal,
@@ -52,15 +52,13 @@ impl Layer<TruePixel> {
         dimensions: PCoord,
         top: &Layer<TruePixel>,
         bottom: &Layer<TruePixel>,
-        blend_mode: BlendMode
-    )
-        -> Result<Scene<TruePixel>, LayerError>
-    {
-        use LayerError::{ MergeError, BlendError };
+        blend_mode: BlendMode,
+    ) -> Result<Scene<TruePixel>, LayerError> {
+        use LayerError::{BlendError, MergeError};
         let mut merged_scene_grid: Vec<Option<TruePixel>> = Vec::new();
         for i in 0..dimensions.x() {
             for j in 0..dimensions.y() {
-                let coord = UCoord{ x: i, y: j };
+                let coord = UCoord { x: i, y: j };
                 let top_p = if top.mute {
                     TruePixel::empty()
                 } else {
@@ -81,10 +79,11 @@ impl Layer<TruePixel> {
                         }
                     }
                 };
-                merged_scene_grid.push(
-                    Some(blend_mode.blend(top_p, bottom_p)
-                        .map_err(|err| BlendError(UCoord{ x: i, y: j }, err))?)
-                );
+                merged_scene_grid.push(Some(
+                    blend_mode
+                        .blend(top_p, bottom_p)
+                        .map_err(|err| BlendError(UCoord { x: i, y: j }, err))?,
+                ));
             }
         }
         Ok(Scene::<TruePixel>::new(dimensions, merged_scene_grid).unwrap())
@@ -96,16 +95,19 @@ impl Layer<IndexedPixel> {
         Layer::<TruePixel> {
             scene: Scene::<TruePixel>::new(
                 self.scene.dim(),
-                self.scene.grid()
+                self.scene
+                    .grid()
                     .map(|index_maybe| match index_maybe {
-                        Some(index) => palette.get_color(index.0)
+                        Some(index) => palette
+                            .get_color(index.0)
                             .map(|true_pixel| Some(true_pixel.clone()))
                             .unwrap_or(None),
                         None => None,
                     })
-                    .collect::<Vec<Option<TruePixel>>>()
-            ).unwrap(), //cant fail because x.dim() is used to construct scene from x.grid()
-                        //which are consistent
+                    .collect::<Vec<Option<TruePixel>>>(),
+            )
+            .unwrap(), //cant fail because x.dim() is used to construct scene from x.grid()
+            //which are consistent
             opacity: self.opacity,
             mute: self.mute,
             blend_mode: self.blend_mode.clone(),
@@ -113,13 +115,11 @@ impl Layer<IndexedPixel> {
     }
 }
 
-
 // Error Types
 
 /// Error enum to describe various errors returns by Layer methods
 #[derive(Debug)]
 pub enum LayerError {
-
     /// Error that occurs when trying to merge inconsistently sized layers in
     /// [`merge`](Layer::merge) and coordinates valid for the passed dimensions turn out to be out
     /// of bounds for any of the two layers passed
@@ -144,8 +144,7 @@ impl std::fmt::Display for LayerError {
             BlendError(coord, err) => write!(
                 f,
                 "Blending pixels while merging failed at coordinate {}: {}",
-                coord,
-                err,
+                coord, err,
             ),
         }
     }

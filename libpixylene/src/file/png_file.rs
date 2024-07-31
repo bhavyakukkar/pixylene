@@ -1,10 +1,10 @@
 use crate::{
-    project::{Layer, Scene, LayersType, Palette, Canvas},
-    types::{UCoord, PCoord, Pixel, IndexedPixel, TruePixel, BlendMode},
+    project::{Canvas, Layer, LayersType, Palette, Scene},
+    types::{BlendMode, IndexedPixel, PCoord, Pixel, TruePixel, UCoord},
 };
 
 use png::{BitDepth, ColorType, Decoder};
-use std::{fmt, fs::File, io::BufWriter, path::PathBuf, collections::HashMap};
+use std::{collections::HashMap, fmt, fs::File, io::BufWriter, path::PathBuf};
 
 pub struct PngFile {
     height: u32,
@@ -70,8 +70,9 @@ impl PngFile {
                 bytes = vec![0; dim.area() as usize * 4];
                 for x in 0..dim.x() {
                     for y in 0..dim.y() {
-                        let TruePixel { r, g, b, a } = canvas.merged_true_scene(None)
-                            .get_pixel(UCoord{ x, y })
+                        let TruePixel { r, g, b, a } = canvas
+                            .merged_true_scene(None)
+                            .get_pixel(UCoord { x, y })
                             .unwrap() //cant fail because iterating over same scene's dim
                             .unwrap_or(TruePixel::empty());
                         let index = (x * dim.y() + y) as usize;
@@ -90,31 +91,31 @@ impl PngFile {
                     bytes,
                     palette: None,
                 })
-            },
+            }
             LayersType::Indexed(_) => {
                 bytes = vec![0; dim.area() as usize];
                 for x in 0..dim.x() {
                     for y in 0..dim.y() {
-                        let IndexedPixel(p) = canvas.merged_indexed_scene(None)
+                        let IndexedPixel(p) = canvas
+                            .merged_indexed_scene(None)
                             .unwrap() //cant fail because this is an indexed canvas
-                            .get_pixel(UCoord{ x, y })
+                            .get_pixel(UCoord { x, y })
                             .unwrap() //cant fail because iterating over same scene's dim
                             .unwrap_or(IndexedPixel::empty());
                         bytes[x as usize * dim.y() as usize + y as usize] = p;
                     }
                 }
 
-                let palette_map = canvas.palette.colors()
+                let palette_map = canvas
+                    .palette
+                    .colors()
                     .map(|(id, col, _)| (*id, *col))
                     .collect::<HashMap<u8, TruePixel>>();
-                let palette_len = palette_map.iter()
-                    .map(|(id, _)| *id)
-                    .max()
-                    .unwrap_or(0);
+                let palette_len = palette_map.iter().map(|(id, _)| *id).max().unwrap_or(0);
 
                 let mut palette = Vec::new();
                 for i in 0..(palette_len + 1) {
-                    if let Some(TruePixel{ r, g, b, .. }) = palette_map.get(&i) {
+                    if let Some(TruePixel { r, g, b, .. }) = palette_map.get(&i) {
                         palette.push(*r);
                         palette.push(*g);
                         palette.push(*b);
@@ -131,15 +132,15 @@ impl PngFile {
                     bytes,
                     palette: Some(palette),
                 })
-            },
+            }
         }
     }
 
     pub fn to_canvas(&self) -> Result<Canvas, PngFileError> {
+        use itertools::Itertools;
         use BitDepth::*;
         use ColorType::*;
         use PngFileError::{SceneSizeError, Unsupported};
-        use itertools::Itertools;
 
         self.check_dimensions()?;
         let dim = PCoord::new(
@@ -170,9 +171,9 @@ impl PngFile {
                             .unwrap();
                     }
                 }
-                Ok(Canvas{
+                Ok(Canvas {
                     layers: LayersType::True(
-                        vec![Layer::<TruePixel>{
+                        vec![Layer::<TruePixel> {
                             scene,
                             opacity: 255,
                             mute: false,
@@ -205,9 +206,9 @@ impl PngFile {
                             .unwrap();
                     }
                 }
-                Ok(Canvas{
+                Ok(Canvas {
                     layers: LayersType::True(
-                        vec![Layer::<TruePixel>{
+                        vec![Layer::<TruePixel> {
                             scene,
                             opacity: 255,
                             mute: false,
@@ -235,9 +236,9 @@ impl PngFile {
                             .unwrap();
                     }
                 }
-                Ok(Canvas{
+                Ok(Canvas {
                     layers: LayersType::Indexed(
-                        vec![Layer::<IndexedPixel>{
+                        vec![Layer::<IndexedPixel> {
                             scene,
                             opacity: 255,
                             mute: false,
@@ -247,7 +248,11 @@ impl PngFile {
                         .unwrap(),
                     ),
                     palette: <Palette as From<&Vec<TruePixel>>>::from(
-                        &self.palette.clone().unwrap().iter()
+                        &self
+                            .palette
+                            .clone()
+                            .unwrap()
+                            .iter()
                             .chunks(3)
                             .into_iter()
                             .map(|mut p| TruePixel {
@@ -256,7 +261,7 @@ impl PngFile {
                                 b: *p.next().unwrap_or(&0),
                                 a: 255,
                             })
-                            .collect::<Vec<TruePixel>>()
+                            .collect::<Vec<TruePixel>>(),
                     ),
                 })
             }

@@ -1,11 +1,10 @@
 use crate::{
-    types::{ Coord, PCoord, UCoord, TruePixel, BlendMode },
-    project::{ Layer, OPixel, LayersError, Canvas, LayersType },
+    project::{Canvas, Layer, LayersError, LayersType, OPixel},
+    types::{BlendMode, Coord, PCoord, TruePixel, UCoord},
 };
 
 use std::collections::HashMap;
 use std::iter::Iterator;
-
 
 /// The absolute state of a Pixel Art project at any given instance and a manager for the
 /// [`Canvas`].
@@ -43,12 +42,11 @@ pub struct Project {
 }
 
 impl Project {
-
     /// Creates a new empty Project containing the provided [`Canvas`]
     pub fn new(canvas: Canvas) -> Self {
         Self {
             canvas,
-            focus: (Coord{x: 0, y: 0}, 0),
+            focus: (Coord { x: 0, y: 0 }, 0),
             out_dim: PCoord::new(10, 10).unwrap(), //shouldn't fail
             out_mul: 1,
             out_repeat: PCoord::new(1, 1).unwrap(), //shouldn't fail
@@ -69,7 +67,7 @@ impl Project {
     ///
     /// Setters and getters are required for this attribute because out_dim is not allowed to be 0
     pub fn set_out_mul(&mut self, new_mul: u8) -> Result<(), ProjectError> {
-        use ProjectError::{ ZeroMultiplier };
+        use ProjectError::ZeroMultiplier;
         if new_mul > 0 {
             self.out_mul = new_mul;
             Ok(())
@@ -97,53 +95,64 @@ impl Project {
             LayersType::True(layers) => {
                 Layer::merge(
                     layers.dim(),
-                    &Layer{
+                    &Layer {
                         opacity: 255,
                         mute: false,
-                        ..layers.get_layer(self.focus.1)
+                        ..layers
+                            .get_layer(self.focus.1)
                             .map_err(|err| ProjectError::LayersError(err))?
                             .clone()
                     },
                     &Layer::new_with_solid_color(layers.dim(), Some(TruePixel::BLACK)),
                     BlendMode::Normal,
-                ).unwrap() //cant fail because dimensions and layers taken from same Layers which
-                           //cannot exist with inconsistent-dimension layers
-            },
+                )
+                .unwrap() //cant fail because dimensions and layers taken from same Layers which
+                          //cannot exist with inconsistent-dimension layers
+            }
             LayersType::Indexed(layers) => {
                 Layer::merge(
                     layers.dim(),
-                    &Layer{
+                    &Layer {
                         opacity: 255,
                         mute: false,
-                        ..layers.get_layer(self.focus.1)
+                        ..layers
+                            .get_layer(self.focus.1)
                             .map(|layer_indexed| layer_indexed.to_true_layer(&self.canvas.palette))
                             .map_err(|err| ProjectError::LayersError(err))?
                             .clone()
                     },
                     &Layer::new_with_solid_color(layers.dim(), Some(TruePixel::BLACK)),
                     BlendMode::Normal,
-                ).unwrap() //cant fail because dimensions and layers taken from same Layers which
-                           //cannot exist with inconsistent-dimension layers
-            },
+                )
+                .unwrap() //cant fail because dimensions and layers taken from same Layers which
+                          //cannot exist with inconsistent-dimension layers
+            }
         };
 
-        let out_pixels = net_scene.render(
-            self.out_dim, self.out_mul, self.out_repeat, self.focus.0
-        );
+        let out_pixels =
+            net_scene.render(self.out_dim, self.out_mul, self.out_repeat, self.focus.0);
 
-        Ok(out_pixels.iter().map(|out_pixel| match out_pixel {
-            OPixel::Filled { scene_coord, color, is_focus, .. } =>
+        Ok(out_pixels
+            .iter()
+            .map(|out_pixel| match out_pixel {
                 OPixel::Filled {
-                    scene_coord: *scene_coord, color: *color, is_focus: *is_focus,
+                    scene_coord,
+                    color,
+                    is_focus,
+                    ..
+                } => OPixel::Filled {
+                    scene_coord: *scene_coord,
+                    color: *color,
+                    is_focus: *is_focus,
                     has_cursor: self.cursors.get(&(*scene_coord, self.focus.1)).is_some(),
                 },
-            OPixel::Empty { scene_coord, .. } =>
-                OPixel::Empty {
+                OPixel::Empty { scene_coord, .. } => OPixel::Empty {
                     scene_coord: *scene_coord,
                     has_cursor: self.cursors.get(&(*scene_coord, self.focus.1)).is_some(),
                 },
-            OPixel::OutOfScene => OPixel::OutOfScene,
-        }).collect::<Vec<OPixel>>())
+                OPixel::OutOfScene => OPixel::OutOfScene,
+            })
+            .collect::<Vec<OPixel>>())
     }
 
     /// Renders the [`Scene`][s] obtained by merging all the [`Layers`](Layer) of the [`Canvas`],
@@ -158,9 +167,9 @@ impl Project {
     /// [om]: Project::get_out_mul
     /// [or]: #structfield.out_repeat
     pub fn render(&self) -> Vec<OPixel> {
-        self.canvas.merged_true_scene(Some(TruePixel::BLACK)).render(
-            self.out_dim, self.out_mul, self.out_repeat, self.focus.0
-        )
+        self.canvas
+            .merged_true_scene(Some(TruePixel::BLACK))
+            .render(self.out_dim, self.out_mul, self.out_repeat, self.focus.0)
     }
 
     /// Returns whether there is a cursor present pointing at the specified coordinate on the
@@ -172,16 +181,18 @@ impl Project {
     /// [cloob]: ProjectError::CursorLayerOutOfBounds
     /// [cioob]: ProjectError::CursorCoordOutOfBounds
     pub fn is_cursor_at(&self, cursor: &(UCoord, u16)) -> Result<bool, ProjectError> {
-        use ProjectError::{ CursorCoordOutOfBounds, CursorLayerOutOfBounds };
+        use ProjectError::{CursorCoordOutOfBounds, CursorLayerOutOfBounds};
 
         if cursor.1 < self.canvas.layers.len() {
-            if cursor.0.x < self.canvas.layers.dim().x() &&
-               cursor.0.y < self.canvas.layers.dim().y()
+            if cursor.0.x < self.canvas.layers.dim().x()
+                && cursor.0.y < self.canvas.layers.dim().y()
             {
                 Ok(self.cursors.get(cursor).is_some())
-            }
-            else {
-                Err(CursorCoordOutOfBounds(cursor.0.clone(), self.canvas.layers.dim()))
+            } else {
+                Err(CursorCoordOutOfBounds(
+                    cursor.0.clone(),
+                    self.canvas.layers.dim(),
+                ))
             }
         } else {
             Err(CursorLayerOutOfBounds(cursor.1, self.canvas.layers.len()))
@@ -197,11 +208,11 @@ impl Project {
     /// [cloob]: ProjectError::CursorLayerOutOfBounds
     /// [cioob]: ProjectError::CursorCoordOutOfBounds
     pub fn toggle_cursor_at(&mut self, cursor: &(UCoord, u16)) -> Result<(), ProjectError> {
-        use ProjectError::{ CursorCoordOutOfBounds, CursorLayerOutOfBounds };
+        use ProjectError::{CursorCoordOutOfBounds, CursorLayerOutOfBounds};
 
         if cursor.1 < self.canvas.layers.len() {
-            if cursor.0.x < self.canvas.layers.dim().x() &&
-               cursor.0.y < self.canvas.layers.dim().y()
+            if cursor.0.x < self.canvas.layers.dim().x()
+                && cursor.0.y < self.canvas.layers.dim().y()
             {
                 if self.cursors.get(&cursor).is_some() {
                     self.cursors.remove(&cursor).unwrap();
@@ -211,8 +222,7 @@ impl Project {
                     self.num_cursors += 1;
                 }
                 Ok(())
-            }
-            else {
+            } else {
                 Err(CursorCoordOutOfBounds(cursor.0, self.canvas.layers.dim()))
             }
         } else {
@@ -266,13 +276,11 @@ impl Project {
 //    }
 //}
 
-
 // Error Types
 
 /// Error enum to describe various errors returns by Canvas methods
 #[derive(Debug)]
 pub enum ProjectError {
-
     /// Error that occurs when trying to access a Cursor using a Layer index that is out of bounds
     /// for the Canvas
     CursorLayerOutOfBounds(u16, u16),
@@ -296,8 +304,7 @@ impl std::fmt::Display for ProjectError {
             CursorLayerOutOfBounds(layer, layers_len) => write!(
                 f,
                 "layer index {} is out of bounds for the {} layers present in the canvas",
-                layer,
-                layers_len,
+                layer, layers_len,
             ),
             CursorCoordOutOfBounds(coord, canvas_dim) => write!(
                 f,
@@ -305,18 +312,17 @@ impl std::fmt::Display for ProjectError {
                 coordinates for this project lie between {} and {} (inclusive)",
                 coord,
                 canvas_dim,
-                UCoord{ x: 0, y: 0 },
-                Coord::from(canvas_dim).add(Coord{ x: -1, y: -1 }),
+                UCoord { x: 0, y: 0 },
+                Coord::from(canvas_dim).add(Coord { x: -1, y: -1 }),
             ),
             LayersError(error) => write!(f, "{}", error),
-            ZeroMultiplier => write!(
-                f,
-                "cannot set output multiplier to 0",
-            ),
+            ZeroMultiplier => write!(f, "cannot set output multiplier to 0",),
         }
     }
 }
 
 impl From<LayersError> for ProjectError {
-    fn from(item: LayersError) -> ProjectError { ProjectError::LayersError(item) }
+    fn from(item: LayersError) -> ProjectError {
+        ProjectError::LayersError(item)
+    }
 }

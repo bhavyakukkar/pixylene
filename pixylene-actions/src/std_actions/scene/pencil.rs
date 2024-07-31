@@ -1,11 +1,10 @@
-use crate::{ Console, memento, utils::OptionalTrueOrIndexed };
 use super::Draw;
+use crate::{memento, utils::OptionalTrueOrIndexed, Console};
 
 use libpixylene::{
-    types::{ UCoord, IndexedPixel, BlendMode },
-    project::{ LayersType, Project },
+    project::{LayersType, Project},
+    types::{BlendMode, IndexedPixel, UCoord},
 };
-
 
 /// An action that extends Draw to dynamically use the project's color at a specificed
 /// palette index and blend it normally with the existing color at each cursor, taking the equipped
@@ -16,7 +15,7 @@ pub struct Pencil {
 
 impl Pencil {
     pub fn new(palette_index: Option<u8>) -> Self {
-        Pencil{ palette_index }
+        Pencil { palette_index }
     }
 }
 
@@ -51,7 +50,9 @@ impl memento::Action for Pencil {
     fn perform(&mut self, project: &mut Project, console: &dyn Console) -> memento::ActionResult {
         use OptionalTrueOrIndexed::*;
 
-        let cursors = project.cursors().map(|a| a.clone())
+        let cursors = project
+            .cursors()
+            .map(|a| a.clone())
             .collect::<Vec<(UCoord, u16)>>();
         for cursor in cursors {
             Draw::new(
@@ -61,12 +62,14 @@ impl memento::Action for Pencil {
                         Some(index) => *project.canvas.palette.get_color(*index)?,
                         None => *project.canvas.palette.get_equipped(),
                     })),
-                    LayersType::Indexed(_) =>
-                        Indexed(Some(IndexedPixel(self.palette_index
-                            .unwrap_or(project.canvas.palette.equipped())))),
+                    LayersType::Indexed(_) => Indexed(Some(IndexedPixel(
+                        self.palette_index
+                            .unwrap_or(project.canvas.palette.equipped()),
+                    ))),
                 },
                 BlendMode::Normal,
-            ).perform(project, console)?;
+            )
+            .perform(project, console)?;
         }
         Ok(())
     }

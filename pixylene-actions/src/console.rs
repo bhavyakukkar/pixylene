@@ -1,5 +1,5 @@
 /// A portable type to enable basic I/O from an Action to a defined Pixylene User Interface.
-/// 
+///
 /// A shared Console instance is passed to an Action's perform_action method to enable the
 /// Action to interact with a Pixylene user
 /*

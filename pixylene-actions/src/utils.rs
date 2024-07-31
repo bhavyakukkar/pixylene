@@ -1,5 +1,4 @@
-use libpixylene::types::{TruePixel, IndexedPixel, Coord};
-
+use libpixylene::types::{Coord, IndexedPixel, TruePixel};
 
 pub enum AbsOrRel<A, B> {
     Abs(A),
@@ -20,10 +19,10 @@ impl Direction {
         use Direction::*;
 
         match self {
-            Up => Coord{ x: -1, y: 0 },
-            Down => Coord{ x: 1, y: 0 },
-            Left => Coord{ x: 0, y: -1 },
-            Right => Coord{ x: 0, y: 1 },
+            Up => Coord { x: -1, y: 0 },
+            Down => Coord { x: 1, y: 0 },
+            Left => Coord { x: 0, y: -1 },
+            Right => Coord { x: 0, y: 1 },
         }
     }
 }

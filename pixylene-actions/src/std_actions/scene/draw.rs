@@ -1,11 +1,10 @@
-use crate::{Console, ActionError, memento, utils::OptionalTrueOrIndexed};
+use crate::{memento, utils::OptionalTrueOrIndexed, ActionError, Console};
 
 use libpixylene::{
-    types::{UCoord, Pixel, TruePixel, BlendMode},
     project::{LayersType, Project},
+    types::{BlendMode, Pixel, TruePixel, UCoord},
 };
 
- 
 /// An action that draws once at the specified `cursor with the specified `color and specified
 /// `blend_mode
 #[derive(Debug)]
@@ -17,7 +16,11 @@ pub struct Draw {
 
 impl Draw {
     pub fn new(cursor: (UCoord, u16), color: OptionalTrueOrIndexed, blend_mode: BlendMode) -> Self {
-        Draw{ cursor, color, blend_mode }
+        Draw {
+            cursor,
+            color,
+            blend_mode,
+        }
     }
 }
 
@@ -52,28 +55,32 @@ impl memento::Action for Draw {
         match (&mut project.canvas.layers, &self.color) {
             (LayersType::True(ref mut layers), True(ref new_pixel)) => {
                 let old_pixel: Option<TruePixel> = layers
-                    .get_layer(self.cursor.1)?.scene.get_pixel(self.cursor.0)?;
+                    .get_layer(self.cursor.1)?
+                    .scene
+                    .get_pixel(self.cursor.0)?;
 
                 layers.get_layer_mut(self.cursor.1)?.scene.set_pixel(
                     self.cursor.0,
                     Some(self.blend_mode.blend(
                         new_pixel.unwrap_or(TruePixel::empty()),
-                        old_pixel.unwrap_or(TruePixel::empty())
+                        old_pixel.unwrap_or(TruePixel::empty()),
                     )?),
                 )?;
                 Ok(())
-            },
+            }
             (LayersType::Indexed(ref mut layers), Indexed(ref new_pixel)) => {
-                layers.get_layer_mut(self.cursor.1)?.scene.set_pixel(
-                    self.cursor.0,
-                    *new_pixel,
-                )?;
+                layers
+                    .get_layer_mut(self.cursor.1)?
+                    .scene
+                    .set_pixel(self.cursor.0, *new_pixel)?;
                 Ok(())
-            },
-            (LayersType::True(_), Indexed(_)) =>
-                Err(InvalidCanvasType{ expecting_indexed: false }),
-            (LayersType::Indexed(_), True(_)) =>
-                Err(InvalidCanvasType{ expecting_indexed: true }),
+            }
+            (LayersType::True(_), Indexed(_)) => Err(InvalidCanvasType {
+                expecting_indexed: false,
+            }),
+            (LayersType::Indexed(_), True(_)) => Err(InvalidCanvasType {
+                expecting_indexed: true,
+            }),
         }
     }
 }

@@ -1,11 +1,10 @@
 use crate::{
-    types::{ TruePixel, TruePixelError },
-    utils::messages::{ EQUIPPEDISINPALETTE, PALETTELEN },
+    types::{TruePixel, TruePixelError},
+    utils::messages::{EQUIPPEDISINPALETTE, PALETTELEN},
 };
 
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use serde::{ Serialize, Deserialize };
-
 
 /// A `Palette` containing a set of [`true-color pixels`](TruePixel) (maximum 256)
 ///
@@ -19,14 +18,78 @@ pub struct Palette {
 
 impl Palette {
     pub const GRUVBOX_COLORS: [(u8, TruePixel); 8] = [
-        (1 , TruePixel{ r: 40 , g: 40 , b: 40 , a: 255 }),
-        (2 , TruePixel{ r: 235, g: 219, b: 178, a: 255 }),
-        (3 , TruePixel{ r: 204, g: 36 , b: 29 , a: 255 }),
-        (4 , TruePixel{ r: 152, g: 151, b: 26 , a: 255 }),
-        (5 , TruePixel{ r: 215, g: 153, b: 33 , a: 255 }),
-        (6 , TruePixel{ r: 69 , g: 133, b: 136, a: 255 }),
-        (7 , TruePixel{ r: 177, g: 98 , b: 134, a: 255 }),
-        (8 , TruePixel{ r: 104, g: 157, b: 106, a: 255 }),
+        (
+            1,
+            TruePixel {
+                r: 40,
+                g: 40,
+                b: 40,
+                a: 255,
+            },
+        ),
+        (
+            2,
+            TruePixel {
+                r: 235,
+                g: 219,
+                b: 178,
+                a: 255,
+            },
+        ),
+        (
+            3,
+            TruePixel {
+                r: 204,
+                g: 36,
+                b: 29,
+                a: 255,
+            },
+        ),
+        (
+            4,
+            TruePixel {
+                r: 152,
+                g: 151,
+                b: 26,
+                a: 255,
+            },
+        ),
+        (
+            5,
+            TruePixel {
+                r: 215,
+                g: 153,
+                b: 33,
+                a: 255,
+            },
+        ),
+        (
+            6,
+            TruePixel {
+                r: 69,
+                g: 133,
+                b: 136,
+                a: 255,
+            },
+        ),
+        (
+            7,
+            TruePixel {
+                r: 177,
+                g: 98,
+                b: 134,
+                a: 255,
+            },
+        ),
+        (
+            8,
+            TruePixel {
+                r: 104,
+                g: 157,
+                b: 106,
+                a: 255,
+            },
+        ),
     ];
 
     pub fn gruvbox() -> Self {
@@ -37,7 +100,12 @@ impl Palette {
     }
 
     /// Returns an empty Palette
-    pub fn new() -> Palette { Palette { colors: HashMap::new(), equipped: None } }
+    pub fn new() -> Palette {
+        Palette {
+            colors: HashMap::new(),
+            equipped: None,
+        }
+    }
 
     /// Returns a Palette initialized with a collection of (index, color hex-string) pairs, failing
     /// if any of the colors fail to get parsed
@@ -124,7 +192,7 @@ impl Palette {
 
         if let None = self.colors.insert(
             index,
-            TruePixel::from_hex(color_hex).map_err(|err| TruePixelError(err))?
+            TruePixel::from_hex(color_hex).map_err(|err| TruePixelError(err))?,
         ) {
             //if nothing was equipped, equip this
             self.equipped = Some(self.equipped.unwrap_or(index));
@@ -141,13 +209,12 @@ impl Palette {
                 Some(equipped) => {
                     if equipped == index {
                         if self.colors.len() > 0 {
-                            self.equipped = Some(*self.colors.iter().next()
-                                                 .expect(PALETTELEN).0);
+                            self.equipped = Some(*self.colors.iter().next().expect(PALETTELEN).0);
                         } else {
                             self.equipped = None;
                         }
                     }
-                },
+                }
                 None => (),
             }
         }
@@ -162,31 +229,37 @@ impl Palette {
     /// the index, the color, and whether or not it is the equipped color in the palette
     pub fn colors(&self) -> impl Iterator<Item = (&u8, &TruePixel, bool)> {
         self.colors.iter().map(|(index, color)| {
-            return (index, color, self.equipped.is_some() && *index == self.equipped.unwrap());
+            return (
+                index,
+                color,
+                self.equipped.is_some() && *index == self.equipped.unwrap(),
+            );
         })
     }
 }
 
 impl From<&Vec<TruePixel>> for Palette {
     fn from(item: &Vec<TruePixel>) -> Palette {
-        let colors = item.iter()
+        let colors = item
+            .iter()
             .take(u8::MAX.into())
             .map(|p| p.clone())
             .enumerate()
             .map(|(i, p)| (i as u8, p.clone()))
             .collect::<HashMap<u8, TruePixel>>();
 
-        Palette{ equipped: if item.len() > 0 { Some(0) } else { None }, colors }
+        Palette {
+            equipped: if item.len() > 0 { Some(0) } else { None },
+            colors,
+        }
     }
 }
-
 
 // Error Types
 
 /// Error enum to describe various errors returned by Palette methods
 #[derive(Debug)]
 pub enum PaletteError {
-
     /// Error that occurs when an index has been received that does not correspond to this palette
     InvalidIndex(u8),
 
@@ -207,10 +280,7 @@ impl std::fmt::Display for PaletteError {
                 "cannot get color {} from palette as it hasn't been set",
                 index,
             ),
-            NothingEquipped => write!(
-                f,
-                "cannot get equipped color as nothing has been equipped",
-            ),
+            NothingEquipped => write!(f, "cannot get equipped color as nothing has been equipped",),
             TruePixelError(true_pixel_error) => write!(f, "{}", true_pixel_error),
         }
     }

@@ -1,8 +1,7 @@
 use super::Action;
 
-use std::rc::Rc;
 use std::cell::RefCell;
-
+use std::rc::Rc;
 
 pub enum Change {
     Start,
@@ -36,14 +35,13 @@ impl Change {
     pub fn as_untracked(self) -> Result<Self, ChangeError> {
         use UntrackError::*;
         match self {
-            Change::Start |
-            Change::End => Err(ChangeError::UntrackError(NotDefined(self))),
-            Change::StartEnd(action_rc) |
-            Change::Untracked(action_rc) => Ok(Change::Untracked(action_rc)),
+            Change::Start | Change::End => Err(ChangeError::UntrackError(NotDefined(self))),
+            Change::StartEnd(action_rc) | Change::Untracked(action_rc) => {
+                Ok(Change::Untracked(action_rc))
+            }
         }
     }
 }
-
 
 // Error Types
 

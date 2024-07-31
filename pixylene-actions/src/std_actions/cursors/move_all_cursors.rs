@@ -1,11 +1,10 @@
-use crate::{ Console, ActionError, memento };
+use crate::{memento, ActionError, Console};
 
 use libpixylene::{
-    types::{ Coord, UCoord },
-    project::{ Project },
+    project::Project,
+    types::{Coord, UCoord},
 };
 use std::collections::HashMap;
-
 
 pub struct MoveAllCursors {
     displacement: Coord,
@@ -13,7 +12,7 @@ pub struct MoveAllCursors {
 
 impl MoveAllCursors {
     pub fn new(displacement: Coord) -> Self {
-        MoveAllCursors{ displacement }
+        MoveAllCursors { displacement }
     }
 }
 
@@ -24,15 +23,25 @@ impl memento::Action for MoveAllCursors {
         let cursors = project.cursors().map(|cursor| cursor.clone());
         for cursor in cursors {
             let displaced_cursor = Coord::from(&cursor.0).add(self.displacement);
-            if displaced_cursor.x < 0 || displaced_cursor.y < 0 
-                || displaced_cursor.x >= dim.x() as i32 || displaced_cursor.y >= dim.y() as i32
+            if displaced_cursor.x < 0
+                || displaced_cursor.y < 0
+                || displaced_cursor.x >= dim.x() as i32
+                || displaced_cursor.y >= dim.y() as i32
             {
-                return Err(ActionError::OperationError(Some(String::from("reached edge"))));
+                return Err(ActionError::OperationError(Some(String::from(
+                    "reached edge",
+                ))));
             } else {
-                new_cursors.insert((UCoord {
-                    x: displaced_cursor.x.try_into().unwrap(),
-                    y: displaced_cursor.y.try_into().unwrap(),
-                }, cursor.1), ());
+                new_cursors.insert(
+                    (
+                        UCoord {
+                            x: displaced_cursor.x.try_into().unwrap(),
+                            y: displaced_cursor.y.try_into().unwrap(),
+                        },
+                        cursor.1,
+                    ),
+                    (),
+                );
             }
         }
         _ = project.clear_cursors();

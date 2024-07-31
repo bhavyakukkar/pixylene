@@ -1,17 +1,15 @@
 use tealr::{
     mlu::{
         mlua::{
-            self,
-            prelude::{ LuaValue },
-            FromLua, Lua, Result, UserData, UserDataFields, UserDataMethods, MetaMethod,
+            self, prelude::LuaValue, FromLua, Lua, MetaMethod, Result, UserData, UserDataFields,
+            UserDataMethods,
         },
         TealData, TealDataMethods, UserDataWrapper,
     },
-    ToTypename, TypeBody, mlua_create_named_parameters,
+    mlua_create_named_parameters, ToTypename, TypeBody,
 };
 
 use libpixylene::types;
-
 
 /// Lua interface to libpixylene's [`UCoord`](types::UCoord) type
 #[derive(Copy, Clone)]
@@ -32,8 +30,10 @@ impl<'lua> FromLua<'lua> for UCoord {
 
 impl TealData for UCoord {
     fn add_methods<'lua, T: TealDataMethods<'lua, Self>>(methods: &mut T) {
-        methods.document_type("An unsigned integer coordinate type composed of two 16-bit unsigned \
-                             integers.");
+        methods.document_type(
+            "An unsigned integer coordinate type composed of two 16-bit unsigned \
+                             integers.",
+        );
 
         //Flexible Lua metamethod Call interface to construct a new UCoord
         //
@@ -47,10 +47,12 @@ impl TealData for UCoord {
                     x : Option<u16>,
                     y : Option<u16>,
             );
-            methods.document("Create & return a new UCoord with optional 'x' and 'y' coordinates \
-                             that default to 0");
+            methods.document(
+                "Create & return a new UCoord with optional 'x' and 'y' coordinates \
+                             that default to 0",
+            );
             methods.add_meta_method(MetaMethod::Call, |_, _, a: UCoordArgs| {
-                Ok(UCoord(types::UCoord{
+                Ok(UCoord(types::UCoord {
                     x: a.x.unwrap_or(0),
                     y: a.y.unwrap_or(0),
                 }))
@@ -66,16 +68,14 @@ impl TealData for UCoord {
             );
             methods.document("Create & return a new UCoord with 'x' and 'y' coordinates");
             methods.add_function("new", |_, a: UCoordNewArgs| {
-                Ok(UCoord(types::UCoord{x: a.x, y: a.y}))
+                Ok(UCoord(types::UCoord { x: a.x, y: a.y }))
             });
         }
 
         //Lua interface to UCoord::zero
         {
             methods.document("Create & return a new (0,0) UCoord");
-            methods.add_function("zero", |_, _: ()| {
-                Ok(UCoord(types::UCoord::zero()))
-            });
+            methods.add_function("zero", |_, _: ()| Ok(UCoord(types::UCoord::zero())));
         }
 
         //Lua interface to UCoord::area
@@ -93,10 +93,12 @@ impl TealData for UCoord {
                     first : UCoord,
                     second : UCoord,
             );
-            methods.document("Return a UCoord composed of the overflowing sums of two UCoord's \
-                             coordinates");
+            methods.document(
+                "Return a UCoord composed of the overflowing sums of two UCoord's \
+                             coordinates",
+            );
             methods.add_meta_function(MetaMethod::Add, |_, a: UCoordAddArgs| {
-                Ok(UCoord(types::UCoord{
+                Ok(UCoord(types::UCoord {
                     x: a.first.0.x.overflowing_add(a.second.0.x).0,
                     y: a.first.0.y.overflowing_add(a.second.0.y).0,
                 }))
@@ -106,7 +108,6 @@ impl TealData for UCoord {
         methods.generate_help();
     }
     fn add_fields<'lua, F: tealr::mlu::TealDataFields<'lua, Self>>(fields: &mut F) {
-
         fields.document("the 'x' coordinate of the UCoord");
         fields.add_field_method_get("x", |_, this| Ok(this.0.x));
         fields.add_field_method_set("x", |_, this, value| {

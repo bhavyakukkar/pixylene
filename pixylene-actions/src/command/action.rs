@@ -1,10 +1,9 @@
-use crate::{ Console };
 use super::ActionResult;
+use crate::Console;
 
 use libpixylene::project::Project;
 
-
-/* 
+/*
  * ACTION
  * An Action is a convenient way to change a Project
  *
@@ -32,12 +31,18 @@ pub trait Action {
     //perform action, transform to reverted (for undo) action, and return as a Change
     fn perform(&mut self, project: &mut Project, console: &dyn Console) -> ActionResult;
 
-    fn has_ended(&self) -> bool { true }
+    fn has_ended(&self) -> bool {
+        true
+    }
 
     // these methods must be overridden only for a complex Action, i.e.,
     // one that takes 2 or more calls to perform_action to complete
-    fn locks_scene(&self) -> bool { false }
-    fn locks_camera(&self) -> bool { false }
+    fn locks_scene(&self) -> bool {
+        false
+    }
+    fn locks_camera(&self) -> bool {
+        false
+    }
 }
 /*
 impl std::fmt::Debug for dyn Action {

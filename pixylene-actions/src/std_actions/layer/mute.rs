@@ -1,9 +1,6 @@
-use crate::{ Console, memento };
+use crate::{memento, Console};
 
-use libpixylene::{
-    project::{ LayersType, Project },
-};
-
+use libpixylene::project::{LayersType, Project};
 
 #[derive(Debug)]
 pub struct Mute;
@@ -16,13 +13,11 @@ impl memento::Action for Mute {
         //i dont think i have a solution for that honestly
         match project.canvas.layers {
             LayersType::True(ref mut layers) => {
-                layers.get_layer_mut(layer)?.mute =
-                    !layers.get_layer(layer)?.mute;
-            },
+                layers.get_layer_mut(layer)?.mute = !layers.get_layer(layer)?.mute;
+            }
             LayersType::Indexed(ref mut layers) => {
-                layers.get_layer_mut(layer)?.mute =
-                    !layers.get_layer(layer)?.mute;
-            },
+                layers.get_layer_mut(layer)?.mute = !layers.get_layer(layer)?.mute;
+            }
         }
         Ok(())
     }

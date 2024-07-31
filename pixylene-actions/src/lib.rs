@@ -1,5 +1,5 @@
 mod console;
-pub use console::{ Console, LogType };
+pub use console::{Console, LogType};
 
 pub mod command;
 

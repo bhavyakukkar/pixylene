@@ -1,9 +1,9 @@
 use crate::{
-    types::{Coord, PCoord, UCoord, Pixel, TruePixel, IndexedPixel},
+    types::{Coord, IndexedPixel, PCoord, Pixel, TruePixel, UCoord},
     utils::messages::U32TOUSIZE,
 };
 
-use serde::{ Serialize, Deserialize };
+use serde::{Deserialize, Serialize};
 use std::{fmt, slice::Iter};
 
 /// A two-dimensional grid of pixels that are of a generic type T.
@@ -12,6 +12,7 @@ use std::{fmt, slice::Iter};
 /// Canvas uses a Scene of 8-bit unsigned integers to denote palette indexes.
 ///
 /// Each item of the grid is either empty or has a value.
+#[rustfmt::skip] //Savefile's macro fails on rustfmt appending a comma to line 14
 #[derive(Serialize, Deserialize, PartialEq, Debug, Savefile, Clone)]
 pub struct Scene<T=TruePixel>
 where T: Pixel
@@ -102,7 +103,6 @@ impl<T: Pixel> Scene<T> {
         self.dim
     }
 }
-
 
 impl Scene<TruePixel> {
     /// Renders a given Scene with the coordinate to be rendered at the center
@@ -243,7 +243,10 @@ impl fmt::Display for Scene<TruePixel> {
                 write!(
                     f,
                     "{} ",
-                    iter.next().unwrap().map(|p| format!("{}", p)).unwrap_or("       ".to_owned())
+                    iter.next()
+                        .unwrap()
+                        .map(|p| format!("{}", p))
+                        .unwrap_or("       ".to_owned())
                 )?;
             }
             write!(f, "\n")?;
@@ -260,7 +263,10 @@ impl fmt::Display for Scene<IndexedPixel> {
                 write!(
                     f,
                     "{} ",
-                    iter.next().unwrap().map(|p| format!("{}", p)).unwrap_or("   ".to_owned())
+                    iter.next()
+                        .unwrap()
+                        .map(|p| format!("{}", p))
+                        .unwrap_or("   ".to_owned())
                 )?;
             }
             write!(f, "\n")?;
@@ -268,7 +274,6 @@ impl fmt::Display for Scene<IndexedPixel> {
         Ok(())
     }
 }
-
 
 /// An `O`utput `Pixel` as rendered by [`render`](Scene::render)
 ///

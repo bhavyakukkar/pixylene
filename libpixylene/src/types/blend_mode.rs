@@ -1,8 +1,7 @@
 use super::TruePixel;
 
+use serde::{Deserialize, Serialize};
 use std::fmt;
-use serde::{ Serialize, Deserialize };
-
 
 /// Enum of the different types of [blend-modes][b]
 ///
@@ -26,7 +25,6 @@ pub enum BlendMode {
 }
 
 impl BlendMode {
-
     /// Blends two [`RGBA colors`](TruePixel) using self's blend-mode variant & returns the
     /// resultant color
     ///
@@ -35,7 +33,7 @@ impl BlendMode {
     ///
     /// [fd]: BlendError::FractionsDoNotSumToWhole
     pub fn blend(&self, a: TruePixel, b: TruePixel) -> Result<TruePixel, BlendError> {
-        use BlendError::{ FractionsDoNotSumToWhole };
+        use BlendError::FractionsDoNotSumToWhole;
 
         match self {
             Self::Composite(frac_a, frac_b) => {
@@ -43,33 +41,44 @@ impl BlendMode {
                     return Err(FractionsDoNotSumToWhole((*frac_a, *frac_b)));
                 }
 
-                let red: u8   = (a.r as u16 * *frac_a as u16 + b.r as u16 * *frac_b as u16)
-                                .checked_div(255).unwrap() //Clearly dividing by 255 not 0
-                                .try_into().unwrap(); //guaranteed to be in range (0,255)
+                let red: u8 = (a.r as u16 * *frac_a as u16 + b.r as u16 * *frac_b as u16)
+                    .checked_div(255)
+                    .unwrap() //Clearly dividing by 255 not 0
+                    .try_into()
+                    .unwrap(); //guaranteed to be in range (0,255)
 
                 let green: u8 = (a.g as u16 * *frac_a as u16 + b.g as u16 * *frac_b as u16)
-                                .checked_div(255).unwrap() //Clearly dividing by 255 not 0
-                                .try_into().unwrap(); //guaranteed to be in range (0,255)
+                    .checked_div(255)
+                    .unwrap() //Clearly dividing by 255 not 0
+                    .try_into()
+                    .unwrap(); //guaranteed to be in range (0,255)
 
-                let blue: u8  = (a.b as u16 * *frac_a as u16 + b.b as u16 * *frac_b as u16)
-                                .checked_div(255).unwrap() //Clearly dividing by 255 not 0
-                                .try_into().unwrap(); //guaranteed to be in range (0,255)
+                let blue: u8 = (a.b as u16 * *frac_a as u16 + b.b as u16 * *frac_b as u16)
+                    .checked_div(255)
+                    .unwrap() //Clearly dividing by 255 not 0
+                    .try_into()
+                    .unwrap(); //guaranteed to be in range (0,255)
 
                 let alpha: u8 = (a.a as u16 * *frac_a as u16 + b.a as u16 * *frac_b as u16)
-                                .checked_div(255).unwrap() //Clearly dividing by 255 not 0
-                                .try_into().unwrap(); //guaranteed to be in range (0,255)
+                    .checked_div(255)
+                    .unwrap() //Clearly dividing by 255 not 0
+                    .try_into()
+                    .unwrap(); //guaranteed to be in range (0,255)
 
-                Ok(TruePixel { r: red, g: green, b: blue, a: alpha })
-            },
+                Ok(TruePixel {
+                    r: red,
+                    g: green,
+                    b: blue,
+                    a: alpha,
+                })
+            }
             Self::Normal => Ok(
-                BlendMode::Composite(a.a, 255 - a.a).blend(a, b)
-                .unwrap() //Guaranteed to sum to 255
+                BlendMode::Composite(a.a, 255 - a.a).blend(a, b).unwrap(), //Guaranteed to sum to 255
             ),
             Self::Overwrite => Ok(a),
         }
     }
 }
-
 
 // Error Types
 

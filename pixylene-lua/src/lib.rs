@@ -209,7 +209,11 @@ mod tests {
     #[test]
     fn main() -> Result<(), tealr::mlu::mlua::Error> {
         use crate::LuaActionManager;
-        use libpixylene::{project::Palette, types::{Coord, PCoord}, PixyleneDefaults};
+        use libpixylene::{
+            project::Palette,
+            types::{Coord, PCoord},
+            PixyleneDefaults,
+        };
         use pixylene_actions::{Console, LogType};
         use std::cell::RefCell;
         use std::rc::Rc;

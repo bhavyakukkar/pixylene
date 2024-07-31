@@ -8,7 +8,7 @@ pub struct UCoord {
     /// The 'x' coordinate of the UCoord
     pub x: u16,
     /// The 'y' coordinate of the UCoord
-    pub y: u16
+    pub y: u16,
 }
 
 impl UCoord {
@@ -18,10 +18,9 @@ impl UCoord {
     /// The smallest value allowed as a coordinate of a UCoord
     pub const MIN: isize = 0;
 
-
     /// Returns a UCoord with coordinates (0,0)
     pub fn zero() -> UCoord {
-        UCoord{ x: 0, y: 0 }
+        UCoord { x: 0, y: 0 }
     }
 
     /// Returns the product of the UCoord's coordinates
@@ -38,6 +37,9 @@ impl fmt::Display for UCoord {
 
 impl From<(usize, usize)> for UCoord {
     fn from(item: (usize, usize)) -> UCoord {
-        UCoord{ x: u16::try_from(item.0).unwrap(), y: u16::try_from(item.1).unwrap() }
+        UCoord {
+            x: u16::try_from(item.0).unwrap(),
+            y: u16::try_from(item.1).unwrap(),
+        }
     }
 }
