@@ -5,6 +5,7 @@ export function name() {
 
 export class PixyleneWebJS {
     constructor() {
+        window.pixylene = this
         /*this.keyState = {
             Digit0: false, Digit1: false, Digit2: false, Digit3: false, Digit4: false,
             Digit5: false, Digit6: false, Digit7: false, Digit8: false, Digit9: false,

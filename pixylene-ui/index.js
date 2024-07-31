@@ -10,6 +10,8 @@ async function run() {
     document.addEventListener('keydown', () => {
         if(running) {
             running = tick();
+            window.pixylene.key = null
+            running = tick();
         } else {
             clearInterval(ticker);
         }
