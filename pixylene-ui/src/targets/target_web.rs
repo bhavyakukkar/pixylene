@@ -11,6 +11,11 @@ use std::{
     collections::HashMap,
 };
 
+macro_rules! keybind {
+    ($key:expr, $($ui_fn:expr),+) => {
+        (KeyEvent::new($key.0, $key.1).into(), vec![$($ui_fn),+])
+    }
+}
 
 //impl KeyCode {
 //    pub fn from_js(in: &str) -> Self {
@@ -284,9 +289,8 @@ thread_local! {
 
 #[wasm_bindgen(start)]
 pub fn start() {
-    use KeyEvent as K;
-    use KeyModifiers as KM;
     use KeyCode::*;
+    use UiFn::*;
 
     APP.with_borrow_mut(|controller_maybe| {
         *controller_maybe = Some(Controller::new(
@@ -303,148 +307,78 @@ pub fn start() {
                     ("Main".to_owned(), ()),
                 ]),
                 keymap: KeyMap::from([(Some("Main".to_owned()), HashMap::from([
-                    (
-                        K::new(Char('h'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_left") }],
-                    ),
-                    (
-                        K::new(Char('j'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_down") }],
-                    ),
-                    (
-                        K::new(Char('k'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_up") }],
-                    ),
-                    (
-                        K::new(Char('l'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_right") }],
-                    ),
-                    (
-                        K::new(Left, KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_left") }],
-                    ),
-                    (
-                        K::new(Down, KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_down") }],
-                    ),
-                    (
-                        K::new(Up, KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_up") }],
-                    ),
-                    (
-                        K::new(Right, KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_right") }],
-                    ),
-                    (
-                        K::new(Char('H'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_dup_left") }],
-                    ),
-                    (
-                        K::new(Char('J'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_dup_down") }],
-                    ),
-                    (
-                        K::new(Char('K'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_dup_up") }],
-                    ),
-                    (
-                        K::new(Char('L'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_dup_right") }],
-                    ),
-                    (
-                        K::new(Char('R'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("cursors_reset") }],
-                    ),
-                    (
-                        K::new(Char('i'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("zoomin") }],
-                    ),
-                    (
-                        K::new(Char('o'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("zoomout") }],
-                    ),
-                    (
-                        K::new(Char('u'), KM::empty()).into(),
-                        vec![UiFn::Undo],
-                    ),
-                    (
-                        K::new(Char('r'), KM::empty()).into(),
-                        vec![UiFn::Redo],
-                    ),
-                    (
-                        K::new(Enter, KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("pencil") }],
-                    ),
-                    (
-                        K::new(Char('1'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("pencil1") }],
-                    ),
-                    (
-                        K::new(Char('2'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("pencil2") }],
-                    ),
-                    (
-                        K::new(Char('3'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("pencil3") }],
-                    ),
-                    (
-                        K::new(Char('4'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("pencil4") }],
-                    ),
-                    (
-                        K::new(Char('5'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("pencil5") }],
-                    ),
-                    (
-                        K::new(Char('6'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("pencil6") }],
-                    ),
-                    (
-                        K::new(Char('7'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("pencil7") }],
-                    ),
-                    (
-                        K::new(Char('8'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("pencil8") }],
-                    ),
+                    keybind!((Char('h'), KeyModifiers::empty()),
+                        RunAction{ name: "cursors_left".to_owned() }),
+                    keybind!((Char('h'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("cursors_left") }),
+                    keybind!((Char('j'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("cursors_down") }),
+                    keybind!((Char('k'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("cursors_up") }),
+                    keybind!((Char('l'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("cursors_right") }),
+                    keybind!((Left, KeyModifiers::empty()),
+                        RunAction{ name: String::from("cursors_left") }),
+                    keybind!((Down, KeyModifiers::empty()),
+                        RunAction{ name: String::from("cursors_down") }),
+                    keybind!((Up, KeyModifiers::empty()),
+                        RunAction{ name: String::from("cursors_up") }),
+                    keybind!((Right, KeyModifiers::empty()),
+                        RunAction{ name: String::from("cursors_right") }),
+                    keybind!((Char('H'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("cursors_dup_left") }),
+                    keybind!((Char('J'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("cursors_dup_down") }),
+                    keybind!((Char('K'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("cursors_dup_up") }),
+                    keybind!((Char('L'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("cursors_dup_right") }),
+                    keybind!((Char('R'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("cursors_reset") }),
+                    keybind!((Char('i'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("zoomin") }),
+                    keybind!((Char('o'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("zoomout") }),
+                    keybind!((Char('u'), KeyModifiers::empty()), Undo),
+                    keybind!((Char('r'), KeyModifiers::empty()), Redo),
+                    keybind!((Enter, KeyModifiers::empty()),
+                        RunAction{ name: String::from("pencil") }),
+                    keybind!((Char('1'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("pencil1") }),
+                    keybind!((Char('2'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("pencil2") }),
+                    keybind!((Char('3'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("pencil3") }),
+                    keybind!((Char('4'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("pencil4") }),
+                    keybind!((Char('5'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("pencil5") }),
+                    keybind!((Char('6'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("pencil6") }),
+                    keybind!((Char('7'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("pencil7") }),
+                    keybind!((Char('8'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("pencil8") }),
 
-                    (
-                        K::new(Char('!'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("equip1") }],
-                    ),
-                    (
-                        K::new(Char('@'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("equip2") }],
-                    ),
-                    (
-                        K::new(Char('#'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("equip3") }],
-                    ),
-                    (
-                        K::new(Char('$'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("equip4") }],
-                    ),
-                    (
-                        K::new(Char('%'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("equip5") }],
-                    ),
-                    (
-                        K::new(Char('^'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("equip6") }],
-                    ),
-                    (
-                        K::new(Char('&'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("equip7") }],
-                    ),
-                    (
-                        K::new(Char('*'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("equip8") }],
-                    ),
+                    keybind!((Char('!'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("equip1") }),
+                    keybind!((Char('@'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("equip2") }),
+                    keybind!((Char('#'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("equip3") }),
+                    keybind!((Char('$'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("equip4") }),
+                    keybind!((Char('%'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("equip5") }),
+                    keybind!((Char('^'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("equip6") }),
+                    keybind!((Char('&'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("equip7") }),
+                    keybind!((Char('*'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("equip8") }),
 
-                    (
-                        K::new(Char('c'), KM::empty()).into(),
-                        vec![UiFn::RunAction{ name: String::from("circularoutline") }],
-                    ),
+                    keybind!((Char('c'), KeyModifiers::empty()),
+                        RunAction{ name: String::from("circularoutline") }),
                 ]))]),
                 required_keys: ReqUiFnMap {
                     force_quit: Key::from(TargetWeb::FORCE_QUIT),
