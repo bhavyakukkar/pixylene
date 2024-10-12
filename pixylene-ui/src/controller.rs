@@ -1339,9 +1339,13 @@ impl Controller {
                 use colored::{ColoredString, Colorize};
                 let mut paragraph: Vec<ColoredString> = vec![
                     "".into(),
-                    "Namespaces".underline().bright_yellow(),
                     format!(
-                        " {:<20} : {} keybinds",
+                        "{} (c: current, d: default)",
+                        "Namespaces".underline().bright_yellow()
+                    )
+                    .into(),
+                    format!(
+                        " -- {:<20} : {} keybinds",
                         "Overlay".bright_magenta(),
                         self.config.keymap.get(&None).as_ref().unwrap().len(),
                     )
@@ -1351,12 +1355,27 @@ impl Controller {
                     .config
                     .keymap
                     .iter()
-                    .filter(|(namespace, _)| namespace.is_some())
+                    .filter_map(|(namespace, keys)| {
+                        namespace.clone().map(|namespace| (namespace, keys))
+                    })
                     .map(|(namespace, keys)| {
                         paragraph.push(
                             format!(
-                                " {:<20} : {} keybinds",
-                                namespace.as_ref().unwrap().to_owned().bright_magenta(),
+                                " {} {:<20} : {} keybinds",
+                                if self.namespace == namespace {
+                                    if self.config.default_namespace == namespace {
+                                        "dc"
+                                    } else {
+                                        "c "
+                                    }
+                                } else {
+                                    if self.config.default_namespace == namespace {
+                                        "d "
+                                    } else {
+                                        "  "
+                                    }
+                                },
+                                namespace.bright_magenta(),
                                 keys.len(),
                             )
                             .into(),

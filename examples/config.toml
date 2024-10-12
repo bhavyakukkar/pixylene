@@ -1,26 +1,26 @@
 # whether the default keys should be emptied before considering the ones defined in the config
-new_keys = false
+clear-all-keybinds = false
 
 # padding to use in the editor
 padding = 1
 
 # sequence of commands that should run after every frame
-every_frame = [
+every-frame = [
     "dl", #draw layer
     "ds", #draw statusline
 ]
 
 # whether the map of keys should show full command names instead of command identifiers used when
 # configuring keys
-keymap_show_command_names = false
+keymap-show-command-names = false
 
 # the default namespace will be the namespace that pixylene starts with
-default_namespace = "Main"
+default-namespace = "Main"
 
 
 # the map of keybinds
 
-[keys."Main"]
+[keys.Main]
 # every keybind binds a single key 'k' to a sequence of commands 'f'
 "alt-x" = [ "A" ]
 ";" = [ "la" ]
@@ -53,17 +53,22 @@ default_namespace = "Main"
 "e" = [{ a = { n = "equip" } }]
 "?" = [ "lc" ]
 
+# go to Launcher namespace
+"space" = [{ ns = { n = "Launcher" } }]
 # go to Ooze namespace
 "o" = [{ ns = { n = "Ooze" } }]
 # go to Cursors namespace
 "c" = [{ ns = { n = "Cursors" } }]
 # go to Shapes namespace
 "s" = [{ ns = { n = "Shapes" } }]
-
 # go to View namespace
 "ctrl-v" = [{ ns = { n = "View" } }]
 # go to Layer namespace
 "ctrl-l" = [{ ns = { n = "Layer" } }]
+
+
+[keys.Launcher]
+"f" = ["open", "dns"]
 
 
 [keys.Ooze]
@@ -172,16 +177,16 @@ default_namespace = "Main"
 
 
 # keys associated to function that are required to be known by pixylene
-[required_keys]
-force_quit = "alt-f4"
+[required-keys]
+force-quit = "alt-f4"
 
 # vim-like
-discard_command = "esc"
-start_command = ":"
+discard-command = "esc"
+start-command = ":"
 
 # emacs-like
-#discard_command = "ctrl-g" 
-#start_command = "alt-x"
+#discard-command = "ctrl-g" 
+#start-command = "alt-x"
 
 # default attributes used by any new pixylene projects
 [defaults]

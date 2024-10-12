@@ -147,7 +147,10 @@ pub type Statusline = Vec<colored::ColoredString>;
 /// sequence of [`UiFns`](UiFn) they will execute when pressed
 pub type KeyMap = HashMap<Option<String>, HashMap<Key, Vec<UiFn>>>;
 
+// TODO Instead of deserializing this from cmdline, just create custom parser that reads first word
+// of input and redirects to the respective command/uifn with the rest of the input
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Deserialize, Serialize, Subcommand)]
+#[serde(rename_all = "kebab-case")]
 pub enum UiFn {
     #[serde(alias = "new")]
     //not needed: #[command(visible_alias = "new")]
@@ -235,6 +238,7 @@ pub enum UiFn {
         name: Option<String>,
     },
 
+    //TODO rename to DefaultNamespace
     #[serde(alias = "dns")]
     #[command(visible_alias = "dns")]
     EnterDefaultNamespace,
@@ -254,6 +258,7 @@ pub enum UiFn {
     #[command(visible_alias = "Cmd")]
     RunCommandSpecify,
 
+    //TODO convert this to tuple-variant so that name = '..' not required in config
     #[serde(alias = "an")]
     #[command(visible_alias = "an")]
     RunNativeAction {
@@ -261,6 +266,7 @@ pub enum UiFn {
         name: String,
     },
 
+    //TODO convert this to tuple-variant so that name = '..' not required in config
     #[cfg(feature = "lua")]
     #[serde(alias = "al")]
     #[command(visible_alias = "al")]
@@ -269,6 +275,7 @@ pub enum UiFn {
         name: String,
     },
 
+    //TODO convert this to tuple-variant so that name = '..' not required in config
     #[serde(alias = "a")]
     #[command(visible_alias = "a")]
     RunAction {
@@ -297,10 +304,12 @@ pub enum UiFn {
     #[command(visible_alias = "L")]
     RunLuaSpecify,
 
+    //TODO rename this DrawLayer
     #[serde(alias = "dl")]
     #[command(visible_alias = "dl")]
     PreviewFocusLayer,
 
+    //TODO rename this DrawCanvas with alias dc
     #[serde(alias = "dp")]
     #[command(visible_alias = "dp")]
     PreviewProject,
@@ -331,6 +340,7 @@ pub enum UiFn {
 
 /// The mapping of [`Keys`](Key) to functions mandatorily required by the app.
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct ReqUiFnMap {
     pub force_quit: Key,
     pub start_command: Key,

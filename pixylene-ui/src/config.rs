@@ -99,13 +99,14 @@ pub struct PixyleneDefaultsConfig {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct ConfigSyntax {
     pub required_keys: ReqUiFnMap,
     pub default_namespace: String,
     pub keys: NamespaceXKeysEntries,
-    //over here
+    //TODO over here
     //pub overlay_keys: ,
-    pub new_keys: bool,
+    pub clear_all_keybinds: bool,
     pub every_frame: Vec<UiFn>,
     pub defaults: PixyleneDefaultsConfig,
     pub keymap_show_command_names: bool,
@@ -127,7 +128,7 @@ impl Default for ConfigSyntax {
                 force_quit: K::new(Char('c'), KM::CONTROL).into(),
             },
             default_namespace: "Main".to_owned(),
-            new_keys: false,
+            clear_all_keybinds: false,
             every_frame: vec![UiFn::PreviewFocusLayer, UiFn::DrawStatusline],
             defaults: PixyleneDefaultsConfig {
                 dimensions: UCoordEntry { x: 32, y: 32 },
@@ -428,7 +429,7 @@ fn get_keys_from_config(
     let mut possible_namespaces = HashMap::new();
 
     //if no user config or user config doesn't want new_keys
-    if !(config.is_some() && config.as_ref().unwrap().new_keys) {
+    if !(config.is_some() && config.as_ref().unwrap().clear_all_keybinds) {
         //we are constructing a new default Config here, just because keymap::KeyMap doesn't
         //implement clone and we cannot clone it from an existing reference to a default config
         _ = default_keys
