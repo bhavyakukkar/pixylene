@@ -6,12 +6,12 @@ The filing of the Project so that it may be saved to disk and loaded back, was
 fragmented into three different types: the Canvas file, the Project file and the
 PNG file. The table shows the 4 ways a new Project may be loaded.
 
-| Manner            | Canvas data       | Project data      | Command-Line                        | Command                  |
-|-------------------|-------------------|-------------------|-------------------------------------|--------------------------|
-| New Project       | Empty             | Empty             | `$ pixylene new`                    | `:new`                   |
-| Import PNG        | From PNG          | Empty             | `$ pixylene import image.png`       | `:import`                |
-| Load Canvas File  | From Canvas File  | Empty             | `$ pixylene canvas first.toml`      | `:open-canvas` or `:e`   |
-| Load Project File | From Project File | From Project File | `$ pixylene project first.pixylene` | `:open-project` or `:ep` |
+| Manner            | Canvas data       | Project data      | Command-Line (outside pixylene)     | Command (inside pixylene) |
+|-------------------|-------------------|-------------------|-------------------------------------|---------------------------|
+| New Project       | Empty             | Empty             | `$ pixylene new`                    | `:new`                    |
+| Import PNG        | From PNG          | Empty             | `$ pixylene import image.png`       | `:import`                 |
+| Load Canvas File  | From Canvas File  | Empty             | `$ pixylene canvas first.toml`      | `:open-canvas` or `:e`    |
+| Load Project File | From Project File | From Project File | `$ pixylene project first.pixylene` | `:open-project` or `:ep`  |
 
 The `Canvas` file is a plaintext readable format of the artwork layers & pixels, guaranteed to work across minor versions between major releases with the advantages that you can track it using version-control or collaborate on it.
 The `Project` file is a binary format of the session state with no guarantees of working across minor versions (for the time being) with the advnatage of preserving project data including but not limited the Lua actions read at its runtime and the positions of cursors.
