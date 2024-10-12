@@ -68,7 +68,7 @@ default-namespace = "Main"
 
 
 [keys.Launcher]
-"f" = ["open", "dns"]
+"f" = ["e", "dns"]
 
 
 [keys.Ooze]
