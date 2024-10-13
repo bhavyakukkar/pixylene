@@ -4,7 +4,10 @@ use crossterm::event::{KeyCode::*, KeyEvent as K, KeyModifiers as KM};
 use dirs::config_dir;
 use libpixylene::{project::Palette, types::UCoord, PixyleneDefaults};
 use serde::Deserialize;
-use std::{collections::HashMap, fs::read_to_string};
+use std::{
+    collections::{HashMap, HashSet},
+    fs::read_to_string,
+};
 use toml::{de::Error, from_str};
 
 /// Configuration (parsed from Config Syntax and evaluated for logic errors)
@@ -13,7 +16,7 @@ pub struct Config {
     pub defaults: PixyleneDefaults,
     pub default_namespace: String,
     pub keymap_show_command_names: bool,
-    pub possible_namespaces: HashMap<String, ()>,
+    pub possible_namespaces: HashSet<String>,
     pub keymap: KeyMap,
     pub required_keys: ReqUiFnMap,
     pub every_frame: Vec<UiFn>,
@@ -423,10 +426,11 @@ fn parse_defaults(defaults: PixyleneDefaultsConfig) -> Result<PixyleneDefaults, 
 fn get_keys_from_config(
     config: &Option<ConfigSyntax>,
     default_keys: NamespaceXKeysEntries,
-) -> (KeyMap, HashMap<String, ()>) {
+) -> (KeyMap, HashSet<String>) {
     let mut keymap = HashMap::new();
     keymap.insert(None, HashMap::new());
-    let mut possible_namespaces = HashMap::new();
+
+    let mut possible_namespaces = HashSet::new();
 
     //if no user config or user config doesn't want new_keys
     if !(config.is_some() && config.as_ref().unwrap().clear_all_keybinds) {
@@ -435,7 +439,7 @@ fn get_keys_from_config(
         _ = default_keys
             .into_iter()
             .map(|(namespace, keys)| {
-                possible_namespaces.insert(namespace.clone(), ());
+                possible_namespaces.insert(namespace.clone());
                 let mut map = HashMap::new();
                 _ = keys
                     .into_iter()
@@ -453,7 +457,7 @@ fn get_keys_from_config(
             .keys
             .iter()
             .map(|(namespace, keys)| {
-                possible_namespaces.insert(namespace.clone(), ());
+                possible_namespaces.insert(namespace.clone());
                 let mut map = HashMap::new();
                 _ = keys
                     .iter()
