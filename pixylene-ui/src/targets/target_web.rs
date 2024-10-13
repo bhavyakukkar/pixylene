@@ -10,7 +10,11 @@ use pixylene_ui::{
     controller::{Controller, StartType},
     ui::{Key, KeyInfo, KeyMap, Rectangle, ReqUiFnMap, Statusline, UiFn, UserInterface},
 };
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{
+    cell::RefCell,
+    collections::{HashMap, HashSet},
+    rc::Rc,
+};
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 macro_rules! keybind {
@@ -327,7 +331,7 @@ pub fn start() {
                 },
                 default_namespace: "Main".to_owned(),
                 keymap_show_command_names: true,
-                possible_namespaces: HashMap::from([("Main".to_owned(), ())]),
+                possible_namespaces: HashSet::from(["Main".to_owned()]),
                 keymap: KeyMap::from([(
                     Some("Main".to_owned()),
                     HashMap::from([
