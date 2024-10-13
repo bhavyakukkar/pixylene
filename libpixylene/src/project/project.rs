@@ -3,7 +3,7 @@ use crate::{
     types::{BlendMode, Coord, PCoord, TruePixel, UCoord},
 };
 
-use std::collections::HashMap;
+use std::collections::HashSet;
 use std::iter::Iterator;
 
 /// The absolute state of a Pixel Art project at any given instance and a manager for the
@@ -36,7 +36,7 @@ pub struct Project {
     /// see [Scene::render](crate::project::Scene::render)
     pub out_repeat: PCoord,
 
-    cursors: HashMap<(UCoord, u16), ()>,
+    cursors: HashSet<(UCoord, u16)>,
     num_cursors: u64,
     sel_cursor: Option<(UCoord, u16)>,
 }
@@ -50,7 +50,7 @@ impl Project {
             out_dim: PCoord::new(10, 10).unwrap(), //shouldn't fail
             out_mul: 1,
             out_repeat: PCoord::new(1, 1).unwrap(), //shouldn't fail
-            cursors: HashMap::new(),
+            cursors: HashSet::new(),
             num_cursors: 0,
             sel_cursor: None,
         }
@@ -144,11 +144,11 @@ impl Project {
                     scene_coord: *scene_coord,
                     color: *color,
                     is_focus: *is_focus,
-                    has_cursor: self.cursors.get(&(*scene_coord, self.focus.1)).is_some(),
+                    has_cursor: self.cursors.contains(&(*scene_coord, self.focus.1)),
                 },
                 OPixel::Empty { scene_coord, .. } => OPixel::Empty {
                     scene_coord: *scene_coord,
-                    has_cursor: self.cursors.get(&(*scene_coord, self.focus.1)).is_some(),
+                    has_cursor: self.cursors.contains(&(*scene_coord, self.focus.1)),
                 },
                 OPixel::OutOfScene => OPixel::OutOfScene,
             })
@@ -187,7 +187,7 @@ impl Project {
             if cursor.0.x < self.canvas.layers.dim().x()
                 && cursor.0.y < self.canvas.layers.dim().y()
             {
-                Ok(self.cursors.get(cursor).is_some())
+                Ok(self.cursors.contains(cursor))
             } else {
                 Err(CursorCoordOutOfBounds(
                     cursor.0.clone(),
@@ -214,11 +214,10 @@ impl Project {
             if cursor.0.x < self.canvas.layers.dim().x()
                 && cursor.0.y < self.canvas.layers.dim().y()
             {
-                if self.cursors.get(&cursor).is_some() {
-                    self.cursors.remove(&cursor).unwrap();
+                if self.cursors.remove(&cursor) {
                     self.num_cursors -= 1;
                 } else {
-                    _ = self.cursors.insert(cursor.clone(), ());
+                    _ = self.cursors.insert(cursor.clone());
                     self.num_cursors += 1;
                 }
                 Ok(())
@@ -231,7 +230,7 @@ impl Project {
     }
 
     pub fn cursors(&self) -> impl Iterator<Item = &(UCoord, u16)> {
-        self.cursors.iter().into_iter().map(|(cursor, _)| cursor)
+        self.cursors.iter()
     }
 
     pub fn num_cursors(&self) -> u64 {
@@ -240,7 +239,7 @@ impl Project {
 
     pub fn clear_cursors(&mut self) -> impl Iterator<Item = (UCoord, u16)> + '_ {
         self.num_cursors = 0;
-        self.cursors.drain().into_iter().map(|(cursor, _)| cursor)
+        self.cursors.drain()
     }
 
     pub fn resize(&mut self) {
