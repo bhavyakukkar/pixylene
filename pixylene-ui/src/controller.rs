@@ -13,6 +13,8 @@ use libpixylene::{
 use pixylene_actions::{memento::ActionManager, Console, LogType};
 
 use clap::Subcommand;
+#[cfg(feature = "lua")]
+use std::collections::HashSet;
 use std::{
     cell::RefCell,
     collections::{hash_map::Iter, HashMap},
@@ -83,7 +85,7 @@ pub struct PixyleneSession {
     native_action_manager: ActionManager,
 
     #[cfg(feature = "lua")]
-    lua_action_map: HashMap<String, ()>,
+    lua_action_map: HashSet<String>,
     #[cfg(feature = "lua")]
     lua_action_manager: Option<pixylene_lua::LuaActionManager>,
 }
@@ -294,7 +296,7 @@ impl Controller {
         let mut native_action_map: HashMap<String, ActionPtr> = HashMap::new();
 
         #[cfg(feature = "lua")]
-        let mut lua_action_map: HashMap<String, ()> = HashMap::new();
+        let mut lua_action_map: HashSet<String> = HashSet::new();
 
         //Create the Lua Action-Manager
         #[cfg(feature = "lua")]
@@ -331,7 +333,7 @@ impl Controller {
                     .list_actions()
                     .iter()
                     .map(|action_name| {
-                        lua_action_map.insert(action_name.clone(), ());
+                        let _ = lua_action_map.insert(action_name.clone());
                     })
                     .collect::<()>();
                 Some(m)
@@ -1093,63 +1095,60 @@ impl Controller {
                     target: target.clone(),
                 };
 
-                match lua_action_map.get(&name.clone()) {
-                    Some(()) => {
-                        target.borrow_mut().clear(&b_console);
+                if lua_action_map.contains(&name.clone()) {
+                    target.borrow_mut().clear(&b_console);
 
-                        match lua_action_manager
-                            .as_mut()
-                            .unwrap() //cant fail because if
-                            //lua_action_manager
-                            //doesn't exist, lua_action_map
-                            //shouldn't contain any actions
-                            //at all (check lua_action_map
-                            //in fn new_session)
-                            .invoke_action(&name, pixylene.clone(), Rc::new(visible_target))
-                        {
-                            Ok(()) => {
-                                if native_action_manager.commit(&pixylene.borrow().project.canvas) {
-                                    *last_action_name = Some(name.clone());
-                                    *modified = true;
-                                }
+                    match lua_action_manager
+                        .as_mut()
+                        .unwrap() //cant fail because if
+                        //lua_action_manager
+                        //doesn't exist, lua_action_map
+                        //shouldn't contain any actions
+                        //at all (check lua_action_map
+                        //in fn new_session)
+                        .invoke_action(&name, pixylene.clone(), Rc::new(visible_target))
+                    {
+                        Ok(()) => {
+                            if native_action_manager.commit(&pixylene.borrow().project.canvas) {
+                                *last_action_name = Some(name.clone());
+                                *modified = true;
                             }
-                            Err(err) => {
-                                use colored::Colorize;
+                        }
+                        Err(err) => {
+                            use colored::Colorize;
 
-                                let error = format!(
-                                    "{}",
-                                    err.to_string()
-                                        .lines()
-                                        .map(|s| s.to_string().replace("\t", " "))
-                                        .collect::<Vec<String>>()
-                                        .join(", ")
+                            let error = format!(
+                                "{}",
+                                err.to_string()
+                                    .lines()
+                                    .map(|s| s.to_string().replace("\t", " "))
+                                    .collect::<Vec<String>>()
+                                    .join(", ")
+                            );
+                            if error.len() <= b_console.size.y().into() {
+                                target.borrow_mut().console_out(
+                                    &error,
+                                    &LogType::Error,
+                                    &b_console,
                                 );
-                                if error.len() <= b_console.size.y().into() {
-                                    target.borrow_mut().console_out(
-                                        &error,
-                                        &LogType::Error,
-                                        &b_console,
-                                    );
-                                } else {
-                                    target
-                                        .borrow_mut()
-                                        .draw_paragraph(vec![error.red()], &b_camera);
-                                    self.console_in("press ENTER to close error");
-                                }
+                            } else {
+                                target
+                                    .borrow_mut()
+                                    .draw_paragraph(vec![error.red()], &b_camera);
+                                self.console_in("press ENTER to close error");
                             }
                         }
                     }
-                    None => {
-                        target.borrow_mut().console_out(
-                            &format!(
-                                "action '{}' was not found in lua actions inserted into \
+                } else {
+                    target.borrow_mut().console_out(
+                        &format!(
+                            "action '{}' was not found in lua actions inserted into \
                                      the action-manager",
-                                name
-                            ),
-                            &LogType::Error,
-                            &b_console,
-                        );
-                    }
+                            name
+                        ),
+                        &LogType::Error,
+                        &b_console,
+                    );
                 }
             }
 
@@ -1170,7 +1169,7 @@ impl Controller {
                     if session.native_action_map.get(name).is_some() {
                         let _ = self.perform_ui(&RunNativeAction { name: name.clone() });
                         return Ok(());
-                    } else if session.lua_action_map.get(name).is_some() {
+                    } else if session.lua_action_map.contains(name) {
                         let _ = self.perform_ui(&RunLuaAction { name: name.clone() });
                         return Ok(());
                     }
