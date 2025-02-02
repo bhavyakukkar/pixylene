@@ -109,6 +109,7 @@ pub struct ConfigSyntax {
     pub keys: NamespaceXKeysEntries,
     //TODO over here
     //pub overlay_keys: ,
+    #[serde(rename(deserialize = "fresh-start"))]
     pub clear_all_keybinds: bool,
     pub every_frame: Vec<UiFn>,
     pub defaults: PixyleneDefaultsConfig,
