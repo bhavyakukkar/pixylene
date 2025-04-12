@@ -1,0 +1,1 @@
+- used wasm-bindgen 0.2.92
